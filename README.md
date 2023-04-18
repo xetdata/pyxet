@@ -16,6 +16,9 @@ git submodule add https://github.com/xetdata/xethub.git   # if not already done
 To develop:
 ```
 source ./develop.sh
+# optional 
+pip install pandas polars pyarrow
+pytest tests 
 ```
 
 To build locally

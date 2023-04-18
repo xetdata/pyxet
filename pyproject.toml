@@ -1,0 +1,35 @@
+[build-system]
+requires = ["maturin>=0.14.17,<0.15"]
+build-backend = "maturin"
+
+[project]
+name = "pyxet"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["fsspec"]
+description = "A python SDK for XetHub"
+
+[project.optional-dependencies]
+dev = ["pytest", "maturin", "sphinx", "sphinx-rtd-theme", "sphinx-autodoc-typehints", "sphinxcontrib-napoleon", "sphinxcontrib-apidoc", "myst_parser", "livereload"]
+pandas = ["pandas"]
+polars = ["polars"]
+duckdb = ["duckdb"]
+pyarrow = ["pyarrow"]
+
+[project.urls]
+Homepage = "https://github.com/xetdata/pyxet"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "pyxet.rpyxet.rpyxet"
+
+[tool.poetry.plugins."fsspec.specs"]
+xet = "pyxet.XetFS"
+
+
+[lib]
+name = "rpyxet"

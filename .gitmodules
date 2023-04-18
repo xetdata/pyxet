@@ -1,0 +1,3 @@
+[submodule "xethub"]
+	path = xethub
+	url = https://github.com/xetdata/xethub.git

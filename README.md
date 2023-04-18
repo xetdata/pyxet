@@ -41,9 +41,10 @@ inexpensive. (The repo only needs to be cloned once).
 
 Docs
 ----
-cd docs
+```bash
+cd docs   
 make html
-
+```
 look at docs/_build/html/index.html
 
 

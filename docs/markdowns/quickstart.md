@@ -1,103 +1,85 @@
 # Quickstart
-[XetHub](https://xethub.com/) is a cloud storage with git capabilities. It is a great place to store your data, models, logs and code.    
+
+[XetHub](https://xethub.com/) is a cloud storage with git capabilities. It is a great place to store your data, models,
+logs and code.    
 This library allows you to access XetHub from Python.
 
 ## Installation
 
+1. [Create an account or sign in](https://xethub.com) 
+2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment variable.
+3. Install the library
+
 `pip install pyxet`
 
-## [Filesystem (fsspec)](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
-* [copy conventions](https://filesystem-spec.readthedocs.io/en/latest/copying.html)
-```python
-import pyxet
+## Usage
 
-fs = pyxet.repo("username/repo", branch="main", login=..., **kwargs)
-
-fs.ls("path/to/dir")
-fs.cat("path/to/file")
-fs.copy("path/to/file-or-folder", "path/to/dest")
-fs.mv("path/to/file-or-folder", "path/to/dest")
-fs.rm("path/to/file-or-folder", "path/to/dest")
-fs.exists("/remote/output/success")
-fs.isfile("/remote/output/success")
-fs.isdir("/remote/output/success")
-fs.glob("path/to/dir/*")
-
-
-with fs.open("path/data.csv", 'r') as f:
-    f.readlines()
-    f.readline()
-    ...
-
-with fs.open("path/file.txt", 'w') as f:
-    f.write("Hello, world!")
-```
-### Mount
-A key tool for simplifying working with data and CICD.   
-This let you use any tool that works with local files, but with data stored in XetHub.   
-Perfect to explore files like images and text, saving monitoring logs, and dump databases data for easy recovery.
-```python
-import pyxet
-
-fs = pyxet.repo("username/repo", branch="main", login=..., **kwargs)
-fs.mount("path/to/mount", mode='r', lazy=True)
-fs.umount("path/to/mount")
-```
-
-## [Git](https://git-scm.com)
-Did you ever want to undo a bad schema change? Or to revert a model to a previous version? Or to see the history of your data?
-```python
-import pyxet
-
-repo = pyxet.repo("username/repo", branch="main", login=..., **kwargs)
-repo.clone(destensation='.', lazy=True)
-repo.commit(target='.', message="commit message")
-repo.status()
-repo.pull()
-repo.put(target='.', message="commit message", upstream=True, force=False) # add + commit + push ? do we want this? or is the copy() enough?
-repo.checkout(target='.', commit="HEAD~1")
-repo.revert(target='.', commit="HEAD~1")
-repo.log()
-repo.diff()
-...
-```
-
-## Integrations
-* [pandas](https://pandas.pydata.org/)
+We'll start with a simple machine learning example of the [titanic dataset](https://www.kaggle.com/c/titanic).
 ```python
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
 
-df = pd.read_csv("xet://username/repo/main/data.csv")
-df.to_csv("xet://username/repo/main/data.csv", index=False)
+df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
+features, target = ["Pclass", "SibSp", "Parch"], "Survived"
+
+test_size, random_state = 0.2, 42
+train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+model = RandomForestClassifier().fit(train[features], train[target])
+predictions = model.predict(test[features])
+print(classification_report(test[target], predictions, target_names=['die', 'survive']))
 ```
-* [arrow](https://arrow.apache.org/)
+
+Let's create a new repo and save everything relevant to reproduce our model there. 
+
 ```python
 import pyxet
-import pyarrow.dataset as ds
+import json
+import joblib
 
-dataset = ds.dataset("titanic.parquet", 
-                     filesystem=pyxet.repo("user/repo","branch"))
+username = "<your username>"
+# Create a new repo
+repo = pyxet.create(f"{username}/titanic-tutorial")
+
+# save the data, the model and the info
+df.to_csv(f"xet://{username}/titanic-tutorial.git/main/data/titanic.csv", index=False)  # save data to XetHubo
+
+info = classification_report(test[target], predictions,
+                             target_names=['die', 'survive'],
+                             output_dict=True)
+# Any other paremeters you want to save
+info["test_size"] = test_size
+info["random_state"] = random_state
+info['features'] = features
+info['target'] = target
+
+with repo.open("info.json") as f:
+    json.dump(info, f)
+
+with repo.open("model.pkl") as f:
+    joblib.dump(model, f)
+
+
 ```
-* [polars](https://polars.rs)
-```python
-import polars as pl
+Of course you can save your code as well, and upload it with the command:    
+`xet cp <train.py> xet://<username>/titanic-tutorial.git/main/train.py`
 
-df = pl.read_csv("xet://username/repo/main/data.csv")
+You can also save your [FastAPI app](https://fastapi.tiangolo.com), checkpoints, logs directories, and even your [docker image](https://docs.docker.com/engine/reference/commandline/images/) to XetHub.
+> This will work no matter the size of your data, model or logs. 
 
-# lazy evaluation
-import pyxet
-import pyarrow.dataset as ds
-lazy_df = pl.scan_parquet(ds.dataset("titanic.parquet", 
-                                     filesystem=pyxet.repo("user/repo","branch")))
-```
+## Next steps
+Do you want to experiment with another model?   
+you can clone the repo, create a new branch and try a different model. 
+* All models will be saved, managed and versioned using git.
+* All metrics and logs will be saved such that you can compare them easily.
+* You can share your repo with your team and collaborate on it.
+  * Sharing data
+  * Pushing code
+  * Running experiments
+  * Saving models
+  * Saving logs
 
-## CLI
-For quick and dirty access to XetHub.
-```bash
-xet clone username/repo --lazy ...
-xet ls username/repo/branch
-xet cp source dest
-xet mv source dest
-xet rm path
-xet login
-```
+Have a look [here]() for more examples.
+
+

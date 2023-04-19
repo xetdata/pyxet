@@ -16,18 +16,17 @@ Features
     * `fsspec <https://filesystem-spec.readthedocs.io>`_
     * `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
     * `glob <https://docs.python.org/3/library/glob.html>`_
-
-2. A mountable file-system.
+2. Mount.
     * read-only for data exploration and analysis
     * read-write for data ingestion and preparation - optimal for database backups and logs.
 3. Integrations:
-    - [x] `pandas <https://pandas.pydata.org>`_ API
-    - [x] `polars <https://pola-rs.github.io/polars-book/>`_ API
-    - [x] `pyarrow <https://arrow.apache.org/docs/python/>`_ API
-    - [ ] `duckdb <https://duckdb.org>`_ API - #TODO
+    - [x] `pandas <https://pandas.pydata.org>`_
+    - [x] `polars <https://pola-rs.github.io/polars-book/>`_
+    - [x] `pyarrow <https://arrow.apache.org/docs/python/>`_
+    - [ ] `duckdb <https://duckdb.org>`_
 4. Extra features like login, copy, move, delete, rename, etc.
 5. Git capabilities:
-    * add-commit-push
+    * add, commit, push
     * clone, fork
     * merge, rebase
     * pull, fetch

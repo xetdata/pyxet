@@ -1,29 +1,39 @@
 # Python integrations
+[XetHub](https://xethub.com) is aimed to simplify every part of the data science workflow.   
+Getting data in and out of XetHub is no exception.
+* You can setup `XETHUB_TOKEN` as an environment variable to avoid passing it to every function.
 
-## [Pandas](https://pandas.pydata.org)
+## Packages
+
+### [pandas](https://pandas.pydata.org/)
 ```python
-import pyxet
 import pandas as pd
 
-with pyxet.open("https://xethub.com/xdssio/titanic.git/main/titanic.csv") as f:
-    df = pd.read_csv(f)
+df = pd.read_csv("xet://username/repo/main/data.csv", xet={"access_token" : "..."})
+df.to_csv("xet://username/repo/main/data.csv", index=False)
 ```
-
-## [Arrow](https://arrow.apache.org)
+### [Arrow](https://arrow.apache.org/)
 ```python
 import pyxet
-dataset = pyxet.read_arrow("https://xethub.com/xdssio/titanic.git/main/titanic.parquet")
-```
+import pyarrow.dataset as ds
 
-## [Polars](https://polars.rs)
+dataset = ds.dataset("titanic.parquet", 
+                     filesystem=pyxet.repo("user/repo","branch"))
+```
+### [Polars](https://pola-rs.github.io/polars-book/user-guide/introduction.html)
+You can use polars normally straight from XetHub.
 ```python
-import pyxet
 import polars as pl
 
-with pyxet.open("https://xethub.com/xdssio/titanic.git/main/titanic.csv") as f:
-    df = pl.read_csv(f)
-    
-# Lazy evaluation using arrow
-import polars as pl
-lazy_df = pl.scan_ds(pyxet.read_arrow("https://xethub.com/xdssio/titanic.git/main/titanic.parquet"))
+df = pl.read_csv("xet://username/repo/main/data.csv")
+df.write_csv("xet://username/repo/main/data.csv")
 ```
+Using Arrow, we can use [lazy evaluation](https://pola-rs.github.io/polars-book/user-guide/lazy-api/intro.html) to avoid downloading the whole dataset.
+```python
+
+import pyxet
+import pyarrow.dataset as ds
+lazy_df = pl.scan_parquet(ds.dataset("titanic.parquet", 
+                                     filesystem=pyxet.repo("user/repo","branch")))
+``` 
+### [DuckDB](https://duckdb.org) (WIP)

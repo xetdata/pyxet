@@ -11,14 +11,15 @@ XetHub is a blob-store with a filesystem like interface and git capabilities, th
 
 1. A filesystem interface.
     * [fsspec](https://filesystem-spec.readthedocs.io)
-      * copy
-      * remove
-      * list
-      * etc.
+        * copy
+        * remove
+        * list
+        * etc.
     * [glob](https://docs.python.org/3/library/glob.html)
-    * [pathlib.Path](https://docs.python.org/3/library/pathlib.html)(WIP) 
+    * [pathlib.Path](https://docs.python.org/3/library/pathlib.html)(WIP)
 2. Mount.
-    * Read-only optimize for speed; perfect for data exploration and analysis and building data-apps and model inference.
+    * Read-only optimize for speed; perfect for data exploration and analysis and building data-apps and model
+      inference.
     * Read-write for data ingestion and preparation; optimal for database backups and training and monitoring logs.
 3. Git capabilities:
     * add, commit, push
@@ -62,21 +63,48 @@ For API documentation and full examples, please see the [documentation](TODO).
 
 ### Quickstart
 
+#### Start by creating a new repo and clone it to your local filesystem.
+
 ```python
 import pyxet
 
 pyxet.login()  # login using the XETHUB_TOKEN environment variable
 
-pyxet.create("repo", branch="main")  # create a new repo
-repo = pyxet.repo("repo", branch="main").clone(destensation='.')
+pyxet.create("user/tutorial", branch="main")  # create a new repo
+repo = pyxet.repo("user/tutorial", branch="main").clone(destensation='.')
+```
 
-df = pyxet.read_csv("xet://user/repo/branch/path/to/data.csv")  # get data from any place
-df.to_csv('data.csv')  # save data to local filesystem - very large files and volumes are supported
-# train model 
-# ...
-model.save('model.pkl')
+#### Getting data
 
+```python
+import pandas as pd
+
+df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # All files on the platform are available with permissions
+
+# or
+
+import pyxet
+
+pyxet.copy("xet://xdssio/titanic/main/titanic.csv", 'titanic.csv')
+```
+
+#### Training a model
+
+We will assume that we have a model training script `train.py` which saves the model as `model.pkl`.
+
+#### Uploading
+
+* This will work on **any file size, and any volume of data**.
+* We can upload the data, model, metrics, etc.
+
+```python
 repo.add_commit_push(target='.', message="commit message")
+```
+
+Or using standard git commands:
+
+```bash
+git add . && git commit -m "commit message" && git push
 ```
 
 ### Next steps
@@ -93,8 +121,7 @@ repo.add_commit_push(target='.', message="commit message")
     * MLOps engineers which can add a docker-image and save it too.
     * Data-scientists can build gradio apps which are available as endpoints automatically (WIP)
     * Machine learning engineers can create feature stores, build datasets, models, and combines datasets.
-      Have a look at some of
-      our [use-cases](https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/markdowns/use_cases.md)
+* Have a look at some more [use-cases](https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/markdowns/use_cases.md)
 
 ### Basic APIs
 
@@ -104,7 +131,7 @@ import pyxet
 fs = pyxet.repo("xet://user/repo/branch")
 ```
 
-| Command         | python                                                                         | cli                                   |
+| Command         | python                                                                         | CLI                                   |
 |-----------------|--------------------------------------------------------------------------------|---------------------------------------|
 | **Copy**        | <pre><br/>fs.copy(source, destination)</pre>                                   | <pre>xet cp source destination</pre>  |
 | **Move**        | <pre><br/>fs.mv(source, destination)</pre>                                     | <pre>xet mv source destination</pre>  |
@@ -145,7 +172,7 @@ df = pd.read_csv("xet://username/repo/main/data.csv")
 df.to_csv("xet://username/repo/main/data.csv", index=False)
 ```
 
-* [arrow](https://arrow.apache.org/)
+* [Arrow](https://arrow.apache.org/)
 
 ```python
 import pyxet
@@ -155,7 +182,7 @@ dataset = ds.dataset("titanic.parquet",
                      filesystem=pyxet.repo("user/repo", "branch"))
 ```
 
-* [polars](https://polars.rs)
+* [Polars](https://polars.rs)
 
 ```python
 import polars as pl

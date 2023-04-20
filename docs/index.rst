@@ -46,11 +46,11 @@ Features
    :maxdepth: 2
    :caption: API Reference:
 
-   markdowns/cli
    markdowns/filesystem
    markdowns/mount
-   markdowns/integrations
    markdowns/git
+   markdowns/integrations
+   markdowns/cli
 
 .. toctree::
    :maxdepth: 2

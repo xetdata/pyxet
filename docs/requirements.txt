@@ -26,14 +26,6 @@ six==1.16.0
 snowballstemmer==2.2.0
 Sphinx==4.5.0
 sphinx-rtd-theme==1.2.0
-sphinx-view==0.3.1
-sphinxcontrib-applehelp==1.0.4
-sphinxcontrib-devhelp==1.0.2
-sphinxcontrib-htmlhelp==2.0.1
-sphinxcontrib-jquery==4.1
-sphinxcontrib-jsmath==1.0.1
-sphinxcontrib-qthelp==1.0.3
-sphinxcontrib-serializinghtml==1.1.5
 tornado==6.3
 typer==0.4.2
 urllib3==1.26.15

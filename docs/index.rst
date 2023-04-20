@@ -1,17 +1,17 @@
 .. image:: images/logo.png
 Welcome to pyxet's documentation!
-=====================================
+=================================
 
 pyxet is a Python library that provides a lightweight interface for the `XetHub <https://xethub.com/>`_  platform.
 XetHub is a blob-store with a file-system like interface and git capabilities, therefore pyxet implement both a CLI for both a file-system and git needs.
 
 Installation
-~~~~~~~~~~
+~~~~~~~~~~~~
 ``pip install pyxet``
 
 
 Features
-~~~~~~~~~~
+~~~~~~~~
 1. A file-system like interface.
     * `fsspec <https://filesystem-spec.readthedocs.io>`_
     * `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
@@ -34,7 +34,7 @@ Features
     * stash, diff, log
     * status, branch
     * submodules
-    ...
+    * etc.
 
 .. toctree::
    :maxdepth: 2

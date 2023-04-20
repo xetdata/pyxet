@@ -1,4 +1,4 @@
-# Use cases - TODO
+# Use cases (WIP)
 
 ## Model versioning
 
@@ -11,6 +11,7 @@ Use-cases:
 * We can mount the models folder or load it explicitly.
 
 Examples:
+
 * [ ] [FastAPI]()
 * [ ] [Modal.com]()
 * [ ] [Sagemaker]()
@@ -60,7 +61,6 @@ models/model/
         └── requirements.txt
 """
 
-
 fs.mount('models', 'r')
 model = mlflow.sklearn.load_model.load_model('model')
 ```
@@ -70,8 +70,6 @@ With the CLI
 ```bash
 pyxet copy model.joblib xet://user/repo/branch/model.joblib
 ```
-
-
 
 ## Data exploration
 

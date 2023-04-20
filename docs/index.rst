@@ -51,6 +51,7 @@ Features
    markdowns/git
    markdowns/integrations
    markdowns/cli
+   markdowns/use_cases
 
 .. toctree::
    :maxdepth: 2

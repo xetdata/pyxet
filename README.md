@@ -32,6 +32,7 @@ XetHub is a blob-store with a filesystem like interface and git capabilities, th
     * submodules
       ...
 4. Integrations:
+    - [x] [GitHub](https://github.com) [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
     - [x] [pandas](https://pandas.pydata.org)
     - [x] [polars](https://pola-rs.github.io/polars-book/)
     - [x] [pyarrow](https://arrow.apache.org/docs/python/)

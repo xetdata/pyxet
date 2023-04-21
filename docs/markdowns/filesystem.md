@@ -8,6 +8,8 @@ the same API to access local files, remote files, and files in Xethub.
 
 * [Copy conventions](https://filesystem-spec.readthedocs.io/en/latest/copying.html)
 
+The `pyxet.repo` returns a repository-filesystem that can be used with fsspec.   
+It works both like a normal filesystem and git.
 ```python
 import pyxet
 

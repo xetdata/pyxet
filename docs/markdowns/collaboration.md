@@ -25,6 +25,7 @@ Can we do better?
    <img src="https://github.com/xetdata/pyxet/blob/main/docs/images/xethub.png?raw=true" alt="logo" width="1000" />
 </p>   
 We can use XetHub to share data, models, and code, with a simple natural distinction view:
+
 * Addresses of things are as directories and files.
 * Versions are managed with git instead of Addresses.
 

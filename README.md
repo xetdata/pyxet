@@ -198,3 +198,5 @@ lazy_df = pl.scan_parquet(ds.dataset("file.parquet",
                                      filesystem=pyxet.repo("user/repo.branch")))
 ```
 
+# Project examples
+* [titanic-server](https://xethub.com/xdssio/titanic-server-example)

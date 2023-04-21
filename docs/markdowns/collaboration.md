@@ -4,7 +4,7 @@ We can use Xet to share data, models, and code.
 
 A standard machine learning solution would be something like this:
 <p align="center">
-   <img src="../_static/images/standard.png" alt="logo" width="500" />
+   <img src="images/standard.png" alt="logo" width="500" />
 </p>   
 
 Every team-member would have to know the location of all the relevant S3 buckets, and the credentials to access them.
@@ -15,7 +15,7 @@ Since serving code depands greatly on the model and technologiers, the data-scie
 
 Can we do better?
 <p align="center">
-   <img src="../_static/images/xethub.png" alt="logo" width="500" />
+   <img src="images/xethub.png" alt="logo" width="500" />
 </p>   
 
 

@@ -69,6 +69,33 @@ With the CLI
 pyxet copy model.joblib xet://user/repo/branch/model.joblib
 ```
 
+## Examples
+### Using a mounted repo
 
+* [titanic-example](https://xethub.com/xdssio/titanic-server-example)
+
+```bash
+git xet mount https://xethub.com/xdssio/titanic-server-example.git server
+# pip install -r server/requirements.txt # <-- if needed
+uvicorn server.src.serve:app --reload
+# Checkout http://127.0.0.1:8000/docs or run: 
+curl -X 'POST' \
+  'http://127.0.0.1:8000/predict' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PassengerId": 1,
+  "Pclass": 3,
+  "Name": "Braund, Mr. Owen Harris",
+  "Sex": "male",
+  "Age": 22,
+  "SibSp": 1,
+  "Parch": 0,
+  "Ticket": "A/5 21171",
+  "Fare": 7.25,
+  "Embarked": "S"
+}'
+umount server
+```
 
 

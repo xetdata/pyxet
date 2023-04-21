@@ -22,7 +22,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'docs', '.venv']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+html_theme = 'sphinx_pydata_theme'
 html_static_path = ['_static']
 
 import os

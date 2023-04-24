@@ -71,7 +71,7 @@ import pyxet
 
 pyxet.login()  # login using the XETHUB_TOKEN environment variable
 
-pyxet.create("user/tutorial", branch="main")  # create a new repo
+pyxet.create("<user>/tutorial", branch="main")  # create a new repo
 repo = pyxet.repo("user/tutorial", branch="main").clone(destensation='.')
 ```
 
@@ -79,19 +79,18 @@ repo = pyxet.repo("user/tutorial", branch="main").clone(destensation='.')
 
 ```python
 import pandas as pd
-
-df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # All files on the platform are available with permissions
-
-# or
-
 import pyxet
 
+df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # All files on the platform are available with permissions
+# or
 pyxet.copy("xet://xdssio/titanic/main/titanic.csv", 'titanic.csv')
 ```
 
 #### Training a model
 
 We will assume that we have a model training script `train.py` which saves the model as `model.pkl`.
+
+* Checkout this [titanic app](https://xethub.com/xdssio/titanic-server-example) for example.
 
 #### Uploading
 
@@ -122,7 +121,8 @@ git add . && git commit -m "commit message" && git push
     * MLOps engineers which can add a docker-image and save it too.
     * Data-scientists can build gradio apps which are available as endpoints automatically (WIP)
     * Machine learning engineers can create feature stores, build datasets, models, and combines datasets.
-* Have a look at some more [use-cases](https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/markdowns/use_cases.md)
+* Have a look at some
+  more [use-cases](https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/markdowns/use_cases.md)
 
 ### Basic APIs
 
@@ -199,4 +199,5 @@ lazy_df = pl.scan_parquet(ds.dataset("file.parquet",
 ```
 
 # Project examples
-* [titanic-server](https://xethub.com/xdssio/titanic-server-example)
+
+* [Titanic-app](https://xethub.com/xdssio/titanic-server-example)

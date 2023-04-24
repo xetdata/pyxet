@@ -6,8 +6,9 @@ This library allows you to access XetHub from Python.
 
 ## Installation
 
-1. [Create an account or sign in](https://xethub.com) 
-2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment variable.
+1. [Create an account or sign in](https://xethub.com)
+2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment
+   variable.
 3. Install the library
 
 `pip install pyxet`
@@ -15,6 +16,7 @@ This library allows you to access XetHub from Python.
 ## Usage
 
 We'll start with a simple machine learning example of the [titanic dataset](https://www.kaggle.com/c/titanic).
+
 ```python
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -22,64 +24,102 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
 df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
-features, target = ["Pclass", "SibSp", "Parch"], "Survived"
+target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
 
 test_size, random_state = 0.2, 42
 train, test = train_test_split(df, test_size=test_size, random_state=random_state)
 model = RandomForestClassifier().fit(train[features], train[target])
 predictions = model.predict(test[features])
-print(classification_report(test[target], predictions, target_names=['die', 'survive']))
+print(classification_report(test[target], predictions, target_names=target_names))
+
+# Any parameters we want to save
+info = classification_report(test[target], predictions,
+                             target_names=target_names,
+                             output_dict=True)
+info["test_size"] = test_size
+info["random_state"] = random_state
+info['features'] = features
+info['target'] = target
 ```
 
-Let's create a new repo and save everything relevant to reproduce our model there. 
+What do we care about? We care about the model, the data, the metrics and the code.
+
+### Setup
+
+Let's [create a new repo](https://xethub.com/xet/create) in the UI or programmatically:
+
+```python
+import pyxet
+
+pyxet.login()  # login using the XETHUB_TOKEN environment variable
+
+username = "<your username>"
+# Create a new repo
+repo = pyxet.create(f"{username}/titanic-tutorial/main")
+print(repo.path)
+
+"xet://<your username>/titanic-tutorial/main"
+```
+
+We can save everything we want to the repo by uploading or committing it to the repo.
+
+### Uploading
+
+* This will create a commit with the files in the repo behind the scenes.
+
+```python
+import joblib
+import json
+
+df.to_csv(repo.open('titanic.csv', 'w'), index=False)
+
+with repo.open("info.json") as f:
+    json.dump(info, f)
+
+with repo.open("model.joblib") as f:
+    joblib.dump(model, f)
+```
+
+### Committing
 
 ```python
 import pyxet
 import json
 import joblib
 
-username = "<your username>"
-# Create a new repo
-repo = pyxet.create(f"{username}/titanic-tutorial")
+repo.clone('.')
 
-# save the data, the model and the info
-df.to_csv(f"xet://{username}/titanic-tutorial.git/main/data/titanic.csv", index=False)  # save data to XetHubo
+df.to_csv(f"titanic.csv",
+          index=False)
 
-info = classification_report(test[target], predictions,
-                             target_names=['die', 'survive'],
-                             output_dict=True)
-# Any other paremeters you want to save
-info["test_size"] = test_size
-info["random_state"] = random_state
-info['features'] = features
-info['target'] = target
-
-with repo.open("info.json") as f:
+with open("info.json") as f:
     json.dump(info, f)
 
-with repo.open("model.pkl") as f:
+with open("model.pkl") as f:
     joblib.dump(model, f)
 
-
+repo.add_commit_push('.', 'first commit')
 ```
+
 Of course you can save your code as well, and upload it with the command:    
 `xet cp <train.py> xet://<username>/titanic-tutorial.git/main/train.py`
-
-You can also save your [FastAPI app](https://fastapi.tiangolo.com), checkpoints, logs directories, and even your [docker image](https://docs.docker.com/engine/reference/commandline/images/) to XetHub.
-> This will work no matter the size of your data, model or logs. 
+> This will work no matter the size of your data, model or logs.
 
 ## Next steps
+
 Do you want to experiment with another model?   
-you can clone the repo, create a new branch and try a different model. 
+you can clone the repo, create a new branch and try a different model.
+
 * All models will be saved, managed and versioned using git.
 * All metrics and logs will be saved such that you can compare them easily.
 * You can share your repo with your team and collaborate on it.
-  * Sharing data
-  * Pushing code
-  * Running experiments
-  * Saving models
-  * Saving logs
+    * Sharing data
+    * Pushing code
+    * Running experiments
+    * Saving models
+    * Saving logs
 
-Have a look [here]() for more examples.
+Checkout this [titanic app](https://xethub.com/xdssio/titanic-server-example), for a more comprehensive example.
+
 
 

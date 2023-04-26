@@ -92,13 +92,29 @@ We will assume that we have a model training script `train.py` which saves the m
 
 * Checkout this [titanic app](https://xethub.com/xdssio/titanic-server-example) for example.
 
-#### Uploading
+#### Uploading - committing
 
 * This will work on **any file size, and any volume of data**.
 * We can upload the data, model, metrics, etc.
 
 ```python
-repo.add_commit_push(target='.', message="commit message")
+import pyxet
+
+# filesystem interface
+repo = pyxet.repo("user/repo/user/branch")
+with repo.commit("commit message"):
+    with repo.open('model.pkl', 'wb') as f:
+        f.write(model_bytes)
+
+# pathlib interface
+from pyxet.pathlib import Path
+
+Path('https://xethub.com/user/repo/branch/model.pkl').write_bytes(model_bytes)
+
+# git interface 
+with repo.open('model.pkl', 'wb') as f:
+    f.write(model_bytes)
+repo.add('model.pkl').commit('commit-message').push(upstream='HEAD')
 ```
 
 Or using standard git commands:
@@ -132,31 +148,33 @@ import pyxet
 fs = pyxet.repo("xet://user/repo/branch")
 ```
 
-| Command         | python                                                                         | CLI                                   |
-|-----------------|--------------------------------------------------------------------------------|---------------------------------------|
-| **Copy**        | <pre><br/>fs.copy(source, destination)</pre>                                   | <pre>xet cp source destination</pre>  |
-| **Move**        | <pre><br/>fs.mv(source, destination)</pre>                                     | <pre>xet mv source destination</pre>  |
-| **Remove**      | <pre><br/>fs.rm(path)</pre>                                                    | <pre>xet rm path</pre>                |
-| **List**        | <pre><br/>fs.ls(path, new_name)</pre>                                          | <pre>xet ls path</pre>                |
-| **Read**        | <pre><br/>with fs.open("path/data.csv", 'r') as f:<br/>    f.readall()</pre>   | <pre>xet cat path</pre>               |
-| **Write**       | <pre><br/>with fs.open("path/data.csv", 'w') as f:<br/>    f.write(data)</pre> | <pre> </pre>                          |
-| **Mount**       | <pre><br/>fs.mount(dest, lazy=True)</pre>                                      | <pre>xet mount repo dest --lazy</pre> |
-| **Unmount**     | <pre><br/>fs.unmount()</pre>                                                   | <pre>xet unmount repo</pre>           |
-| **Create repo** | <pre><br/>pyxet.create("repo", branch="main", login=..., **kwargs)</pre>       | <pre>xet create repo -b main</pre>    |
-| **Clone**       | <pre><br/>repo.clone(dest, lazy=True)</pre>                                    | <pre>xet clone repo dest --lazy</pre> |
+| Command         | State | python                                                                                                           | CLI                                   |
+|-----------------|-------|------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| **Copy**        | `-`   | <pre><br/>fs.copy(source, destination)</pre>                                                                     | <pre>xet cp source destination</pre>  |
+| **Move**        | `-`   | <pre><br/>fs.mv(source, destination)</pre>                                                                       | <pre>xet mv source destination</pre>  |
+| **Remove**      | `-`   | <pre><br/>fs.rm(path)</pre>                                                                                      | <pre>xet rm path</pre>                |
+| **List**        | `+`   | <pre><br/>fs.ls(path, new_name)</pre>                                                                            | <pre>xet ls path</pre>                |
+| **Read**        | `+`   | <pre><br/>with fs.open("path/data.csv", 'r') as f:<br/>    f.read()</pre>                                     | <pre>xet cat path</pre>               |
+| **Write**       | `+`   | <pre>with fs.commit("message"):<br/>    with fs.open("path/data.csv", 'w') as f:<br/>        f.write(data)</pre> | <pre> </pre>                          |
+| **Mount**       | `-`   | <pre><br/>fs.mount(dest, lazy=True)</pre>                                                                        | <pre>xet mount repo dest --lazy</pre> |
+| **Unmount**     | `-`   | <pre><br/>fs.unmount()</pre>                                                                                     | <pre>xet unmount repo</pre>           |
+| **Create repo** | `-`   | <pre><br/>pyxet.create("repo", branch="main", login=..., **kwargs)</pre>                                         | <pre>xet create repo -b main</pre>    |
+| **Clone**       | `-`   | <pre><br/>repo.clone(dest, lazy=True)</pre>                                                                      | <pre>xet clone repo dest --lazy</pre> |
+| **Fork**        | `-`   | <pre><br/>repo.fork(dest, lazy=True)</pre>                                                                       |                                       |
 
-### Git commands
+### Git commands [WIP]
 
 Any git command can be executed using the `repo.git` attribute.
 
 ```python
 import pyxet
 
-pyxet.git.add("path/to/file")
-pyxet.git.commit("commit message")
-pyxet.git.push()
-pyxet.git.pull()
-pyxet.git.status()
+repo = pyxet.Git("xet://user/repo/branch")
+repo.add("path/to/file")
+repo.commit("commit message")
+repo.push()
+repo.pull()
+repo.status()
 ...
 ```
 
@@ -168,9 +186,10 @@ Using the CLI, just use git commands as usual.
 
 ```python
 import pandas as pd
-
+import pyxet
 df = pd.read_csv("xet://username/repo/main/data.csv")
-df.to_csv("xet://username/repo/main/data.csv", index=False)
+with pyxet.repo("username/repo/branch").commit("commit message"):
+    df.to_csv("xet://username/repo/main/data.csv", index=False)
 ```
 
 * [Arrow](https://arrow.apache.org/)

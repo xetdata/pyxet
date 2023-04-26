@@ -11,19 +11,18 @@ Getting data in and out of XetHub is no exception.
 
 ```python
 import pandas as pd
+import pyxet # import to load
 
-df = pd.read_csv("xet://username/repo/branch/data.csv", xet={"access_token": "..."})
-df.to_csv("xet://username/repo/branch/data.csv", index=False)
+df = pd.read_csv("xet://username/repo/branch/data.csv")
 ```
 
 ### [Arrow](https://arrow.apache.org/)
 
 ```python
-import pyxet
+from pyxet.arrow import read_arrow
 import pyarrow.dataset as ds
 
-dataset = ds.dataset("titanic.parquet",
-                     filesystem=pyxet.repo("user/repo", "branch"))
+dataset = read_arrow('username/repo/branch/data.arrow') # returns a pyarrow.dataset
 ```
 
 ### [Polars](https://pola-rs.github.io/polars-book/user-guide/introduction.html)
@@ -32,24 +31,21 @@ You can use polars normally straight from XetHub.
 
 ```python
 import polars as pl
+import pyxet
 
-df = pl.read_csv("xet://username/repo/main/data.csv")
-df.write_csv("xet://username/repo/main/data.csv")
+df = pl.read_csv(pyxet.XetFS("xet://username/repo/main").open("data.csv"))
 ```
 
 Using Arrow, we can use [lazy evaluation](https://pola-rs.github.io/polars-book/user-guide/lazy-api/intro.html) to avoid
 downloading the whole dataset.
 
 ```python
+import polars as pl
+from pyxet.arrow import read_arrow
 
-import pyxet
-import pyarrow.dataset as ds
-
-lazy_df = pl.scan_parquet(ds.dataset("titanic.parquet",
-                                     filesystem=pyxet.repo("user/repo", "branch")))
+lazy_df = pl.scan_parquet(read_arrow('username/repo/branch/data.arrow'))
 ``` 
 
-### [DuckDB](https://duckdb.org) (WIP)
 
 ## [GitHub integration](https://github.com)
 
@@ -71,6 +67,6 @@ This let you manage your data and models as a part of your project instead of ma
 
 You can do with the usual [git submodule commands](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
 ```bash
-git submodule add <xethub-repo>
+git submodule add <xethub-repo-url>
 ```
 

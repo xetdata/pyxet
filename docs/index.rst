@@ -13,12 +13,12 @@ Installation
 Features
 ~~~~~~~~
 1. A file-system like interface.
-    * `fsspec <https://filesystem-spec.readthedocs.io>`_
-    * `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
-    * `glob <https://docs.python.org/3/library/glob.html>`_
+    - [x] `fsspec <https://filesystem-spec.readthedocs.io>`_
+    - [x] `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
+    - [ ] `glob <https://docs.python.org/3/library/glob.html>`_
 2. Mount.
-    * read-only for data exploration and analysis
-    * read-write for data ingestion and preparation - optimal for database backups and logs.
+    - [x] read-only for data exploration and analysis
+    - [ ] read-write for data ingestion and preparation - optimal for database backups and logs - coming soon
 3. Integrations:
     - [x] `pandas <https://pandas.pydata.org>`_
     - [x] `polars <https://pola-rs.github.io/polars-book/>`_
@@ -48,9 +48,7 @@ Features
 
    markdowns/filesystem
    markdowns/mount
-   markdowns/git
    markdowns/integrations
-   markdowns/cli
 
 .. toctree::
    :maxdepth: 2
@@ -58,16 +56,3 @@ Features
 
    markdowns/collaboration
    markdowns/model_versioning
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Modules:
-
-   modules
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

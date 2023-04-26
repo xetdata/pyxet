@@ -7,9 +7,8 @@ Perfect to explore files like images and text, saving monitoring logs, and dump 
 ```python
 import pyxet
 
-fs = pyxet.repo("username/repo/branch", login=...)
-fs.mount("path/to/mount", mode='r', lazy=True)
-fs.umount("path/to/mount")  # or unmount? 
+fs = pyxet.XetFS("https://xethub.com/username/repo/branch", login=...)
+fs.mount("path/to/mount", mode='r')
 ```
 
 ## Best practices
@@ -26,39 +25,37 @@ Use cases:
 * Explore datasets with tools which only work with local files.
 * Load a machine learning model on a server.
 
-Usage:
+### Read-write mount - coming soon
 
-```python
-import pyxet
-
-fs = pyxet.repo("username/repo", branch="main", login=...)
-fs.mount("path/to/mount", mode='r', lazy=True)
-```
-
-### Read-write mount
 There are some cases where one would prefer to mount a repository in read-write mode.   
-This is significally slower than the read-only mode, but it is still very fast, and maintaining all the goodies of git behind the scenes.
+This is significally slower than the read-only mode, but it is still very fast, and maintaining all the goodies of git
+behind the scenes.
 
 Use cases:
+
 * Saving model monitoring logs to a folder.
 * Saving model checkpoints during training
 * Saving Training monitoring logs to a folder.
 * Databases which support dumps to storage:
-  * [Redis](https://redis.com/)
-  * [Postgress](https://www.postgresql.org)
-  * Etc.
+    * [Redis](https://redis.com/)
+    * [Postgress](https://www.postgresql.org)
+    * Etc.
 * Embedded databases:
-  * [chromadb](https://github.com/chroma-core/chroma)
-  * [sqlite](https://sqlite.org/index.html)
-  * [duckdb](https://duckdb.org)
+    * [chromadb](https://github.com/chroma-core/chroma)
+    * [sqlite](https://sqlite.org/index.html)
+    * [duckdb](https://duckdb.org)
+
 ```python
 import pyxet
 
-fs = pyxet.repo("username/repo/branch", login=...)
-fs.mount("path/to/mount", mode='w', cron="* * * * 5")
+fs = pyxet.XetFS("username/repo/branch", login=...)
+fs.mount("path/to/mount", mode='w')
 ```
+
 ### unmount
+
 ```python
 import pyxet
-pyxet.unmount("path/to/mounted") # or umount?
+
+pyxet.unmount("path/to/mounted")  # or umount?
 ```

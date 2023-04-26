@@ -7,8 +7,8 @@ This library allows you to access XetHub from Python.
 ## Installation
 
 1. [Create an account or sign in](https://xethub.com)
-2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment
-   variable.
+2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XET_USER`, `XET_TOKEN` environment
+   variables.
 3. Install the library
 
 `pip install pyxet`
@@ -48,46 +48,17 @@ What do we care about? We care about the model, the data, the metrics and the co
 
 Let's [create a new repo](https://xethub.com/xet/create) in the UI or programmatically:
 
-```python
-import pyxet
+We clone the repo to our local filesystem, saving everything we want, and committing it:
 
-pyxet.login()  # login using the XETHUB_TOKEN environment variable
-
-username = "<your username>"
-# Create a new repo
-repo = pyxet.create(f"{username}/titanic-tutorial/main")
-print(repo.path)
-
-"xet://<your username>/titanic-tutorial/main"
+```bash
+git xet clone https://xethub.com/user/repo
 ```
-
-We can save everything we want to the repo by uploading or committing it to the repo.
-
-### Uploading
-
-* This will create a commit with the files in the repo behind the scenes.
-
-```python
-import joblib
-import json
-
-df.to_csv(repo.open('titanic.csv', 'w'), index=False)
-
-with repo.open("info.json") as f:
-    json.dump(info, f)
-
-with repo.open("model.joblib") as f:
-    joblib.dump(model, f)
-```
-
-### Committing
 
 ```python
 import pyxet
 import json
 import joblib
 
-repo.clone('.')
 
 df.to_csv(f"titanic.csv",
           index=False)
@@ -97,12 +68,14 @@ with open("info.json") as f:
 
 with open("model.pkl") as f:
     joblib.dump(model, f)
-
-repo.add_commit_push('.', 'first commit')
+```
+```bash
+git add .
+git commit -m "first commit"
+git push
 ```
 
-Of course you can save your code as well, and upload it with the command:    
-`xet cp <train.py> xet://<username>/titanic-tutorial.git/main/train.py`
+Of course you can save your code as well, and upload it with the command:
 > This will work no matter the size of your data, model or logs.
 
 ## Next steps

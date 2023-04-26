@@ -106,13 +106,9 @@ Logs of bugs, drift etc. are always fitting the model in production and we can a
 Checkout a new branch, add the feature engineering, train the model and commit the new model, logs and metrics.   
 Good enough to go to production? Merge it all to prod in a single step.
 
-- [ ] [Example (WIP)]()
-
 ### Reproduce a model
 
 We can always reproduce the results, and compare the models by checking out the branch and re-running.
-
-- [ ] [Example (WIP)]()
 
 ### Re-raining with more data?
 
@@ -122,89 +118,5 @@ We will override the model, the metrics, the model-checkpoints etc. and we can m
 This way, the model in prod is always up-to-date with it's correct metrics, inference code and relevant logs.
 
 Everything **this** model needs is saved in the repo. If changes to the app are needed, they are managed together.
-
-- [ ] [Example (WIP)]()
-
-### A/B testing [WIP]
-
-We add a submodule *experiments* to the monitoring folder, and we can save the results of the inference there.
-We now create a new branch *A* and *B* for each experiment, each saves it's own model, metrics, logs and monitoring, and
-deploy them.
-
-We can later compare the results.
-
-```python
-import pyxet
-import pandas as pd
-
-branches = pyxet.ls("xet://org/project/**/monitoring/experiments/results.csv")
-results = []
-for branch in branches():
-    df = pd.read_csv(f"xet://org/project/{branch}/monitoring/serving/results.csv")
-    df['branch'] = branch
-    results.append(df)
-results = pd.concat(results)
-# Analyze the results
-```
-
-- [ ] [Example (WIP)]()
-
-## Saving/Loading a model remotely
-
-```python
-import pyxet
-
-fs = pyxet.repo("xet://user/repo/branch")
-
-# pickle/cloudpickle
-import pickle
-
-pickle.dump(model, fs.open('model.pickle', 'wb'))
-
-loaded_model = pickle.load(fs.open('model.pickle', 'rb'))
-
-# Joblib
-import joblib
-
-with fs.open('model.joblib', 'wb') as f:
-    joblib.dump(model, f)
-
-with fs.open('model.joblib', 'rb') as f:
-    model = joblib.load(f)
-
-# Any model in bytes
-import io
-import torch
-
-buffer = io.BytesIO()
-torch.save(model, buffer)
-with fs.open('model.pt', 'wb') as f:
-    f.write(buffer.getvalue())
-
-# This also works for directories
-import mlflow.sklearn
-
-mlflow.sklearn.save_model(model, "models/model")
-"""
-models/model/
-        ├── MLmodel
-        ├── model.pkl
-        ├── conda.yaml
-        ├── python_env.yaml
-        └── requirements.txt
-"""
-# Or we can use git
-repo = pyxet.repo("xet://user/repo/branch").clone('.')
-model.save('models/model')
-repo.git.add_commit_push('models/model', 'Save model')
-```
-
-With the CLI
-
-```bash
-pyxet copy model.joblib xet://user/repo/branch/model.joblib
-```
-
-
 
 

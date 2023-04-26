@@ -31,7 +31,7 @@ with fs.commit("message"):
         f.write("Hello, world!")
 ```
 
-## [pathlib](https://docs.python.org/3/library/pathlib.html) (Nice to have)
+## [pathlib](https://docs.python.org/3/library/pathlib.html)
 
 ```python
 from pyxet.pathlib import Path

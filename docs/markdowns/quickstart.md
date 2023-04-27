@@ -1,8 +1,7 @@
-# Quickstart
+# Quick Start
 
-[XetHub](https://xethub.com/) is a cloud storage with git capabilities. It is a great place to store your data, models,
-logs and code.    
-This library allows you to access XetHub from Python.
+[XetHub](https://xethub.com/) is a cloud storage platform with Git capabilities. It is a great place to store your data, models,
+logs, and code. The pyxet library allows you to easily access XetHub from Python.
 
 ## Installation
 
@@ -20,91 +19,50 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
+After installing pyxet, the next step is to confirm your git configuration is complete.
+
+Note: This requirement will be removed soon, but today git user.email and git user.name are required to be set in order to use pyxet. This is because XetHub is built on scalable Git repositories, and pyxet is built with libgit, and libgit requires git user configuration to be set in order to work.
+
+```sh
+git config --global user.name "Your Name"
+git config --global user.email "your_email_address@email.com"
+```
+
 ## Usage
 
-We'll start with a simple machine learning example of the [titanic dataset](https://www.kaggle.com/c/titanic).
+XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily. 
+To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
-```python
-import pyxet
-
+```sh
+# assumes you have already done pip install pandas
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-
-# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
-# pyxet.login('username', 'token')
-
-df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
-target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
-
-test_size, random_state = 0.2, 42
-train, test = train_test_split(df, test_size=test_size, random_state=random_state)
-model = RandomForestClassifier().fit(train[features], train[target])
-predictions = model.predict(test[features])
-print(classification_report(test[target], predictions, target_names=target_names))
-
-# Any parameters we want to save
-info = classification_report(test[target], predictions,
-                             target_names=target_names,
-                             output_dict=True)
-info["test_size"] = test_size
-info["random_state"] = random_state
-info['features'] = features
-info['target'] = target
-```
-
-What do we care about? We care about the model, the data, the metrics and the code.
-
-### Setup
-
-Let's [create a new repo](https://xethub.com/xet/create) in the UI.
-
-We clone the repo to our local filesystem, saving everything we want, and committing it:
-
-```bash
-git xet clone https://xethub.com/user/repo
-```
-
-```python
 import pyxet
-import json
-import joblib
 
-
-df.to_csv(f"titanic.csv",
-          index=False)
-
-with open("info.json") as f:
-    json.dump(info, f)
-
-with open("model.pkl") as f:
-    joblib.dump(model, f)
-```
-```bash
-git add .
-git commit -m "first commit"
-git push
+df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
+df
 ```
 
-Of course you can save your code as well, and upload it with the command:
-> This will work no matter the size of your data, model or logs.
+This will return something like:
 
-## Next steps
+```sh
+Out[3]:
+     PassengerId  Survived  Pclass  ...     Fare Cabin  Embarked
+0              1         0       3  ...   7.2500   NaN         S
+1              2         1       1  ...  71.2833   C85         C
+2              3         1       3  ...   7.9250   NaN         S
+3              4         1       1  ...  53.1000  C123         S
+4              5         0       3  ...   8.0500   NaN         S
+..           ...       ...     ...  ...      ...   ...       ...
+886          887         0       2  ...  13.0000   NaN         S
+887          888         1       1  ...  30.0000   B42         S
+888          889         0       3  ...  23.4500   NaN         S
+889          890         1       1  ...  30.0000  C148         C
+890          891         0       3  ...   7.7500   NaN         Q
 
-Do you want to experiment with another model?   
-you can clone the repo, create a new branch and try a different model.
+[891 rows x 12 columns]
+```
 
-* All models will be saved, managed and versioned using git.
-* All metrics and logs will be saved such that you can compare them easily.
-* You can share your repo with your team and collaborate on it.
-    * Sharing data
-    * Pushing code
-    * Running experiments
-    * Saving models
-    * Saving logs
+Now you can work directly with files without needing to download the full repository.
 
-Checkout this [titanic app](https://xethub.com/xdssio/titanic-server-example), for a more comprehensive example.
-
-
+Continue to see how you can use pyxet on a private XetHub repository.
 

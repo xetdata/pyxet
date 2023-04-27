@@ -1,31 +1,30 @@
 # File system
 
-The filesystem APIs are the most straight forward.     
-They are based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library. This means that you can use
-the same API to access local files, remote files, and files in Xethub.
+Filesystem APIs are straightforward and based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library. This means that you can use
+the same API to access local files, remote files, and files in XetHub.
 
 ## [Filesystem (fsspec)](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
 
 * [Copy conventions](https://filesystem-spec.readthedocs.io/en/latest/copying.html)
 
-The `pyxet.repo` returns a repository-filesystem that can be used with fsspec.   
-It works both like a normal filesystem and git.
+`pyxet.XetFS` returns a filesystem object that can be used with fsspec. It enables you to work with your repository 
+like a normal filesystem in read-only mode. Coming soon: support for write and Git commands.
 
 ```python
 import pyxet
 
-fs = pyxet.XetFS("username/repo/branch", login=..., **kwargs)
+fs = pyxet.XetFS("https://xethub.com/xdssio/titanic-server-example/main", login=..., **kwargs)
 
 fs.ls("path/to/dir")
 fs.glob("path/to/dir/*")
 
-# Files
+# Currently supported: read-only filesystem operations
 with fs.open("path/data.csv", 'b') as f:
     f.read()
 
     ...
 
-# Write is coming soon
+# Coming soon: write support!
 with fs.commit("message"):
     with fs.open("path/file.txt", 'w') as f:
         f.write("Hello, world!")

@@ -3,17 +3,15 @@
 Use-cases:
 
 * A/B testing between branches.
-* Update a model in production is as easy as merging it.
+* Updating a model in production is as easy as merging it.
 * We can mount the models folder or load it explicitly.
 
-## Manage with git
+## ML experimentation today
 
-Currently, many organisations manage their experiments by saving snapshot of the data, the logs, the metrics and the
-models.    
-Best models are copied to a different locations to get into dev and production environments. Sometimes managed by a
-database, or with docker-image registry.        
-Often enough, another third-party tool is used to manage the experiments - which then needs to be integrated with the
-rest of the development stack.
+Currently, many organizations manage their experiments by saving snapshots of the data, the logs, the metrics and the
+models. The best performing models are copied to a different location for deployment to dev and production environments, 
+which are ometimes managed by a database, or with docker-image registry. Often, another third-party tool is used to 
+manage experiments, which then needs to be integrated with the rest of the development stack.
 
 *An example:*
 
@@ -74,10 +72,13 @@ https://github.com/org/project-ops
 ...
 ```
 
-And that not including sharing the data or models with other teams.
+And this doesn't even cover other common use cases like sharing data or models with other teams!
 
-With XetHub, we can use git to manage the experiments and models together with the code.
-Optionally, we can use [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to manage the data.
+## ML experimentation with pyxet and XetHub
+
+With XetHub, we can use Git to manage every part of your ML experiments by storing models and assest alongside your code.
+Optionally, use [Git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to manage only large data on XetHub.
+
 
 ```bash
 xet://org/project (branch-prod/dev/ab-test-210322/ab-test-210323)
@@ -97,26 +98,25 @@ xet://org/project (branch-prod/dev/ab-test-210322/ab-test-210323)
 │   ├── serve.py 
 ```
 
-It means that we can save a single model (or a whole pipeline) per branch - and merge to the environment of our
-choosing will merge the model as well.
-Logs of bugs, drift etc. are always fitting the model in production and we can always reproduce the results.
+This means that we can save a single model (or a whole pipeline) per branch — and merge it to the environment of our
+choosing. We can even write logs of bugs, drift, etc., which are always fitting the model in production, to the repository 
+for easy review.
 
-### Experiment with some feature engineering
+### Experiment with feature engineering
 
-Checkout a new branch, add the feature engineering, train the model and commit the new model, logs and metrics.   
+Checkout a new branch, add the feature engineering, train the model and commit the new model, logs, and metrics.   
 Good enough to go to production? Merge it all to prod in a single step.
 
 ### Reproduce a model
 
-We can always reproduce the results, and compare the models by checking out the branch and re-running.
+We can always reproduce results and compare models by checking out branches and re-running.
 
 ### Retraining with more data?
 
-We can simply checkout from prod for example to a new experiment branch, pull the new data
-with `git submodule update data` and run the training again.   
-We will override the model, the metrics, the model-checkpoints etc. and we can merge them back to prod if we want.  
-This way, the model in prod is always up-to-date with it's correct metrics, inference code and relevant logs.
+Start a new experiment branch from any existing one, pull new data with `git submodule update data` and run the training 
+again. XetHub will overwrite the model, metrics, and checkpoints in the new branch, and if the pull request review is 
+successful, merge the changes back to prod. This ensures that the model in prod is always up-to-date, and that its
+always stored  alongside its metrics, inference code and relevant logs.
 
 Everything **this** model needs is saved in the repo. If changes to the app are needed, they are managed together.
-
 

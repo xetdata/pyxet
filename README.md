@@ -1,3 +1,9 @@
+---
+
+### :construction: pyxet is a new and is under active development. It is not ready for production usage. See details below. :construction: 
+
+---
+
 <p align="center">
    <img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
 </p>

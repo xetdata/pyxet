@@ -2,14 +2,21 @@
    <img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
 </p>
 
-# Welcome to pyxet's documentation!
+
+# pyxet - The SDK for XetHub
+
+[![Version](https://img.shields.io/pypi/v/pyxet.svg?style=flat)](https://pypi.python.org/pypi/pyxet/)
+[![Python](https://img.shields.io/pypi/pyversions/pyxet.svg?style=flat)](https://pypi.python.org/pypi/pyxet/)
+[![License](https://img.shields.io/pypi/l/pyxet.svg?style=flat)](https://github.com/xetdata/pyxet/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/pyxet?style=flat)](https://pypi.python.org/pypi/pyxet/)
+[![Discord](https://img.shields.io/discord/1100889165777862807)](https://discord.gg/KCzmjDaDdC)
 
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.   
 XetHub is a blob-store with a filesystem like interface and git capabilities, therefore pyxet implement both.
 
 ## Features
 
-1. A filesystem interface.
+1. A filesystem interface:
     * [fsspec](https://filesystem-spec.readthedocs.io)
         * copy
         * remove
@@ -17,21 +24,13 @@ XetHub is a blob-store with a filesystem like interface and git capabilities, th
         * etc.
     * [glob](https://docs.python.org/3/library/glob.html)
     * [pathlib.Path](https://docs.python.org/3/library/pathlib.html)(WIP)
-2. Mount.
+
+2. Mount:
     * Read-only optimize for speed; perfect for data exploration and analysis and building data-apps and model
       inference.
-    * Read-write for data ingestion and preparation; optimal for database backups and training and monitoring logs.
-3. Git capabilities:
-    * add, commit, push
-    * clone, fork
-    * merge, rebase
-    * pull, fetch
-    * checkout, reset
-    * stash, diff, log
-    * status, branch
-    * submodules
-      ...
-4. Integrations:
+    * Read-write for data ingestion and preparation; optimal for database backups and training and monitoring logs. _(coming soon)_
+
+3. Integrations:
     - [x] [GitHub](https://github.com) [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
     - [x] [pandas](https://pandas.pydata.org)
     - [x] [polars](https://pola-rs.github.io/polars-book/)
@@ -39,9 +38,12 @@ XetHub is a blob-store with a filesystem like interface and git capabilities, th
     - [ ] [duckdb](https://duckdb.org/)
     - [ ] [dask](https://dask.org/)
     - [ ] [ray](https://ray.io/)
-5. CLI: All the features are available through the CLI too under `xet <command>`.
 
-For API documentation and full examples, please see the [documentation](TODO).
+For API documentation and full examples, please see the [documentation](https://pyxet.readthedocs.io/en/latest/).
+
+## Getting Started
+
+
 
 ## Installation
 

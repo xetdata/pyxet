@@ -1,4 +1,5 @@
 .. image:: images/logo.png
+
 Welcome to pyxet's documentation!
 =================================
 
@@ -12,13 +13,13 @@ Installation
 
 Features
 ~~~~~~~~
-1. A file-system like interface.
+1. A file-system like interface:
     - [x] `fsspec <https://filesystem-spec.readthedocs.io>`_
     - [x] `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
     - [ ] `glob <https://docs.python.org/3/library/glob.html>`_
-2. Mount.
+2. Mount:
     - [x] read-only for data exploration and analysis
-    - [ ] read-write for data ingestion and preparation - optimal for database backups and logs - coming soon
+    - [ ] read-write for data ingestion and preparation - optimal for database backups and logs _(coming soon)_
 3. Integrations:
     - [x] `pandas <https://pandas.pydata.org>`_
     - [x] `polars <https://pola-rs.github.io/polars-book/>`_
@@ -56,3 +57,4 @@ Features
 
    markdowns/collaboration
    markdowns/model_versioning
+

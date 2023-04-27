@@ -18,10 +18,15 @@ This library allows you to access XetHub from Python.
 We'll start with a simple machine learning example of the [titanic dataset](https://www.kaggle.com/c/titanic).
 
 ```python
+import pyxet
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
+
+# make sure to set your XET_USER and XET_TOKEN environment variables, or run:
+# pyxet.login('username', 'token')
 
 df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
 target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"

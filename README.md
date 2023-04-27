@@ -18,11 +18,13 @@
 [![Documentation Status](https://readthedocs.org/projects/pyxet/badge/?version=latest)](https://pyxet.readthedocs.io/en/latest/?badge=latest)
 [![Discord](https://img.shields.io/discord/1100889165777862807)](https://discord.gg/KCzmjDaDdC)
 
-pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
-
 ### Note: This project is just getting started. Please join our [Discord server](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates please star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 
-## Features
+## What is it?
+
+pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
+
+## Preliminary Features (more to come, get involved!)
 
 1. A filesystem interface:
     * [fsspec](https://filesystem-spec.readthedocs.io)
@@ -47,34 +49,60 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
     - [ ] [dask](https://dask.org/)
     - [ ] [ray](https://ray.io/)
 
-For API documentation and full examples, please see the [documentation](https://pyxet.readthedocs.io/en/latest/).
+
+## Documentation
+For API documentation and full examples, please see [here](https://pyxet.readthedocs.io/en/latest/).
 
 ## Getting Started
+Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your virtualenv with:
 
+```sh
+$ python -m venv .venv
+...
+$ . .venv/bin/activate
+```
 
+Then, install pyxet with:
 
-## Installation
+```sh
+$ pip install pyxet
+```
 
-`pip install pyxet`
+### Using pyxet
+After installing pyxet, next step is to confirm your git configuration is complete.
 
-## Environment Setup
+**Note:** This requirement will be removed soon, but today git user.email and git user.name are required to be set in order to use pyxet. This is because XetHub is built on scalable Git repositories, and pyxet is built with libgit, and libgit requires git user configuration to be set in order to work.
 
-* This is only done for the first time.
+```sh
+git config --global user.name "Your Name"
+git config --global user.email "your_email_address@email.com"
+```
 
-1. [Create an account or sign in](https://xethub.com/assets/docs/getting-started/installation#create-a-xethub-account)
-2. [Install the git-xet CLI](https://xethub.com/assets/docs/getting-started/installation#install-the-git-xet-extension)
-3. Get a personal access token [here](https://xethub.com/user/settings/pat)
-4. Install the [pyxet](https://pypi.org/project/pyxet/) library
-5. Authenticate in one of two ways:
-    1. Set you personal access token as `XETHUB_TOKEN` environment variable.
-    2. Configure using the CLI
-       command [git-xet login](https://xethub.com/assets/docs/getting-started/installation#configure-authentication)
+### Demo
+To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
-## Using pyxet
+```python
+import pandas as pd
+import pyxet
 
-### Quickstart
+df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
+df
+```
 
-#### Getting data
+### Next Steps - Working with private repos (How to set pyxet credentials)
+To start working with private repositories, you need to set up credentials for pyxet. The steps to do this are as follows:
+
+1. Sign up for [XetHub](https://xethub.com/user/sign_up)
+2. Install [git-xet client](https://xethub.com/explore/install)
+3. Create a [Personal Access Token](https://xethub.com/explore/install). Click on 'CREATE TOKEN' button.
+4. Copy & Execute Login command, it should look like: `git xet login -u rajatarya -e rajat@xethub.com -p **********`
+5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USER and XET_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
+
+```sh
+# Note: set this environment variable into your shell config (ex. .zshrc) so not lost.
+export XET_USER=<YOUR XETHUB USERNAME>
+export XET_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
+```
 
 ```python
 import pandas as pd
@@ -85,4 +113,11 @@ df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # All files on the pl
 pyxet.copy("xet://xdssio/titanic/main/titanic.csv", 'titanic.csv')
 ```
 
-## Getting Help
+## Contributing & Getting Help
+This project is just getting started. We were so eager to get pyxet out we have not gotten all the code over to this repository yet. We will bring the code here very soon. We fully intend to develop this package in the public under the BSD license. 
+
+In the coming days we will add a roadmap to make it easier to know when pyxet features are being implemented and how you can help.
+
+For now, join our [Discord server](https://discord.gg/KCzmjDaDdC) to talk with us. We have ambitious plans and some very useful features under development / partially working (ex. write back to XetHub repos easy commit messages, stream repositories locally, easily load the same file across git branches, and more).
+
+

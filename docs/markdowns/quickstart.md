@@ -6,12 +6,19 @@ This library allows you to access XetHub from Python.
 
 ## Installation
 
-1. [Create an account or sign in](https://xethub.com)
-2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XET_USER`, `XET_TOKEN` environment
-   variables.
-3. Install the library
+Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your virtualenv with:
 
-`pip install pyxet`
+```sh
+$ python -m venv .venv
+...
+$ . .venv/bin/activate
+```
+
+Then, install pyxet with:
+
+```sh
+$ pip install pyxet
+```
 
 ## Usage
 
@@ -25,7 +32,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-# make sure to set your XET_USER and XET_TOKEN environment variables, or run:
+# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
 # pyxet.login('username', 'token')
 
 df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
@@ -51,7 +58,7 @@ What do we care about? We care about the model, the data, the metrics and the co
 
 ### Setup
 
-Let's [create a new repo](https://xethub.com/xet/create) in the UI or programmatically:
+Let's [create a new repo](https://xethub.com/xet/create) in the UI.
 
 We clone the repo to our local filesystem, saving everything we want, and committing it:
 

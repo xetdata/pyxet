@@ -3,7 +3,7 @@
 [XetHub](https://xethub.com) is aimed to simplify every part of the data science workflow.   
 Getting data in and out of XetHub is no exception.
 
-* You can setup `XET_USER` and `XET_TOKEN` as an environment variable to avoid passing it to every function.
+* You can setup `XET_USERNAME` and `XET_TOKEN` as an environment variable to avoid passing it to every function.
 
 ## Python Packages
 

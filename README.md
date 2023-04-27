@@ -35,12 +35,7 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
     * [glob](https://docs.python.org/3/library/glob.html)
     * [pathlib.Path](https://docs.python.org/3/library/pathlib.html)(WIP)
 
-2. Mount:
-    * Read-only optimize for speed; perfect for data exploration and analysis and building data-apps and model
-      inference.
-    * Read-write for data ingestion and preparation; optimal for database backups and training and monitoring logs. _(coming soon)_
-
-3. Integrations:
+2. Integrations:
     - [x] [GitHub](https://github.com) [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
     - [x] [pandas](https://pandas.pydata.org)
     - [x] [polars](https://pola-rs.github.io/polars-book/)
@@ -48,7 +43,6 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
     - [ ] [duckdb](https://duckdb.org/)
     - [ ] [dask](https://dask.org/)
     - [ ] [ray](https://ray.io/)
-
 
 ## Documentation
 For API documentation and full examples, please see [here](https://pyxet.readthedocs.io/en/latest/).
@@ -82,11 +76,32 @@ git config --global user.email "your_email_address@email.com"
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
 ```python
+# assumes you have already done pip install pandas
 import pandas as pd
 import pyxet
 
 df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
 df
+```
+
+should return something like:
+
+```
+Out[3]:
+     PassengerId  Survived  Pclass  ...     Fare Cabin  Embarked
+0              1         0       3  ...   7.2500   NaN         S
+1              2         1       1  ...  71.2833   C85         C
+2              3         1       3  ...   7.9250   NaN         S
+3              4         1       1  ...  53.1000  C123         S
+4              5         0       3  ...   8.0500   NaN         S
+..           ...       ...     ...  ...      ...   ...       ...
+886          887         0       2  ...  13.0000   NaN         S
+887          888         1       1  ...  30.0000   B42         S
+888          889         0       3  ...  23.4500   NaN         S
+889          890         1       1  ...  30.0000  C148         C
+890          891         0       3  ...   7.7500   NaN         Q
+
+[891 rows x 12 columns]
 ```
 
 ### Next Steps - Working with private repos (How to set pyxet credentials)
@@ -96,21 +111,49 @@ To start working with private repositories, you need to set up credentials for p
 2. Install [git-xet client](https://xethub.com/explore/install)
 3. Create a [Personal Access Token](https://xethub.com/explore/install). Click on 'CREATE TOKEN' button.
 4. Copy & Execute Login command, it should look like: `git xet login -u rajatarya -e rajat@xethub.com -p **********`
-5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USER and XET_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
+5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USERNAME and XET_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
 
 ```sh
 # Note: set this environment variable into your shell config (ex. .zshrc) so not lost.
-export XET_USER=<YOUR XETHUB USERNAME>
+export XET_USERNAME=<YOUR XETHUB USERNAME>
 export XET_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
 ```
 
+### ML Demo
+
+A slightly more complete demo doing some basic ML is as simple as setting up your virtualenv with:
+
+```sh
+pip install scikit-learn ipython pandas
+```
 ```python
-import pandas as pd
 import pyxet
 
-df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # All files on the platform are available with permissions
-# or
-pyxet.copy("xet://xdssio/titanic/main/titanic.csv", 'titanic.csv')
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
+# pyxet.login('username', 'token')
+
+df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
+target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
+
+test_size, random_state = 0.2, 42
+train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+model = RandomForestClassifier().fit(train[features], train[target])
+predictions = model.predict(test[features])
+print(classification_report(test[target], predictions, target_names=target_names))
+
+# Any parameters we want to save
+info = classification_report(test[target], predictions,
+                             target_names=target_names,
+                             output_dict=True)
+info["test_size"] = test_size
+info["random_state"] = random_state
+info['features'] = features
+info['target'] = target
 ```
 
 ## Contributing & Getting Help

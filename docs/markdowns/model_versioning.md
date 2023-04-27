@@ -110,7 +110,7 @@ Good enough to go to production? Merge it all to prod in a single step.
 
 We can always reproduce the results, and compare the models by checking out the branch and re-running.
 
-### Re-raining with more data?
+### Retraining with more data?
 
 We can simply checkout from prod for example to a new experiment branch, pull the new data
 with `git submodule update data` and run the training again.   

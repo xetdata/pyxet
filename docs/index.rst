@@ -25,7 +25,7 @@ file system operations and integrations with common tools. It includes:
    :caption: Introduction
 
    markdowns/quickstart
-   markdowns/advanced
+   markdowns/newrepo
 
 .. toctree::
    :maxdepth: 2

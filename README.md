@@ -29,7 +29,6 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
 1. A filesystem interface:
     * [fsspec](https://filesystem-spec.readthedocs.io)
         * copy
-        * remove
         * list
         * etc.
     * [glob](https://docs.python.org/3/library/glob.html)
@@ -60,16 +59,6 @@ Then, install pyxet with:
 
 ```sh
 $ pip install pyxet
-```
-
-### Using pyxet
-After installing pyxet, next step is to confirm your git configuration is complete.
-
-**Note:** This requirement will be removed soon, but today git user.email and git user.name are required to be set in order to use pyxet. This is because XetHub is built on scalable Git repositories, and pyxet is built with libgit, and libgit requires git user configuration to be set in order to work.
-
-```sh
-git config --global user.name "Your Name"
-git config --global user.email "your_email_address@email.com"
 ```
 
 ### Demo

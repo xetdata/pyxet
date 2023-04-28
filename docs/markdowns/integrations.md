@@ -3,13 +3,12 @@
 [XetHub](https://xethub.com) aims to simplify every part of the data science workflow.   
 Getting data in and out of XetHub is no exception.
 
-.. note::
-   Set `XET_USERNAME` and `XET_TOKEN` as environment variables to avoid needing to pass them to every function.
-   Forgot your token? [Create a new token through the XetHub UI](https://xethub.com/user/settings/pat).
+**Note**: Set `XET_USERNAME` and `XET_TOKEN` as environment variables to avoid needing to pass them to every function. 
+Forgot your token? [Create a new token through the XetHub UI](https://xethub.com/user/settings/pat).
 
 ## Python Packages
 
-### [pandas](https://pandas.pydata.org/)
+### [Pandas](https://pandas.pydata.org/)
 
 ```python
 import pandas as pd

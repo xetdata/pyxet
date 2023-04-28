@@ -19,7 +19,7 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
-After installing pyxet, the next step is to confirm your git configuration is complete.
+After installing pyxet, the next step is to confirm your Git configuration is complete.
 
 Note: This requirement will be removed soon, but today git user.email and git user.name are required to be set in order to use pyxet. This is because XetHub is built on scalable Git repositories, and pyxet is built with libgit, and libgit requires git user configuration to be set in order to work.
 
@@ -30,7 +30,7 @@ git config --global user.email "your_email_address@email.com"
 
 ## Usage
 
-XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily. 
+XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
 ```sh
@@ -63,6 +63,46 @@ Out[3]:
 ```
 
 Now you can work directly with files without needing to download the full repository.
+
+## Advanced ML example
+
+Start this demo by setting up your virtualenv with:
+
+```sh
+pip install scikit-learn ipython pandas
+```
+
+Now use this code to generate some parameters.
+
+```sh
+import pyxet
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
+# pyxet.login('username', 'token')
+
+df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
+target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
+
+test_size, random_state = 0.2, 42
+train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+model = RandomForestClassifier().fit(train[features], train[target])
+predictions = model.predict(test[features])
+print(classification_report(test[target], predictions, target_names=target_names))
+
+# Any parameters we want to save
+info = classification_report(test[target], predictions,
+                             target_names=target_names,
+                             output_dict=True)
+info["test_size"] = test_size
+info["random_state"] = random_state
+info['features'] = features
+info['target'] = target
+```
 
 Continue to see how you can use pyxet on a private XetHub repository.
 

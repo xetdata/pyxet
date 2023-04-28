@@ -15,9 +15,9 @@ or they can be passed in with the URL by prefixing `xet://<user>[:token]@xethub.
 the branch `main` of the repo `data_user/data_repo`  with credentials `user=user1` and `token=mytokenxyz`. 
 
 For example, to refer to the results.csv file in the main branch of the XetHub Flickr30k repo, the following work: 
-- xet://xethub.com/XetHub/Flickr30k/main/results.csv (all fsspec compatible packages)
-- /XetHub/Flickr30k/main/results.csv (pyxet.open) 
-- https://xethub.com/XetHub/Flickr30k/main/results.csv (pyxet.open) 
+- `xet://xethub.com/XetHub/Flickr30k/main/results.csv` (all fsspec compatible packages)
+- `/XetHub/Flickr30k/main/results.csv` (pyxet.open) 
+- `https://xethub.com/XetHub/Flickr30k/main/results.csv` (pyxet.open) 
 
 ## pyxet.open
 
@@ -76,7 +76,7 @@ All fsspec read-only functionality is supported; write operations such as flush(
 
 ## [pathlib](https://docs.python.org/3/library/pathlib.html)
 
-pyxet also implements read-only pathlib functions. write_text and write_bytes are not currently supported.
+pyxet also implements read-only pathlib functions. `write_text()` and `write_bytes()` are not currently supported.
 
 ```python
 from pyxet.pathlib import Path

@@ -19,15 +19,6 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
-After installing pyxet, the next step is to confirm your Git configuration is complete.
-
-Note: This requirement will be removed soon, but today git user.email and git user.name are required to be set in order to use pyxet. This is because XetHub is built on scalable Git repositories, and pyxet is built with libgit, and libgit requires git user configuration to be set in order to work.
-
-```sh
-git config --global user.name "Your Name"
-git config --global user.email "your_email_address@email.com"
-```
-
 ## Usage
 
 XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 

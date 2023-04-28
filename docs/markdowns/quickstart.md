@@ -104,5 +104,5 @@ info['features'] = features
 info['target'] = target
 ```
 
-Continue to see how you can use pyxet on a private XetHub repository.
+Continue to the next section to see how you can use pyxet with git-xet on a private XetHub repository.
 

@@ -60,23 +60,23 @@ Example usage of `pyxet.XetFS`:
   contents = f.read()
 ```
 
-## fsspec integration
+## [fsspec](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
 
 Many packages such as pandas and pyarrow support the fsspec protocol.
 xet:// URLs must be used as file paths in these packages. For example, to read a csv from pandas, use:
 
 ```sh
   import pyxet
+  import pandas as pd
+
   csv = pd.read_csv('xet://xethub.com/XetHub/Flickr30k/main/results.csv')
 ```
 
-See [fsspec usage](https://filesystem-spec.readthedocs.io/en/latest/usage.html) for complete functionality. All read-only 
-functionality is supported; write operations such as flush() and write() are in development.
+All fsspec read-only functionality is supported; write operations such as flush() and write() are in development.
 
-## pathlib integration
+## [pathlib](https://docs.python.org/3/library/pathlib.html)
 
-pyxet also implements read-only [pathlib functions](https://docs.python.org/3/library/pathlib.html). 
-write_text and write_bytes are not currently supported.
+pyxet also implements read-only pathlib functions. write_text and write_bytes are not currently supported.
 
 ```python
 from pyxet.pathlib import Path

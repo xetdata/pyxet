@@ -1,6 +1,6 @@
 ---
 
-### :construction: :construction: :construction: _pyxet is a new and is under active development. See details below._ :construction: :construction: :construction:
+### :construction: :construction: :construction: _pyxet is new and under active development. See details below._ :construction: :construction: :construction:
 
 ---
 
@@ -146,10 +146,10 @@ info['target'] = target
 ```
 
 ## Contributing & Getting Help
-This project is just getting started. We were so eager to get pyxet out we have not gotten all the code over to this repository yet. We will bring the code here very soon. We fully intend to develop this package in the public under the BSD license. 
+This project is just getting started. We were so eager to get pyxet out that we have not gotten all the code over to this repository yet. We will bring the code here very soon. We fully intend to develop this package in public under the BSD license. 
 
 In the coming days we will add a roadmap to make it easier to know when pyxet features are being implemented and how you can help.
 
-For now, join our [Discord server](https://discord.gg/KCzmjDaDdC) to talk with us. We have ambitious plans and some very useful features under development / partially working (ex. write back to XetHub repos easy commit messages, stream repositories locally, easily load the same file across git branches, and more).
+For now, join our [Discord server](https://discord.gg/KCzmjDaDdC) to talk with us. We have ambitious plans and some very useful features under development / partially working (ex. write back to XetHub repos, easy commit messages, stream repositories locally, easily load the same file across Git branches, and more).
 
 

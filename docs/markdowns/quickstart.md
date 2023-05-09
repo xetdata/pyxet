@@ -21,7 +21,7 @@ $ pip install pyxet
 
 ## Usage
 
-XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
+XetHub lets you store up to 1TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
 ```sh

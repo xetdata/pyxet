@@ -1,7 +1,7 @@
 Using pyxet with git-xet
 ========================
 
-Want to use pyxet on your own XetHub repository? Set up git-xet to use XetHub for repositories of up to 100TB. XetHub is 
+Want to use pyxet on your own XetHub repository? Set up git-xet to use XetHub for repositories of up to 1TB. XetHub is 
 a great place to store models, data, and more all together.
 
 1. Sign up for [XetHub](https://xethub.com/user/sign_up)

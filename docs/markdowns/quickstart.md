@@ -21,7 +21,7 @@ $ pip install pyxet
 
 ## Usage
 
-XetHub lets you store up to 100TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
+XetHub lets you store up to 1TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
 
 ```sh
@@ -73,7 +73,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
+# make sure to set your XET_USER_NAME and XET_USER_TOKEN environment variables, or run:
 # pyxet.login('username', 'token')
 
 df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub

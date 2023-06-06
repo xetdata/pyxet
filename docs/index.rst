@@ -33,6 +33,7 @@ file system operations and integrations with common tools. It includes:
 
    markdowns/filesystem
    markdowns/integrations
+   markdowns/fsspec
 
 .. toctree::
    :maxdepth: 2

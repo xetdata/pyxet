@@ -36,59 +36,5 @@ Example usage of `pyxet.open`:
   f.close()
 ```
 
-## pyxet.XetFS
 
-To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class. This class provides a file system handle 
-for a XetHub repository, allowing you to perform read-only operations like ls, glob, and open. The initialization of this class 
-requires a repository URL and optional arguments for branch, user, and token. 
 
-Example usage of `pyxet.XetFS`:
-
-```sh
-  import pyxet
-
-  # Create a file system handle for a public repository.
-  fs = pyxet.XetFS('xet://xethub.com/XetHub/Flickr30k/main/')
-
-  # List files in the repository.
-  files = fs.ls('/')
-
-  # Open a file from the repository.
-  f = fs.open('results.csv')
-
-  # Read the contents of the file.
-  contents = f.read()
-```
-
-## [fsspec](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
-
-Many packages such as pandas and pyarrow support the fsspec protocol.
-xet:// URLs must be used as file paths in these packages. For example, to read a csv from pandas, use:
-
-```sh
-  import pyxet
-  import pandas as pd
-
-  csv = pd.read_csv('xet://xethub.com/XetHub/Flickr30k/main/results.csv')
-```
-
-All fsspec read-only functionality is supported; write operations such as flush() and write() are in development.
-
-## [pathlib](https://docs.python.org/3/library/pathlib.html)
-
-pyxet also implements read-only pathlib functions. `write_text()` and `write_bytes()` are not currently supported.
-
-```python
-from pyxet.pathlib import Path
-
-path = Path("https://xethub.com/xdssio/titanic.git/main/titanic.csv")
-path.is_dir()
-path.is_file()
-path.exists()
-path.read_bytes()
-path.read_text()
-path.absolute()
-path.iterdir()
-path.joinpath()  # returns a new path
-path.glob()  # use fsspec glob
-```

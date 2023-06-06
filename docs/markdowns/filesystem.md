@@ -1,8 +1,7 @@
 # File system
 
 Pyxet implements a simple and intuitive API based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library.
-Use the same API to access local files, remote files, and files in XetHub. All operations are currently read-only; write functionality 
-is in development.
+Use the same API to access local files, remote files, and files in XetHub. 
 
 ## Using URLs
 

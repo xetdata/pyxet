@@ -12,7 +12,7 @@ In your python session, pyxet.login() will set the environment variables for you
 
 ```sh
 # Save these environment variables to your shell config (ex. .zshrc)
-export XET_USER_NAME=<YOUR XETHUB USER NAME>
+export XET_USER_NAME=<YOUR XETHUB USERNAME>
 export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
 ```
 

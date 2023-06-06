@@ -100,12 +100,12 @@ To start working with private repositories, you need to set up credentials for p
 2. Install [git-xet client](https://xethub.com/explore/install)
 3. Create a [Personal Access Token](https://xethub.com/explore/install). Click on 'CREATE TOKEN' button.
 4. Copy & Execute Login command, it should look like: `git xet login -u rajatarya -e rajat@xethub.com -p **********`
-5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USERNAME and XET_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
+5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USER_NAME and XET_USER_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
 
 ```sh
 # Note: set this environment variable into your shell config (ex. .zshrc) so not lost.
-export XET_USERNAME=<YOUR XETHUB USERNAME>
-export XET_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
+export XET_USER_NAME=<YOUR XETHUB USERNAME>
+export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
 ```
 
 ### ML Demo
@@ -123,7 +123,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
+# make sure to set your XET_USER_NAME and XET_USER_TOKEN environment variables, or run:
 # pyxet.login('username', 'token')
 
 df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub

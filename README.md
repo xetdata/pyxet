@@ -148,8 +148,13 @@ info['target'] = target
 ## Contributing & Getting Help
 This project is just getting started. We were so eager to get pyxet out that we have not gotten all the code over to this repository yet. We will bring the code here very soon. We fully intend to develop this package in public under the BSD license. 
 
-In the coming days we will add a roadmap to make it easier to know when pyxet features are being implemented and how you can help.
-
 For now, join our [Discord server](https://discord.gg/KCzmjDaDdC) to talk with us. We have ambitious plans and some very useful features under development / partially working (ex. write back to XetHub repos, easy commit messages, stream repositories locally, easily load the same file across Git branches, and more).
 
+## pyxet Roadmap
+The open source community is very important to us at XetHub and we strive for transparency in sharing our plans for the future. We welcome feedback — join us on Discord to help shape our roadmap!
 
+| Version     | Estimated Release Date | Updates|
+| ------------|------------------------|--------|
+| pyxet 0.0.7 |	6/23/2023              | Support for repository and branch creation <br/>Xet CLI wrapper for pyxet functionality <br/> Experimental support for >10TB repositories |
+| pyxet 0.0.8 | 7/10/2023	           | pyxet and xet-core codebases are open source!  <br/>XetHub moves to an open-core software model |
+| pyxet 0.1   | 7/17/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories <br/> Support for using pyxet on your own storage without XetHub |

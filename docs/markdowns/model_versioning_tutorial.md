@@ -3,7 +3,7 @@
 We will build a comprehensive machine learning project such it will scale in terms of compute, team, and system design
 for almost any smart solution.
 
-### Setup
+## Setup
 
 Let’s start by [forking this repo](https://xethub.com/xdssio/kickstart_ml) and setting the virtual environment:
 
@@ -15,7 +15,7 @@ $ python -m venv .venv && . .venv/bin/activate
 (.venv) $ git checkout base # this will be out starting point
 ```
 
-### Train
+## Train
 
 Before we start - we checkout a *baseline* branch: `git checkout -b baseline`
 
@@ -46,7 +46,7 @@ git checkout main && git merge baseline && git push
 
 # Next step
 
-### Data
+## Data
 
 Should we save our data in the same repo? That is absolutely possible, but as your project scale, more data is ingested
 from other services; you might want to have different permissions for adding/removing data and would want to manage it

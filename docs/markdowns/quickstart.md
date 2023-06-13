@@ -1,8 +1,8 @@
-# Quick Start
+# Quickstart
 
 [XetHub](https://xethub.com/) is a cloud storage platform with Git capabilities. It is a great place to store your data,
 models,
-logs, and code. The pyxet library allows you to easily access XetHub from Python.
+logs, and code with versioning. The pyxet library allows you to easily access XetHub files directly from Python.
 
 ## Installation
 
@@ -11,7 +11,6 @@ virtualenv with:
 
 ```sh
 $ python -m venv .venv
-...
 $ . .venv/bin/activate
 ```
 
@@ -21,21 +20,20 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
-### Demo
+## Demo
 
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for
 Python fsspec.
 
 ```python
-# assumes you have already done pip install pandas
-import pyxet  # make xet:// protocol available
-import pandas as pd
+import pyxet            # make xet:// protocol available
+import pandas as pd     # assumes pip install pandas has been run
 
 df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
 df
 ```
 
-should return something like:
+This should return something like:
 
 ```
 Out[3]:
@@ -55,50 +53,38 @@ Out[3]:
 [891 rows x 12 columns]
 ```
 
-### Next Steps - Working with private repos (How to set pyxet credentials)
+## Working with a Blob Store
 
-To start working with private repositories, you need to set up credentials for pyxet. The steps to do this are as
-follows:
+pyxet provides a Python SDK (with a CLI on the way!) for interacting with XetHub repositories as blob stores, while 
+leveraging the power of Git branches and versioning.
 
-1. Sign up for [XetHub](https://xethub.com/user/sign_up)
-2. Install [git-xet client](https://xethub.com/explore/install)
-3. Create a [Personal Access Token](https://xethub.com/user/settings/pat). Click on 'CREATE TOKEN' button.
-4. Copy & Execute Login command, it should look like: `git xet login -u rajatarya -e rajat@xethub.com -p **********`
-5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USER_NAME
-   and XET_USER_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment
-   variables for you.
-
-```sh
-# Note: set this environment variable into your shell config (ex. .zshrc) so not lost.
-export XET_USER_NAME=<YOUR XETHUB USERNAME>
-export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
+A XetHub URL for pyxet is in the form:
+```
+xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
 
-## Blob store tooling
+Unlike with traditional blob stores, the ability to call a branch means that you can choose whether to 
+use the most recent version of a file/directory or to reference a particular branch or commit.
 
-pyxet also provides a python SDK (CLI is on the way!)  for interacting with XetHub blob stores.
-
-* A URI for pyxet is `<username>/<repository>/<branch>/<path to whatever>`
-* `pyxet.XetFs` implement [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+To work with a repository as a file system, use `pyxet.XetFS`, which implements [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+Here are some simple ways to access information from an existing repository:
 
 ```python
 import pyxet
 
 fs = pyxet.XetFS()  # fsspec filesystem
 
-# Reads
-fs.info(
-    "xdssio/titanic/main/titanic.csv")  # {'name': 'https://xethub.com/main/titanic.csv', 'size': 61194, 'type': 'file'}
-fs.open("xdssio/titanic/main/titanic.csv", 'r').read(11)  # 'PassengerId'
-fs.get("xdssio/titanic/main/data/*parquet", "data", recursive=True)  # Download file/directories recursively
-fs.cp("xdssio/titanic/main/titanic.csv", "titanic.csv")  # fsspec cp
-fs.ls("xdssio/titanic/main/data/", detail=False)  # ['data/titanic_0.parquet', 'data/titanic_1.parquet']
+fs.info("xdssio/titanic/main/titanic.csv")  
+# returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
 
-# Writes - You need to have write permissions to that repo
-with fs.transaction("xdssio/titanic/main"):
-    fs.cp("xdssio/titanic/main/titanic.csv", "xdssio/titanic/main/titanic2.csv")
-fs.info("xdssio/titanic/main/titanic2.csv")
-with fs.transaction("xdssio/titanic/main"):
-    fs.rm("xdssio/titanic/main/titanic2.csv")
-fs.info("xdssio/titanic/main/titanic2.csv")  # FileNotFoundError: xdssio / titanic / main / titanic2.csv
+fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+# returns first 20 characters: 'PassengerId,Survived'
+
+fs.get("xdssio/titanic/main/data/", "data", recursive=True)  
+# download remote directory recursively into a local data folder
+
+fs.ls("xdssio/titanic/main/data/", detail=False)  
+# returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
 ```
+
+Pyxet also allows you to write to repositories with Git versioning. 

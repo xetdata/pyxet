@@ -1,0 +1,143 @@
+Writing files with pyxet
+========================
+
+## Create an account, install git-xet
+
+To use pyxet on your own XetHub repository, or to write back to an existing repository, set up an account.
+Then install git-xet, a Git extension, to seamlessly manage your XetHub repositories.
+
+1. Sign up for [XetHub](https://xethub.com/user/sign_up)
+2. Install the [git-xet client](https://xethub.com/explore/install) and create a token
+3. Copy and execute the login command: 
+   ```sh
+   $ git xet login -u <username> -e <email> -p **********
+   ```
+4. To make these credentials available to pyxet, set the username and token parameters as XET_USER_NAME and XET_USER_TOKEN environment variables.
+   ```sh
+   # Save these environment variables to your shell config (ex. .zshrc)
+   export XET_USER_NAME=<YOUR XETHUB USER NAME>
+   export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN>
+   ```
+   You can also manually log in to pyxet from Python with `pyxet.login('user_name', 'token')`.
+
+Now that you have an account, you can contribute to repositories that you have access to.
+
+## Create your own Titanic repository
+
+Let's walk through a more complete demo of how to use pyxet for some basic ML.
+
+Use the XetHub UI to [create a new repository](https://xethub.com/xet/create). Name the repository `titanic`, 
+clone the empty repository to your local machine, then create a branch named `experiment-1`.
+
+```sh
+cd titanic
+git checkout -b experiment-1 && git push -u origin titanic
+```
+
+Start a new virtualenv and install some dependencies:
+
+```sh
+$ python -m venv .venv
+$ . .venv/bin/activate
+$ pip install pyxet scikit-learn ipython pandas
+```
+
+From your `experiment-1` branch, train and evaluate: 
+```python
+import pyxet
+import json
+import pickle
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # read data from XetHub
+
+# Standard ML workflow
+target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
+
+test_size, random_state = 0.2, 42
+train, test = train_test_split(df, test_size=test_size, random_state=random_state)
+model = RandomForestClassifier().fit(train[features], train[target])
+predictions = model.predict(test[features])
+print(classification_report(test[target], predictions, target_names=target_names))
+
+# Save important parameters
+info = classification_report(test[target], predictions,
+                             target_names=target_names,
+                             output_dict=True)
+info["test_size"] = test_size
+info["random_state"] = random_state
+info['features'] = features
+info['target'] = target
+
+# Record metrics for comparison
+results = pd.DataFrame([{'accuracy': info['accuracy'],
+                         'precision': info['macro avg']['precision'],
+                         'recall': info['macro avg']['recall']}])
+```
+
+### Writing back to XetHub
+
+After training your model, you can persist both the model and metrics back to XetHub.
+Update the `<user_name>` fields below and run:
+
+```python
+fs = pyxet.XetFS()
+with fs.transaction("<user_name>/titanic/experiment-1/"):
+    fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)
+    fs.mkdirs("<user_name>/titanic/experiment-1/models", exist_ok=True)
+    results.to_csv(fs.open("<user_name>/titanic/experiment-1/metrics/results.csv", "w"), index=False)  # write results
+    pickle.dump(model, fs.open("<user_name>/titanic/experiment-1/models/model.pickle", 'wb'))  # save model
+    json.dump(info, fs.open("<user_name>/titanic/experiment-1/metrics/info.json", 'w'))  # any other metadata
+```
+
+If you navigate to your titanic repository on XetHub, you'll see the new files show up 
+with the corresponding commit in your `experiment-1` branch.
+
+### Loading models
+
+You can easily load a XetHub model from an inference server:
+
+```python
+import pyxet
+import pickle
+
+model = pickle.load(fs.open("<user_name>/titanic/experiment-1/models/model.pickle", 'rb')) 
+```
+
+### Comparing across branches
+
+Versioned experiments on branches enables easy comparison.
+To try this out, create a new `experiment-2` branch:
+```sh
+git checkout -b experiment-2 && git push -u origin titanic
+```
+
+Run the same code as above, but change the `test_size` and `random_state` values. This time, persist 
+your model and metrics back to XetHub in the `experiment-2` branch.
+
+```python
+fs = pyxet.XetFS()
+with fs.transaction("<user_name>/titanic/experiment-2/"):
+    fs.mkdirs("<user_name>/titanic/experiment-2/metrics", exist_ok=True)
+    fs.mkdirs("<user_name>/titanic/experiment-2/models", exist_ok=True)
+    results.to_csv(fs.open("<user_name>/titanic/experiment-2/metrics/results.csv", "w"), index=False)  # write results
+    pickle.dump(model, fs.open("<user_name>/titanic/experiment-2/models/model.pickle", 'wb'))  # save model
+    json.dump(info, fs.open("<user_name>/titanic/experiment-2/metrics/info.json", 'w'))  # any other metadata
+```
+
+Compare your results:
+
+```python
+import pyxet
+import pandas as pd
+
+dfs = []
+for branch in ['experiment-1', 'experiment-2']:
+    df = pd.read_csv(f"xet://<user_name>/titanic/{branch}/metrics/results.csv")
+    df['branch'] = branch
+    dfs.append(df)
+pd.concat(dfs)
+```

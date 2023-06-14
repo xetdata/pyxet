@@ -1,6 +1,7 @@
 Writing files with pyxet
 ========================
 
+(account_setup)=
 ## Create an account, install git-xet
 
 To use pyxet on your own XetHub repository, or to write back to an existing repository, set up an account.
@@ -31,7 +32,7 @@ clone the empty repository to your local machine, then create a branch named `ex
 
 ```sh
 cd titanic
-git checkout -b experiment-1 && git push -u origin titanic
+git checkout -b experiment-1 && git push -u origin experiment-1
 ```
 
 Start a new virtualenv and install some dependencies:
@@ -85,7 +86,7 @@ Update the `<user_name>` fields below and run:
 
 ```python
 fs = pyxet.XetFS()
-with fs.transaction("<user_name>/titanic/experiment-1/"):
+with fs.transaction("<user_name>/titanic/experiment-1/", "Write experiment 1 results back to repo"):
     fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)
     fs.mkdirs("<user_name>/titanic/experiment-1/models", exist_ok=True)
     results.to_csv(fs.open("<user_name>/titanic/experiment-1/metrics/results.csv", "w"), index=False)  # write results
@@ -112,7 +113,7 @@ model = pickle.load(fs.open("<user_name>/titanic/experiment-1/models/model.pickl
 Versioned experiments on branches enables easy comparison.
 To try this out, create a new `experiment-2` branch:
 ```sh
-git checkout -b experiment-2 && git push -u origin titanic
+git checkout -b experiment-2 && git push -u origin experiment-2
 ```
 
 Run the same code as above, but change the `test_size` and `random_state` values. This time, persist 
@@ -120,7 +121,7 @@ your model and metrics back to XetHub in the `experiment-2` branch.
 
 ```python
 fs = pyxet.XetFS()
-with fs.transaction("<user_name>/titanic/experiment-2/"):
+with fs.transaction("<user_name>/titanic/experiment-2/", "Write experiment 2 results back to repo"):
     fs.mkdirs("<user_name>/titanic/experiment-2/metrics", exist_ok=True)
     fs.mkdirs("<user_name>/titanic/experiment-2/models", exist_ok=True)
     results.to_csv(fs.open("<user_name>/titanic/experiment-2/metrics/results.csv", "w"), index=False)  # write results
@@ -128,7 +129,7 @@ with fs.transaction("<user_name>/titanic/experiment-2/"):
     json.dump(info, fs.open("<user_name>/titanic/experiment-2/metrics/info.json", 'w'))  # any other metadata
 ```
 
-Compare your results:
+Compare your results, making sure to update `<user_name>` in the code below:
 
 ```python
 import pyxet
@@ -140,4 +141,12 @@ for branch in ['experiment-1', 'experiment-2']:
     df['branch'] = branch
     dfs.append(df)
 pd.concat(dfs)
+```
+
+Changing `test_size` and `random_state` to 0.5 and 30 respectively results in the following comparison printout:
+
+```sh
+   accuracy  precision    recall        branch
+0  0.731844   0.724591  0.715573  experiment-1
+0  0.688341   0.673824  0.653577  experiment-2
 ```

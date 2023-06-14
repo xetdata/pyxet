@@ -6,7 +6,7 @@ Welcome to pyxet's documentation!
 =================================
 
 pyxet is a Python package that provides a lightweight interface for the `XetHub <https://xethub.com/>`_  platform with familiar 
-file system operations and integrations with common tools. It includes:
+file system operations and integrations with common tools. It works with anything that supports fsspec and more integrations are planned.
 
 1. A file-system like interface:
     - [x] `fsspec <https://filesystem-spec.readthedocs.io>`_
@@ -39,5 +39,4 @@ file system operations and integrations with common tools. It includes:
 
    markdowns/collaboration
    markdowns/model_versioning
-   markdowns/model_versioning_tutorial
 

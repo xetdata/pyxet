@@ -1,68 +1,71 @@
-# Machine learning kickstart project
+Kickstart ML Project
+====================
 
-We will build a comprehensive machine learning project such it will scale in terms of compute, team, and system design
-for almost any smart solution.
+Let's build a comprehensive machine learning project that scales for almost any smart solution.
 
 ## Setup
 
-Let’s start by [forking this repo](https://xethub.com/xdssio/kickstart_ml) and setting the virtual environment:
+Let’s start by forking and cloning [this repo](https://xethub.com/xdssio/kickstart_ml) and setting the virtual environment:
 
 ```bash
 $ git xet clone "https://xethub.com/${XET_USER_NAME}/kickstart_ml.git"
 $ cd kickstart_ml
 $ python -m venv .venv && . .venv/bin/activate
 (.venv) $ pip install -r requirements.txt
-(.venv) $ git checkout base # this will be out starting point
 ```
 
 ## Train
 
-Before we start - we checkout a *baseline* branch: `git checkout -b baseline`
+Before we start, checkout a baseline branch.
+```sh
+git checkout -b baseline
+```
 
-Run the train*.ipynb* Jupyter Notebook - this will:
+The train.ipynb Jupyter Notebook in the repository will:
 
 1. Download the [Titanic dataset](https://www.kaggle.com/c/titanic).
 2. Build a model.
 3. Run evaluation.
-4. Save the model, the data and the metrics to files.
+4. Save the model, the data, and the metrics to files.
 
-- We can run the entire notebook as follow:
-  `(cd notebooks && ipython -c "%run train.ipynb")` # raw
-- For more sophisticated execution, use [papermill](https://papermill.readthedocs.io/en/latest/index.html).
+We can run the entire notebook as follows:
+```sh
+  (cd notebooks && ipython -c "%run train.ipynb")
+```
+For more sophisticated execution, use [papermill](https://papermill.readthedocs.io/en/latest/index.html).
 
-Let’s push it into our repository and merge it to *main.*
+Let’s push everything into our repository and merge it to main.
 
 ```bash
-git add . && git commit -m "baseline training" && git push 
-git checkout main && git merge baseline && git push
+  git push --set-upstream origin baseline
+  git add . && git commit -m "baseline training" && git push 
+  git checkout main && git merge baseline && git push
 ```
 
-**Congratulations!** You did your first project!
+**Congratulations!** You completed your first project!
 
 <aside>
-💡 Note that this would work even if the model or data files are very big and extremely efficient!
-
+💡 Note that this would work even if the model or data files are huge.
 </aside>
+
+
 
 # Next step
 
-## Data
+## Data Setup
 
-Should we save our data in the same repo? That is absolutely possible, but as your project scale, more data is ingested
-from other services; you might want to have different permissions for adding/removing data and would want to manage it
-differently than your machine learning code.
+Should we save our data in the same repo? That is absolutely possible, but as your project scales, more data may be ingested
+from other services. You might want to have different permissions for adding/removing data and would want to manage it
+differently than your machine learning code. Note that while our example uses ML and involves saving our machine learning 
+datasets, XetHub can hold any type of file: A/B test data, databases backup dumps, etc.
 
-- In our example, we save our machine learning datasets, but we can also have our a/b test data, databases backup dumps
-  and any other data type.
-
-Create a repository [here](https://xethub.com/xet/create) and call it “kickstart_data”.
-
-And add the data straight to it:
+[Create a new data repository](https://xethub.com/xet/create) and call it `kickstart_data`. Add the data straight to it:
 
 ```python
 import pyxet
 
 fs = pyxet.XetFS()
+
 # a transaction is needed for write
 with fs.transaction("xet://${XET_USER_NAME}/kickstart_data/main/"):
     fs.cp("data/titanic.csv", "xet://${XET_USER_NAME}/kickstart_data/main/titanic.csv")

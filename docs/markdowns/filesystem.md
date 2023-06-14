@@ -1,31 +1,38 @@
 # File system
 
-Pyxet implements a simple and intuitive API based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
-library.
-Use the same API to access local files, remote files, and files in XetHub. All operations are currently read-only; write
-functionality
-is in development.
+Pyxet implements a simple API based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+library. Use it to access local files, remote files, and files in XetHub.
 
 ## Using URLs
 
-Xet URLs should be of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`, where `<path-to-file>` is
-optional if the URL
-refers to a repository. The xet:// prefix is not neccery when using pyxet.XetFS.
+Xet URLs are in the form:
+```sh
+xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
+```
+
+The `<path_to_file>` argument is optional if the URL
+refers to a repository and the `xet://` prefix is optional when using pyxet.XetFS.
+
+## Accessing private repositories
+
+To create your own repositories or access private repositories, first [create a XetHub account and set your personal access token](account_setup).
+Make sure that the `XET_USER_NAME` and `XET_USER_TOKEN` environment variables are set when developing.
 
 ## pyxet.XetFS
 
 To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class. This class provides a file
 system handle
-for a XetHub repository, allowing you to perform read-only operations like ls, glob, and open. The initialization of
+for a XetHub repository, allowing you to perform opens, reads, and writes. The initialization of
 this class
-requires a repository URL and optional arguments for branch, user, and token.
+requires a repository URL and optional arguments for branch, user, and token. All write operations will 
+automatically commit the change back to XetHub; the optional commit message will be applied when available.
 
 Example usage of `pyxet.XetFS`:
 
-```sh
+```python
   import pyxet
 
-  # Create a file system handle for a public repository.
+  # Create a file system handle for a repository
   fs = pyxet.XetFS()
 
   # List files in the repository.
@@ -36,44 +43,55 @@ Example usage of `pyxet.XetFS`:
 
   # Read the contents of the file.
   contents = f.read()
+
+  # Write to a repository with an optional commit message
+  with fs.transaction("<user_name>/<repo_name>/main", "Writing things"):
+    fs.open("<user_name>/<repo_name>/main/foo", 'w').write("Hello world!")
 ```
-## Other common utils
+
+## Other common utilities
 ```python
-import pyxet
+  import pyxet
 
-fs = pyxet.XetFS()  # fsspec filesystem
+  fs = pyxet.XetFS()  # fsspec filesystem
 
-# Reads
-fs.info(
-    "xdssio/titanic/main/titanic.csv")  # {'name': 'https://xethub.com/main/titanic.csv', 'size': 61194, 'type': 'file'}
-fs.open("xdssio/titanic/main/titanic.csv", 'r').read(11)  # 'PassengerId'
-fs.get("xdssio/titanic/main/data/*parquet", "data", recursive=True)  # Download file/directories recursively
-fs.cp("xdssio/titanic/main/titanic.csv", "titanic.csv")  # fsspec cp
-fs.ls("xdssio/titanic/main/data/", detail=False)  # ['data/titanic_0.parquet', 'data/titanic_1.parquet']
+  # Read functions
+  fs.info("xdssio/titanic/main/titanic.csv")
+  # returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
 
-# Writes - You need to have write permissions to that repo
-with fs.transaction("xdssio/titanic/main"):
-    fs.open("xdssio/titanic/main/text.txt", 'w').write("Hello World")
-with fs.transaction("xdssio/titanic/main"):
-    fs.cp("xdssio/titanic/main/titanic.csv", "xdssio/titanic/main/titanic2.csv")
-fs.info(
-    "xdssio/titanic/main/titanic2.csv")  # {'name': 'https://xethub.com/main/titanic2.csv', 'size': 61194, 'type': 'file'}
-with fs.transaction("xdssio/titanic/main"):
-    fs.rm("xdssio/titanic/main/titanic2.csv")
-fs.info("xdssio/titanic/main/titanic2.csv")  # FileNotFoundError: xdssio / titanic / main / titanic2.csv
+  fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+  # returns first 20 characters: 'PassengerId,Survived'
+
+  fs.get("xdssio/titanic/main/data/", "data", recursive=True)
+  # download remote directory recursively into a local data folder
+
+  fs.ls("xdssio/titanic/main/data/", detail=False)
+  # returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
+
+  # Write functions, with optional commit message
+  with fs.transaction("<user_name>/<repo_name>/main", "Write hi"):
+    fs.open("<user_name>/<repo_name>/main/text.txt", 'w').write("Hello world!")
+  # writes "Hello World" to text.txt, Git commits the change with comment "Write hi" in the main branch of the repository
+
+  with fs.transaction("<user_name>/<repo_name>/main", "Copy file"):
+    fs.cp("<user_name>/<repo_name>/main/text.txt", "<user_name>/<repo_name>/main/text2.txt")
+  # copies text.txt into text2.txt in the main branch of the repository, commits the change with "Copy file"
+
+  with fs.transaction("<user_name>/<repo_name>/main", "Remove file"):
+    fs.rm("<user_name>/<repo_name>/main/titanic2.csv")
+  fs.info("xdssio/titanic/main/titanic2.csv") 
+   # removes a file from the main branch of the repository with comment "Remove file"
 ```
 
 ## [fsspec](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
 
 Many packages such as pandas and pyarrow support the fsspec protocol.
-xet:// URLs must be used as file paths in these packages. For example, to read a csv from pandas, use:
+xet:// URLs must be used as file paths when interacting with these packages. For example, to read a CSV from pandas, use:
 
 ```sh
-  import pyxet # make xet protocol available to fsspec
+  import pyxet   # make xet protocol available to fsspec
   import pandas as pd
 
   df = pd.read_csv('xet://XetHub/Flickr30k/main/results.csv')
 ```
-
-All fsspec read-only functionality is supported; write operations such as flush() and write() are in development.
 

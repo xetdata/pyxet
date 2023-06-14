@@ -21,17 +21,17 @@
 
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
 
-This project is just getting started and we have not moved all our code over to this repository yet. We intend to develop this package in public under the BSD license. In the meantime, here is our roadmap:
+This project is just getting started and we have not moved all our code over to this repository yet. We intend to develop this package in public under the BSD license.
 
 | Version     | Estimated Release Date | Updates|
 | ------------|------------------------|--------|
 | pyxet 0.0.7 |	6/23/2023              | Support for repository and branch creation <br/>Xet CLI wrapper for pyxet functionality <br/> Experimental support for >10TB repositories |
-| pyxet 0.0.8 | 7/10/2023	           | pyxet and xet-core codebases are open source!  <br/>XetHub moves to an open-core software model |
+| pyxet 0.0.8 | 7/10/2023	             | pyxet and xet-core codebases are open source!  <br/>XetHub moves to an open-core software model |
 | pyxet 0.1   | 7/17/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories <br/> Support for using pyxet on your own storage without XetHub |
 
 Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates, star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 
-## Preliminary Features (more to come, get involved!)
+## Preliminary Features
 
 1. A filesystem interface:
     * [fsspec](https://filesystem-spec.readthedocs.io)
@@ -289,4 +289,3 @@ Changing `test_size` and `random_state` to 0.5 and 30 respectively results in th
 0  0.731844   0.724591  0.715573  experiment-1
 0  0.688341   0.673824  0.653577  experiment-2
 ```
-

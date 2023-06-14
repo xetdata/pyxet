@@ -1,15 +1,16 @@
-# Quick Start
+# Quickstart
 
-[XetHub](https://xethub.com/) is a cloud storage platform with Git capabilities. It is a great place to store your data, models,
-logs, and code. The pyxet library allows you to easily access XetHub from Python.
+[XetHub](https://xethub.com/) is a cloud storage platform with Git capabilities. It is a great place to store your data,
+models,
+logs, and code with versioning. The pyxet library allows you to easily access XetHub files directly from Python.
 
 ## Installation
 
-Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your virtualenv with:
+Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your
+virtualenv with:
 
 ```sh
 $ python -m venv .venv
-...
 $ . .venv/bin/activate
 ```
 
@@ -19,23 +20,22 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
-## Usage
+## Demo
 
-XetHub lets you store up to 1TB of files in a single repository. With pyxet, you can access these files easily using familiar file system operations. 
-To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
+To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for
+Python fsspec.
 
-```sh
-# assumes you have already done pip install pandas
-import pandas as pd
-import pyxet
+```python
+import pyxet            # make xet:// protocol available
+import pandas as pd     # assumes pip install pandas has been run
 
 df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
 df
 ```
 
-This will return something like:
+This should return something like:
 
-```sh
+```
 Out[3]:
      PassengerId  Survived  Pclass  ...     Fare Cabin  Embarked
 0              1         0       3  ...   7.2500   NaN         S
@@ -53,47 +53,38 @@ Out[3]:
 [891 rows x 12 columns]
 ```
 
-Now you can work directly with files without needing to download the full repository.
+## Working with a Blob Store
 
-## Advanced ML example
+pyxet provides a Python SDK (with a CLI on the way!) for interacting with XetHub repositories as blob stores, while 
+leveraging the power of Git branches and versioning.
 
-Start this demo by setting up your virtualenv with:
-
-```sh
-pip install scikit-learn ipython pandas
+A XetHub URL for pyxet is in the form:
+```
+xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
 
-Now use this code to generate some parameters.
+Unlike with traditional blob stores, the ability to call a branch means that you can choose whether to 
+use the most recent version of a file/directory or to reference a particular branch or commit.
 
-```sh
+To work with a repository as a file system, use `pyxet.XetFS`, which implements [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+Here are some simple ways to access information from an existing repository:
+
+```python
 import pyxet
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+fs = pyxet.XetFS()  # fsspec filesystem
 
-# make sure to set your XET_USER_NAME and XET_USER_TOKEN environment variables, or run:
-# pyxet.login('username', 'token')
+fs.info("xdssio/titanic/main/titanic.csv")  
+# returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
 
-df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
-target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
+fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+# returns first 20 characters: 'PassengerId,Survived'
 
-test_size, random_state = 0.2, 42
-train, test = train_test_split(df, test_size=test_size, random_state=random_state)
-model = RandomForestClassifier().fit(train[features], train[target])
-predictions = model.predict(test[features])
-print(classification_report(test[target], predictions, target_names=target_names))
+fs.get("xdssio/titanic/main/data/", "data", recursive=True)  
+# download remote directory recursively into a local data folder
 
-# Any parameters we want to save
-info = classification_report(test[target], predictions,
-                             target_names=target_names,
-                             output_dict=True)
-info["test_size"] = test_size
-info["random_state"] = random_state
-info['features'] = features
-info['target'] = target
+fs.ls("xdssio/titanic/main/data/", detail=False)  
+# returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
 ```
 
-Continue to the next section to see how you can use pyxet with git-xet on a private XetHub repository.
-
+Pyxet also allows you to write to repositories with Git versioning. 

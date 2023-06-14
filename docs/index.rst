@@ -6,16 +6,16 @@ Welcome to pyxet's documentation!
 =================================
 
 pyxet is a Python package that provides a lightweight interface for the `XetHub <https://xethub.com/>`_  platform with familiar 
-file system operations and integrations with common tools. It includes:
+file system operations and integrations with common tools. It works with anything that supports fsspec and more integrations are planned.
 
 1. A file-system like interface:
     - [x] `fsspec <https://filesystem-spec.readthedocs.io>`_
-    - [x] `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
+    - [ ] `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_
     - [ ] `glob <https://docs.python.org/3/library/glob.html>`_
 2. Integrations:
     - [x] `pandas <https://pandas.pydata.org>`_
-    - [x] `polars <https://pola-rs.github.io/polars-book/>`_
-    - [x] `pyarrow <https://arrow.apache.org/docs/python/>`_
+    - [ ] `polars <https://pola-rs.github.io/polars-book/>`_
+    - [ ] `pyarrow <https://arrow.apache.org/docs/python/>`_
     - [ ] `duckdb <https://duckdb.org>`_
 
 ---------------------------------------
@@ -25,14 +25,13 @@ file system operations and integrations with common tools. It includes:
    :caption: Introduction
 
    markdowns/quickstart
-   markdowns/newrepo
+   markdowns/writing
 
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
 
    markdowns/filesystem
-   markdowns/integrations
 
 .. toctree::
    :maxdepth: 2

@@ -1,94 +1,97 @@
 # File system
 
-Pyxet implements a simple and intuitive API based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library.
-Use the same API to access local files, remote files, and files in XetHub. All operations are currently read-only; write functionality 
-is in development.
+Pyxet implements a simple API based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+library. Use it to access local files, remote files, and files in XetHub.
 
 ## Using URLs
 
-Xet URLs should be of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`, where `<path-to-file>` is optional if the URL 
-refers to a repository. The xet:// prefix is inferred as needed, or if the URL is given as https://.  
-
-Setting a user and token is required for private repositories. They may be provided as explicit arguments to most pyxet functions, 
-or they can be passed in with the URL by prefixing `xet://<user>[:token]@xethub.com/`. For example, 
-`xet://user1:mytokenxyz@xethub.com/data_user/data_repo/main/data/survey.csv` would access the file `data/survey.csv` on 
-the branch `main` of the repo `data_user/data_repo`  with credentials `user=user1` and `token=mytokenxyz`. 
-
-For example, to refer to the results.csv file in the main branch of the XetHub Flickr30k repo, the following work: 
-- `xet://xethub.com/XetHub/Flickr30k/main/results.csv` (all fsspec compatible packages)
-- `/XetHub/Flickr30k/main/results.csv` (pyxet.open) 
-- `https://xethub.com/XetHub/Flickr30k/main/results.csv` (pyxet.open) 
-
-## pyxet.open
-
-To open a file from an XetHub repository, you can use the `pyxet.open()` function, which takes a file URL in the format 
-`xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`.
-
-Example usage of `pyxet.open`:
+Xet URLs are in the form:
 ```sh
-  import pyxet
-
-  # Open a file from a public repository.
-  f = pyxet.open('xet://xethub.com/XetHub/Flickr30k/main/results.csv')
-
-  # Read the contents of the file.
-  contents = f.read()
-  f.close()
+xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
+
+The `<path_to_file>` argument is optional if the URL
+refers to a repository and the `xet://` prefix is optional when using pyxet.XetFS.
+
+## Accessing private repositories
+
+To create your own repositories or access private repositories, first [create a XetHub account and set your personal access token](account_setup).
+Make sure that the `XET_USER_NAME` and `XET_USER_TOKEN` environment variables are set when developing.
 
 ## pyxet.XetFS
 
-To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class. This class provides a file system handle 
-for a XetHub repository, allowing you to perform read-only operations like ls, glob, and open. The initialization of this class 
-requires a repository URL and optional arguments for branch, user, and token. 
+To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class. This class provides a file
+system handle
+for a XetHub repository, allowing you to perform opens, reads, and writes. The initialization of
+this class
+requires a repository URL and optional arguments for branch, user, and token. All write operations will 
+automatically commit the change back to XetHub; the optional commit message will be applied when available.
 
 Example usage of `pyxet.XetFS`:
 
-```sh
+```python
   import pyxet
 
-  # Create a file system handle for a public repository.
-  fs = pyxet.XetFS('xet://xethub.com/XetHub/Flickr30k/main/')
+  # Create a file system handle for a repository
+  fs = pyxet.XetFS()
 
   # List files in the repository.
-  files = fs.ls('/')
+  files = fs.ls('xet://XetHub/Flickr30k/main')
 
   # Open a file from the repository.
-  f = fs.open('results.csv')
+  f = fs.open('xet://XetHub/Flickr30k/main/results.csv')
 
   # Read the contents of the file.
   contents = f.read()
+
+  # Write to a repository with an optional commit message
+  with fs.transaction("<user_name>/<repo_name>/main", "Writing things"):
+    fs.open("<user_name>/<repo_name>/main/foo", 'w').write("Hello world!")
+```
+
+## Other common utilities
+```python
+  import pyxet
+
+  fs = pyxet.XetFS()  # fsspec filesystem
+
+  # Read functions
+  fs.info("xdssio/titanic/main/titanic.csv")
+  # returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
+
+  fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+  # returns first 20 characters: 'PassengerId,Survived'
+
+  fs.get("xdssio/titanic/main/data/", "data", recursive=True)
+  # download remote directory recursively into a local data folder
+
+  fs.ls("xdssio/titanic/main/data/", detail=False)
+  # returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
+
+  # Write functions, with optional commit message
+  with fs.transaction("<user_name>/<repo_name>/main", "Write hi"):
+    fs.open("<user_name>/<repo_name>/main/text.txt", 'w').write("Hello world!")
+  # writes "Hello World" to text.txt, Git commits the change with comment "Write hi" in the main branch of the repository
+
+  with fs.transaction("<user_name>/<repo_name>/main", "Copy file"):
+    fs.cp("<user_name>/<repo_name>/main/text.txt", "<user_name>/<repo_name>/main/text2.txt")
+  # copies text.txt into text2.txt in the main branch of the repository, commits the change with "Copy file"
+
+  with fs.transaction("<user_name>/<repo_name>/main", "Remove file"):
+    fs.rm("<user_name>/<repo_name>/main/titanic2.csv")
+  fs.info("xdssio/titanic/main/titanic2.csv") 
+   # removes a file from the main branch of the repository with comment "Remove file"
 ```
 
 ## [fsspec](https://filesystem-spec.readthedocs.io/en/latest/usage.html)
 
 Many packages such as pandas and pyarrow support the fsspec protocol.
-xet:// URLs must be used as file paths in these packages. For example, to read a csv from pandas, use:
+xet:// URLs must be used as file paths when interacting with these packages. For example, to read a CSV from pandas, use:
 
 ```sh
-  import pyxet
+  import pyxet   # make xet protocol available to fsspec
   import pandas as pd
 
-  csv = pd.read_csv('xet://xethub.com/XetHub/Flickr30k/main/results.csv')
+  df = pd.read_csv('xet://XetHub/Flickr30k/main/results.csv')
 ```
 
-All fsspec read-only functionality is supported; write operations such as flush() and write() are in development.
-
-## [pathlib](https://docs.python.org/3/library/pathlib.html)
-
-pyxet also implements read-only pathlib functions. `write_text()` and `write_bytes()` are not currently supported.
-
-```python
-from pyxet.pathlib import Path
-
-path = Path("https://xethub.com/xdssio/titanic.git/main/titanic.csv")
-path.is_dir()
-path.is_file()
-path.exists()
-path.read_bytes()
-path.read_text()
-path.absolute()
-path.iterdir()
-path.joinpath()  # returns a new path
-path.glob()  # use fsspec glob
-```

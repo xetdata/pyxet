@@ -1,13 +1,12 @@
 ---
 
-### :construction: :construction: :construction: _pyxet is new and under active development. See details below._ :construction: :construction: :construction:
+### :construction: :construction: pyxet is new and under active development :construction: :construction:
 
 ---
 
 <p align="center">
    <img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
 </p>
-
 
 # pyxet - The SDK for XetHub
 
@@ -18,13 +17,21 @@
 [![Documentation Status](https://readthedocs.org/projects/pyxet/badge/?version=latest)](https://pyxet.readthedocs.io/en/latest/?badge=latest)
 [![Discord](https://img.shields.io/discord/1100889165777862807)](https://discord.gg/KCzmjDaDdC)
 
-### Note: This project is just getting started. Please join our [Discord server](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates please star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
-
 ## What is it?
 
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
 
-## Preliminary Features (more to come, get involved!)
+This project is just getting started and we have not moved all our code over to this repository yet. We intend to develop this package in public under the BSD license.
+
+| Version     | Estimated Release Date | Updates|
+| ------------|------------------------|--------|
+| pyxet 0.0.7 |	6/23/2023              | Support for repository and branch creation <br/>Xet CLI wrapper for pyxet functionality <br/> Experimental support for >10TB repositories |
+| pyxet 0.0.8 | 7/10/2023	             | pyxet and xet-core codebases are open source!  <br/>XetHub moves to an open-core software model |
+| pyxet 0.1   | 7/17/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories <br/> Support for using pyxet on your own storage without XetHub |
+
+Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates, star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
+
+## Preliminary Features
 
 1. A filesystem interface:
     * [fsspec](https://filesystem-spec.readthedocs.io)
@@ -44,14 +51,16 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
     - [ ] [ray](https://ray.io/)
 
 ## Documentation
+
 For API documentation and full examples, please see [here](https://pyxet.readthedocs.io/en/latest/).
 
-## Getting Started
-Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your virtualenv with:
+## Installation
+
+Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your
+virtualenv with:
 
 ```sh
 $ python -m venv .venv
-...
 $ . .venv/bin/activate
 ```
 
@@ -61,19 +70,20 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
-### Demo
-To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for Python fsspec.
+## Demo
+
+To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for
+Python fsspec.
 
 ```python
-# assumes you have already done pip install pandas
-import pandas as pd
-import pyxet
+import pyxet            # make xet:// protocol available
+import pandas as pd     # assumes pip install pandas has been run
 
 df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
 df
 ```
 
-should return something like:
+This should return something like:
 
 ```
 Out[3]:
@@ -93,40 +103,99 @@ Out[3]:
 [891 rows x 12 columns]
 ```
 
-### Next Steps - Working with private repos (How to set pyxet credentials)
-To start working with private repositories, you need to set up credentials for pyxet. The steps to do this are as follows:
+## Working with a Blob Store
 
-1. Sign up for [XetHub](https://xethub.com/user/sign_up)
-2. Install [git-xet client](https://xethub.com/explore/install)
-3. Create a [Personal Access Token](https://xethub.com/explore/install). Click on 'CREATE TOKEN' button.
-4. Copy & Execute Login command, it should look like: `git xet login -u rajatarya -e rajat@xethub.com -p **********`
-5. To make these credentials available to pyxet, set the -u param (rajatarya above) and the -p param as XET_USERNAME and XET_TOKEN environment variables. Also, for your python session, `pyxet.login()` will set the environment variables for you.
+pyxet provides a Python SDK (with a CLI on the way!) for interacting with XetHub repositories as blob stores, while
+leveraging the power of Git branches and versioning.
 
-```sh
-# Note: set this environment variable into your shell config (ex. .zshrc) so not lost.
-export XET_USERNAME=<YOUR XETHUB USERNAME>
-export XET_TOKEN=<YOUR PERSONAL ACCESS TOKEN PASSWORD>
+A XetHub URL for pyxet is in the form:
+```
+xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
 
-### ML Demo
+Unlike with traditional blob stores, the ability to call a branch means that you can choose whether to
+use the most recent version of a file/directory or to reference a particular branch or commit.
 
-A slightly more complete demo doing some basic ML is as simple as setting up your virtualenv with:
+To work with a repository as a file system, use `pyxet.XetFS`, which implements [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)
+Here are some simple ways to access information from an existing repository:
 
-```sh
-pip install scikit-learn ipython pandas
-```
 ```python
 import pyxet
 
+fs = pyxet.XetFS()  # fsspec filesystem
+
+fs.info("xdssio/titanic/main/titanic.csv")
+# returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
+
+fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+# returns first 20 characters: 'PassengerId,Survived'
+
+fs.get("xdssio/titanic/main/data/", "data", recursive=True)
+# download remote directory recursively into a local data folder
+
+fs.ls("xdssio/titanic/main/data/", detail=False)
+# returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
+```
+
+Pyxet also allows you to write to repositories with Git versioning.
+
+Writing files with pyxet
+========================
+
+## Create an account, install git-xet
+
+To use pyxet on your own XetHub repository, or to write back to an existing repository, set up an account.
+Then install git-xet, a Git extension, to seamlessly manage your XetHub repositories.
+
+1. Sign up for [XetHub](https://xethub.com/user/sign_up)
+2. Install the [git-xet client](https://xethub.com/explore/install) and create a token
+3. Copy and execute the login command:
+   ```sh
+   $ git xet login -u <username> -e <email> -p **********
+   ```
+4. To make these credentials available to pyxet, set the username and token parameters as XET_USER_NAME and XET_USER_TOKEN environment variables.
+   ```sh
+   # Save these environment variables to your shell config (ex. .zshrc)
+   export XET_USER_NAME=<YOUR XETHUB USER NAME>
+   export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN>
+   ```
+   You can also manually log in to pyxet from Python with `pyxet.login('user_name', 'token')`.
+
+Now that you have an account, you can contribute to repositories that you have access to.
+
+## Create your own Titanic repository
+
+Let's walk through a more complete demo of how to use pyxet for some basic ML.
+
+Use the XetHub UI to [create a new repository](https://xethub.com/xet/create). Name the repository `titanic`,
+clone the empty repository to your local machine, then create a branch named `experiment-1`.
+
+```sh
+cd titanic
+git checkout -b experiment-1 && git push -u origin experiment-1
+```
+
+Start a new virtualenv and install some dependencies:
+
+```sh
+$ python -m venv .venv
+$ . .venv/bin/activate
+$ pip install pyxet scikit-learn ipython pandas
+```
+
+From your `experiment-1` branch, train and evaluate:
+```python
+import pyxet
+import json
+import pickle
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-# make sure to set your XET_USERNAME and XET_TOKEN environment variables, or run:
-# pyxet.login('username', 'token')
+df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # read data from XetHub
 
-df = pd.read_csv("xet://xdssio/titanic.git/main/titanic.csv")  # read data from XetHub
+# Standard ML workflow
 target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
 
 test_size, random_state = 0.2, 42
@@ -135,7 +204,7 @@ model = RandomForestClassifier().fit(train[features], train[target])
 predictions = model.predict(test[features])
 print(classification_report(test[target], predictions, target_names=target_names))
 
-# Any parameters we want to save
+# Save important parameters
 info = classification_report(test[target], predictions,
                              target_names=target_names,
                              output_dict=True)
@@ -143,16 +212,80 @@ info["test_size"] = test_size
 info["random_state"] = random_state
 info['features'] = features
 info['target'] = target
+
+# Record metrics for comparison
+results = pd.DataFrame([{'accuracy': info['accuracy'],
+                         'precision': info['macro avg']['precision'],
+                         'recall': info['macro avg']['recall']}])
 ```
 
-## Contributing & Getting Help
-This project is just getting started. We were so eager to get pyxet out that we have not gotten all the code over to this repository yet. We will bring the code here very soon. We fully intend to develop this package in public under the BSD license. 
+### Writing back to XetHub
 
-## pyxet Roadmap
-The open source community is very important to us at XetHub and we strive for transparency in sharing our plans for the future. We welcome feedback — join us on [Discord](https://discord.gg/KCzmjDaDdC) to help shape our roadmap!
+After training your model, you can persist both the model and metrics back to XetHub.
+Update the `<user_name>` fields below and run:
 
-| Version     | Estimated Release Date | Updates|
-| ------------|------------------------|--------|
-| pyxet 0.0.7 |	6/23/2023              | Support for repository and branch creation <br/>Xet CLI wrapper for pyxet functionality <br/> Experimental support for >10TB repositories |
-| pyxet 0.0.8 | 7/10/2023	           | pyxet and xet-core codebases are open source!  <br/>XetHub moves to an open-core software model |
-| pyxet 0.1   | 7/17/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories <br/> Support for using pyxet on your own storage without XetHub |
+```python
+fs = pyxet.XetFS()
+with fs.transaction("<user_name>/titanic/experiment-1/", "Write experiment 1 results back to repo"):
+    fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)
+    fs.mkdirs("<user_name>/titanic/experiment-1/models", exist_ok=True)
+    results.to_csv(fs.open("<user_name>/titanic/experiment-1/metrics/results.csv", "w"), index=False)  # write results
+    pickle.dump(model, fs.open("<user_name>/titanic/experiment-1/models/model.pickle", 'wb'))  # save model
+    json.dump(info, fs.open("<user_name>/titanic/experiment-1/metrics/info.json", 'w'))  # any other metadata
+```
+
+If you navigate to your titanic repository on XetHub, you'll see the new files show up
+with the corresponding commit in your `experiment-1` branch.
+
+### Loading models
+
+You can easily load a XetHub model from an inference server:
+
+```python
+import pyxet
+import pickle
+model = pickle.load(fs.open("<user_name>/titanic/experiment-1/models/model.pickle", 'rb'))
+```
+
+### Comparing across branches
+
+Versioned experiments on branches enables easy comparison.
+To try this out, create a new `experiment-2` branch:
+```sh
+git checkout -b experiment-2 && git push -u origin experiment-2
+```
+
+Run the same code as above, but change the `test_size` and `random_state` values. This time, persist
+your model and metrics back to XetHub in the `experiment-2` branch.
+
+```python
+fs = pyxet.XetFS()
+with fs.transaction("<user_name>/titanic/experiment-2/", "Write experiment 2 results back to repo"):
+    fs.mkdirs("<user_name>/titanic/experiment-2/metrics", exist_ok=True)
+    fs.mkdirs("<user_name>/titanic/experiment-2/models", exist_ok=True)
+    results.to_csv(fs.open("<user_name>/titanic/experiment-2/metrics/results.csv", "w"), index=False)  # write results
+    pickle.dump(model, fs.open("<user_name>/titanic/experiment-2/models/model.pickle", 'wb'))  # save model
+    json.dump(info, fs.open("<user_name>/titanic/experiment-2/metrics/info.json", 'w'))  # any other metadata
+```
+
+Compare your results, making sure to update `<user_name>` in the code below:
+
+```python
+import pyxet
+import pandas as pd
+
+dfs = []
+for branch in ['experiment-1', 'experiment-2']:
+    df = pd.read_csv(f"xet://<user_name>/titanic/{branch}/metrics/results.csv")
+    df['branch'] = branch
+    dfs.append(df)
+pd.concat(dfs)
+```
+
+Changing `test_size` and `random_state` to 0.5 and 30 respectively results in the following comparison printout:
+
+```sh
+   accuracy  precision    recall        branch
+0  0.731844   0.724591  0.715573  experiment-1
+0  0.688341   0.673824  0.653577  experiment-2
+```

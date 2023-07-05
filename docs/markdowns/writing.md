@@ -86,7 +86,8 @@ Update the `<user_name>` fields below and run:
 
 ```python
 fs = pyxet.XetFS()
-with fs.transaction("<user_name>/titanic/experiment-1/", "Write experiment 1 results back to repo"):
+with fs.transaction as tr:
+    tr.set_commit_message("Write experiment 1 results back to repo")
     fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)
     fs.mkdirs("<user_name>/titanic/experiment-1/models", exist_ok=True)
     results.to_csv(fs.open("<user_name>/titanic/experiment-1/metrics/results.csv", "w"), index=False)  # write results
@@ -121,7 +122,8 @@ your model and metrics back to XetHub in the `experiment-2` branch.
 
 ```python
 fs = pyxet.XetFS()
-with fs.transaction("<user_name>/titanic/experiment-2/", "Write experiment 2 results back to repo"):
+with fs.transaction as tr:
+    tr.set_commit_message("Write experiment 2 results back to repo")
     fs.mkdirs("<user_name>/titanic/experiment-2/metrics", exist_ok=True)
     fs.mkdirs("<user_name>/titanic/experiment-2/models", exist_ok=True)
     results.to_csv(fs.open("<user_name>/titanic/experiment-2/metrics/results.csv", "w"), index=False)  # write results

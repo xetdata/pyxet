@@ -67,7 +67,8 @@ import pyxet
 fs = pyxet.XetFS()
 
 # a transaction is needed for write
-with fs.transaction("xet://${XET_USER_NAME}/kickstart_data/main/"):
+with fs.transaction as tr:
+    tr.set_commit_message("Adding data")
     fs.cp("data/titanic.csv", "xet://${XET_USER_NAME}/kickstart_data/main/titanic.csv")
 ```
 
@@ -284,7 +285,8 @@ We simulate it by just adding data there:
 import pyxet
 
 fs = pyxet.XetFS()
-with fs.transaction("xet://${XET_USER_NAME}/kickstart_data/main/"):
+with fs.transaction as tr:
+    tr.set_commit_message("Adding more data")
     fs.cp("data/titanic.csv", "xet://${XET_USER_NAME}/kickstart_data/main/titanic2.csv")
 ```
 

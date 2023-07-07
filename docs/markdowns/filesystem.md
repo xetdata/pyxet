@@ -45,7 +45,8 @@ Example usage of `pyxet.XetFS`:
   contents = f.read()
 
   # Write to a repository with an optional commit message
-  with fs.transaction("<user_name>/<repo_name>/main", "Writing things"):
+with fs.transaction as tr:
+    tr.set_commit_message("Writing things")
     fs.open("<user_name>/<repo_name>/main/foo", 'w').write("Hello world!")
 ```
 
@@ -69,15 +70,18 @@ Example usage of `pyxet.XetFS`:
   # returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
 
   # Write functions, with optional commit message
-  with fs.transaction("<user_name>/<repo_name>/main", "Write hi"):
+  with fs.transaction as tr:
+    tr.set_commit_message("Write hi")
     fs.open("<user_name>/<repo_name>/main/text.txt", 'w').write("Hello world!")
   # writes "Hello World" to text.txt, Git commits the change with comment "Write hi" in the main branch of the repository
 
-  with fs.transaction("<user_name>/<repo_name>/main", "Copy file"):
+  with fs.transaction as tr:
+    tr.set_commit_message("Copy file")
     fs.cp("<user_name>/<repo_name>/main/text.txt", "<user_name>/<repo_name>/main/text2.txt")
   # copies text.txt into text2.txt in the main branch of the repository, commits the change with "Copy file"
 
-  with fs.transaction("<user_name>/<repo_name>/main", "Remove file"):
+  with fs.transaction as tr:
+    tr.set_commit_message("Remove file")
     fs.rm("<user_name>/<repo_name>/main/titanic2.csv")
   fs.info("xdssio/titanic/main/titanic2.csv") 
    # removes a file from the main branch of the repository with comment "Remove file"

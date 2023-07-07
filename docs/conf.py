@@ -9,7 +9,7 @@
 project = 'pyxet'
 copyright = '2023, XetHub'
 author = '<a href="https://xethub.com/xdssio" target="_blank">Jonathan Alexander</a>, <a href="https://xethub.com/team" target="_blank">XetHub team</a>, and the <a href="https://github.com/xetdata/pyxet" target="_blank">pyxet</a> community'
-release = '0.0.6'
+release = '0.0.8'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

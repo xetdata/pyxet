@@ -32,6 +32,7 @@ file system operations and integrations with common tools. It works with anythin
    :caption: API Reference
 
    markdowns/filesystem
+   markdowns/cli
 
 .. toctree::
    :maxdepth: 2

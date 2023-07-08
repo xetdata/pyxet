@@ -25,8 +25,8 @@ This project is just getting started and we have not moved all our code over to 
 
 | Version     | Estimated Release Date | Updates|
 | ------------|------------------------|--------|
-| pyxet 0.0.8 | 7/12/2023	             | pyxet and xet-core codebases are open source! <br/> Experimental support for >10TB repositories <br/>XetHub moves to an open-core software model <br/> Windows support |
-| pyxet 0.1   | 7/27/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories <br/> Support for using pyxet on your own storage without XetHub |
+| pyxet 0.0.8 | 7/12/2023	             | pyxet and xet-core codebases are open source! <br/> Experimental support for >10TB repositories <br/>Windows support <br/>XetHub moves to an open-core software model |
+| pyxet 0.1   | 7/27/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories |
 
 Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates, star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 

@@ -203,7 +203,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             try:
                 v.complete(commit)
             except Exception as e:
-                sys.stderr.write("Failed to commit {k}: {e}\n")
+                sys.stderr.write(f"Failed to commit {k}: {e}\n")
                 sys.stderr.flush()
                 if ret_except is None:
                     ret_except = e
@@ -272,5 +272,6 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             deletes.extend(v._transaction_handler.deletes)
             new_files.extend(v._transaction_handler.new_files)
             copies.extend(v._transaction_handler.copies)
+            moves.extend(v._transaction_handler.moves)
 
-        return {'deletes': deletes, 'new_files': new_files, 'copies': copies}
+        return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves':moves}

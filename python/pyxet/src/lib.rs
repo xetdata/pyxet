@@ -301,6 +301,31 @@ impl PyRepo {
             ..Default::default()
         })
     }
+
+    /// Fetch shards that could be useful for dedup, according to the given endpoints.
+    ///
+    /// Endpoints are given as a list of (branch, path) tuples.  Shard hint fetches may be
+    /// across branches.
+    ///
+    /// If min_num_bytes_in_dedup is specified, then only shards that collectively define
+    /// that many bytes are actually downloaded; any hinted shards that don't specify at least
+    /// the minimum number of bytes in chunks are ignored.
+    ///
+    pub fn fetch_hinted_shards_for_dedup(
+        &self,
+        file_paths: Vec<(&str, &str)>,
+        min_dedup_bytes_for_shard_downloading: Option<usize>,
+    ) -> PyResult<()> {
+        let res = exec_async_anyhow!(
+            self.repo
+                .fetch_hinted_shards_for_dedup(
+                    &file_paths,
+                    min_dedup_bytes_for_shard_downloading.unwrap_or(0)
+                )
+                .await
+        );
+        Ok(res)
+    }
 }
 
 #[pyclass(subclass)]

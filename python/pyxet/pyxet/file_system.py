@@ -115,6 +115,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         return {}
 
+    def isdir(self, path):
+        """Is this entry directory-like?"""
+        return self.isdir_or_branch(path)
+
     def isdir_or_branch(self, path):
         """Is this entry directory-like?"""
         try:

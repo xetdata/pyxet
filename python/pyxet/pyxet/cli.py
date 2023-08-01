@@ -14,6 +14,7 @@ from .url_parsing import parse_url
 from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
+from collections import defaultdict 
 
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
@@ -121,7 +122,12 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
-def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
+def _build_source_destination_list(source, destination, recursive, _src_fs, _dest_fs):
+    """
+    Builds a list of all the source and destination files, returning a list of 
+    [(src_fs, source_path, dest_fs, dest_path)] tuples and a list of new 
+    destination directories to create.
+    """
     src_fs, src_path = _get_fs_and_path(source)
     dest_fs, dest_path = _get_fs_and_path(destination)
     if _src_fs is not None:
@@ -152,22 +158,24 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
             raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
         # The source path contains a wildcard
         with ThreadPoolExecutor() as executor:
+            dest_directories = []
             futures = []
             for path, info in src_fs.glob(src_path, detail=True).items():
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
+
                 relpath = _ltrim_match(path, src_root_dir).lstrip('/')
                 if dest_path == '/':
                     dest_for_this_path = f"/{relpath}"
                 else:
                     dest_for_this_path = f"{dest_path}/{relpath}"
                 dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
-                dest_fs.makedirs(dest_dir, exist_ok=True)
+                dest_directories.append((dest_fs, dest_dir))
 
                 futures.append(
                     executor.submit(
-                        _copy,
+                        _build_source_destination_list,
                         f"{src_fs.protocol}://{path}",
                         f"{dest_fs.protocol}://{dest_for_this_path}",
                         recursive=True,
@@ -175,46 +183,71 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
                         _dest_fs=dest_fs,
                     )
                 )
+
+            cp_commands = []
             for future in futures:
-                future.result()
-        return
+                _cp_commands, _dest_directories = future.result()
+                cp_commands += _cp_commands
+                dest_directories += _dest_directories
+
+            return cp_commands, dest_directories 
 
     # Handling directories
     if src_isdir:
-        # Recursively copy
-        # xet cp_file can cp directories
-        if srcproto == 'xet' and destproto == 'xet':
-            print(f"Copying {src_path} to {dest_path}...")
-            dest_fs.cp_file(src_path, dest_path)
-            return
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for path,info in src_fs.find(src_path, detail=True).items():
-                if info['type'] == 'directory' and not recursive:
-                    continue
-                # Note that path is a full path
-                # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
-                dest_fs.makedirs(dest_dir, exist_ok=True)
-                # Submitting copy jobs to thread pool
-                futures.append(
-                        executor.submit(
-                            _single_file_copy,
-                            src_fs,
-                            f"{path}",
-                            dest_fs,
-                            dest_for_this_path))
-            # Waiting for all copy jobs to complete
-            for future in futures:
-                future.result()
-        return
+        cp_commands = []
+        dest_directories = []
+        for path,info in src_fs.find(src_path, detail=True).items():
+            if info['type'] == 'directory': # glob will hit within this directory
+                continue
+            # Note that path is a full path
+            # we need to relativize to make the destination path
+            relpath = _ltrim_match(path, src_path).lstrip('/')
+            if dest_path == '/':
+                dest_for_this_path = f"/{relpath}"
+            else:
+                dest_for_this_path = f"{dest_path}/{relpath}"
+            dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+            dest_directories.append((dest_fs, dest_dir))
+            cp_commands.append( (src_fs, f"{path}", dest_fs, dest_for_this_path) )
 
-    _single_file_copy(src_fs, src_path, dest_fs, dest_path)
+        return cp_commands, dest_directories
+    
+    return [(src_fs, src_path, dest_fs, dest_path)], []
+
+
+
+def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
+
+    (cp_list, dest_directory_list) = _build_source_destination_list(source, destination, recursive, _src_fs, _dest_fs)
+
+    # Prefetch all the hints appropriately.  
+    prefetch_urls = []
+    xet_fs = None
+    for (src_fs, _, dest_fs, dest_path) in cp_list:
+        if dest_fs.protocol == "xet" and src_fs.protocol != "xet":
+            dest_url = parse_url(dest_path, dest_fs.domain, partial_remote=True)
+            prefetch_urls.append(dest_url)
+            if xet_fs is None:
+                xet_fs = dest_fs
+
+    if prefetch_urls and dest_fs is not None:
+        xet_fs._add_deduplication_hints_by_url(prefetch_urls)
+
+    # create all the directories
+    for dest_fs, dest_dir in dest_directory_list: 
+        dest_fs.makedirs(dest_dir, exist_ok=True)
+
+    # Now, go through and do all the copying. 
+    futures = []
+    with ThreadPoolExecutor() as executor:
+        for (src_fs, src_path, dest_fs, dest_path) in cp_list:
+            if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
+                futures.append(executor.submit(dest_fs.cp_file, dest_fs, src_path, dest_path))
+            else:
+                futures.append(executor.submit(_single_file_copy, src_fs, src_path, dest_fs, dest_path))
+
+    for future in futures:
+        future.result()
 
 
 def _root_copy(source, destination, message, recursive=False):

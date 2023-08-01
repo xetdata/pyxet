@@ -141,7 +141,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         prefix = '/'.join(components[:2]) + '/' + url_path.branch
         attr = _manager.stat(url_path.remote, url_path.branch, "")
         if attr is None:
-            raise FileNotFoundError(f"Branch or repo not found {url}")
+            raise FileNotFoundError(f"Branch or repo not found {url}, remote = {url_path.remote}, branch = {url_path.branch}")
         return {"name": prefix + '/' + url_path.path,
                 "size": attr.size,
                 "type": attr.ftype}
@@ -577,6 +577,35 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
     def move(self, path1, path2, *args, **kwargs):
         return self.mv(path1, path2, *args, **kwargs)
+
+    def add_deduplication_hints(self, path_urls, min_dedup_byte_threshhold = None):
+        """
+        Fetches and downloads all of the metadata needed for binary deduplication against 
+        all the paths given by `paths`.  Once fetched, new data will be deduplicated against 
+        any binary content given by `paths`.  
+        """
+        
+        url_paths = [parse_url(url, self.domain, partial_remote = True) for url in path_urls]
+
+        self._add_deduplication_hints_by_url(url_paths, min_dedup_byte_threshhold)
+    
+
+    def _add_deduplication_hints_by_url(self, url_paths, min_dedup_byte_threshhold = None):
+
+        if min_dedup_byte_threshhold is None:
+            # TODO: set this to a more resonable value.  
+            min_dedup_byte_threshhold = 0 
+
+        paths_by_remotes = {}
+        for url in url_paths:
+             paths_by_remotes.setdefault(url.remote, []).append(url)
+
+        for (remote, urls) in paths_by_remotes.items():
+            repo_handle = _manager.get_repo(remote)
+
+            repo_handle.fetch_hinted_shards_for_dedup([(url.branch, url.path) for url in urls], min_dedup_byte_threshhold)
+
+
 
     @property
     def transaction(self):

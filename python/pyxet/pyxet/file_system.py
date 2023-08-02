@@ -578,7 +578,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
     def move(self, path1, path2, *args, **kwargs):
         return self.mv(path1, path2, *args, **kwargs)
 
-    def add_deduplication_hints(self, path_urls, min_dedup_byte_threshhold = None):
+    def add_deduplication_hints(self, path_urls):
         """
         Fetches and downloads all of the metadata needed for binary deduplication against 
         all the paths given by `paths`.  Once fetched, new data will be deduplicated against 
@@ -587,7 +587,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         
         url_paths = [parse_url(url, self.domain, partial_remote = True) for url in path_urls]
 
-        self._add_deduplication_hints_by_url(url_paths, min_dedup_byte_threshhold)
+        self._add_deduplication_hints_by_url(url_paths)
     
 
     def _add_deduplication_hints_by_url(self, url_paths, min_dedup_byte_threshhold = None):

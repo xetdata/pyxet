@@ -12,6 +12,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use xetblob::*;
 
 #[pyclass]
@@ -311,14 +312,9 @@ impl PyRepo {
         commit_message: &str,
         py: Python<'_>,
     ) -> PyResult<PyWriteTransaction> {
-        rust_async!(py, {
-         let transaction: XetRepoWriteTransaction =
-             self.repo.begin_write_transaction(branch, None, None).await?;
-        anyhow::Ok(PyWriteTransaction {
-             transaction: Some(transaction),
-             message: commit_message.to_owned(),
-             ..Default::default()
-         })})
+        let transaction = rust_async!(py, 
+             self.repo.begin_write_transaction(branch, None, None).await)?;
+        PyWriteTransaction::new(transaction,branch, commit_message)
     }
 
     /// Fetch shards that could be useful for dedup, according to the given endpoints.
@@ -417,7 +413,7 @@ impl PyRFile {
 
 #[pymethods]
 impl PyRFile {
-    pub fn is_closed(&mut self) -> PyResult<bool> {
+    pub fn is_closed(&self) -> PyResult<bool> {
         Ok(self.closed)
     }
     pub fn close(&mut self) -> PyResult<()> {
@@ -555,18 +551,13 @@ impl PyRFile {
     }
 }
 
-#[pyclass(subclass)]
 #[derive(Default)]
-struct PyWriteTransaction {
+struct PyWriteTransactionInternal {
     transaction: Option<XetRepoWriteTransaction>,
     branch: String,
-    #[pyo3(get)]
     new_files: Vec<String>,
-    #[pyo3(get)]
     copies: Vec<(String, String)>,
-    #[pyo3(get)]
     deletes: Vec<String>,
-    #[pyo3(get)]
     moves: Vec<(String, String)>,
     do_not_commit: bool,
     error_on_commit: bool,
@@ -575,129 +566,232 @@ struct PyWriteTransaction {
     message: String,
 }
 
-#[pymethods]
-impl PyWriteTransaction {
+
+impl PyWriteTransactionInternal {
     /// This is for testing
-    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> PyResult<()> {
+    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> anyhow::Result<()> {
         self.do_not_commit = do_not_commit;
         Ok(())
     }
     /// This is for testing
-    pub fn set_error_on_commit(&mut self, error_on_commit: bool) -> PyResult<()> {
+    pub fn set_error_on_commit(&mut self, error_on_commit: bool) -> anyhow::Result<()> {
         self.error_on_commit = error_on_commit;
         Ok(())
     }
-    pub fn open_for_write(&mut self, path: &str, py: Python<'_>) -> PyResult<PyWFile> {
+
+    pub async fn open_for_write(&mut self, path: &str) -> anyhow::Result<PyWFile> {
         if let Some(ref mut tr) = self.transaction {
             self.new_files
                 .push(format!("{}/{path}", self.branch).to_string());
-            let writer = rust_async!(py, tr.open_for_write(path).await)?;
+            let writer = tr.open_for_write(path).await?;
             self.pending_write_files.fetch_add(1, Ordering::SeqCst);
 
             Ok(PyWFile { writer })
         } else {
-            Err(PyRuntimeError::new_err("Transaction already committed"))
+            Err(anyhow!("Transaction already committed"))
         }
     }
-    pub fn set_ready(&mut self, py: Python<'_>) -> PyResult<()> {
+    pub async fn set_ready(&mut self) -> anyhow::Result<()> {
         let val = self.pending_write_files.load(Ordering::SeqCst);
 
         // We need to check here because if all write files finished before this
         // then none of them sees the ready signal.
         if val == 0 {
             // All write files finished
-            self.commit(py)
+            self.commit().await
         } else {
             // Some files are pending, signal them to commit when they finish
             self.ready_to_commit = true;
             Ok(())
         }
     }
-    pub fn finish_write_one(&mut self, py: Python<'_>) -> PyResult<()> {
+    pub async fn finish_write_one(&mut self) -> anyhow::Result<()> {
         let val = self.pending_write_files.fetch_sub(1, Ordering::SeqCst);
         // The last write just finished
         if val == 1 && self.ready_to_commit {
-            self.commit(py)
+            self.commit().await
         } else {
             Ok(())
         }
     }
-    pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
+    pub async fn transaction_size(&self) -> anyhow::Result<usize> {
         if let Some(ref tr) = self.transaction {
-            rust_async!(py, anyhow::Ok(tr.transaction_size().await))
+            Ok(tr.transaction_size().await)
         } else {
             Ok(0)
         }
     }
-    pub fn commit(&mut self, py: Python<'_>) -> PyResult<()> {
+    pub async fn commit(&mut self) -> anyhow::Result<()> {
         if self.error_on_commit {
-            return Err(PyRuntimeError::new_err("Error on commit flagged"));
+            return Err(anyhow!("Error on commit flagged"));
         }
         if self.do_not_commit {
-            return self.cancel(py);
+            return self.cancel().await;
         }
         let mut transaction = None;
         std::mem::swap(&mut self.transaction, &mut transaction);
+
         if transaction.is_none() {
-            return Err(PyRuntimeError::new_err("Transaction already committed"));
+            return Err(anyhow!("Transaction already committed"));
         }
         let transaction = transaction.unwrap();
-        rust_async!(py, transaction.commit(&self.message).await)
-    }
-    pub fn cancel(&mut self, py: Python<'_>) -> PyResult<()> {
-        let mut transaction = None;
-        std::mem::swap(&mut self.transaction, &mut transaction);
-        if transaction.is_none() {
-            return Err(PyRuntimeError::new_err("Transaction already committed"));
-        }
-        let transaction = transaction.unwrap();
-        let _ = rust_async!(py, transaction.cancel().await);
+        transaction.commit(&self.message).await?;
         Ok(())
     }
-    pub fn delete(&mut self, path: &str, py : Python<'_>) -> PyResult<()> {
+    pub async fn cancel(&mut self) -> anyhow::Result<()> {
+        let mut transaction = None;
+        std::mem::swap(&mut self.transaction, &mut transaction);
+        if transaction.is_none() {
+            return Err(anyhow!("Transaction already committed"));
+        }
+        let transaction = transaction.unwrap();
+        transaction.cancel().await?;
+        Ok(())
+    }
+    pub async fn delete(&mut self, path: &str) -> anyhow::Result<()> {
         if let Some(ref mut tr) = self.transaction {
-            rust_async!(py, 
-                {
                     self.deletes
                 .push(format!("{}/{path}", self.branch).to_string());
-            tr.delete(path).await})
+            tr.delete(path).await?;
+            Ok(())
         } else {
-            Err(PyRuntimeError::new_err("Transaction already committed"))
+            Err(anyhow!("Transaction already committed"))
         }
     }
-    pub fn copy(
+    pub async fn copy(
         &mut self,
         src_branch: &str,
         src_path: &str,
         target_path: &str,
-        py: Python<'_>,
-    ) -> PyResult<()> {
+    ) -> anyhow::Result<()> {
         if let Some(ref mut tr) = self.transaction {
             self.copies.push((
                 format!("{src_branch}/{src_path}").to_string(),
                 format!("{}/{target_path}", self.branch).to_string(),
             ));
-            rust_async!(py, tr.copy(src_branch, src_path, target_path).await)
+            tr.copy(src_branch, src_path, target_path).await?;
+            Ok(())
         } else {
-            Err(PyRuntimeError::new_err("Transaction already committed"))
+            Err(anyhow!("Transaction already committed"))
         }
     }
 
-    pub fn mv(&mut self, src_path: &str, target_path: &str, py: Python<'_>) -> PyResult<()> {
+    pub async fn mv(&mut self, src_path: &str, target_path: &str) -> anyhow::Result<()> {
         // can't call this move cos move is taken
         if let Some(ref mut tr) = self.transaction {
             self.moves.push((
                 format!("{}/{src_path}", self.branch).to_string(),
                 format!("{}/{target_path}", self.branch).to_string(),
             ));
-            rust_async!(py, tr.mv(src_path, target_path).await)
+            tr.mv(src_path, target_path).await?;
+            Ok(())
         } else {
-            Err(PyRuntimeError::new_err("Transaction already committed"))
+            Err(anyhow!("Transaction already committed"))
         }
     }
-    pub fn closed(&self) -> PyResult<bool> {
+    pub fn closed(&self) -> anyhow::Result<bool> {
         Ok(self.transaction.is_none())
     }
+}
+
+#[pyclass(subclass)]
+struct PyWriteTransaction {
+    pwt : Mutex<PyWriteTransactionInternal>
+}
+
+
+impl PyWriteTransaction {
+    fn new(transaction : XetRepoWriteTransaction, branch : &str, commit_message : &str) -> PyResult<Self> {
+        Ok(Self { 
+            pwt : Mutex::new(PyWriteTransactionInternal { 
+                transaction : Some(transaction), 
+                branch : branch.to_string(),
+                message : commit_message.to_string(),
+                ..Default::default()
+            })
+        })
+    }
+}
+
+#[pymethods]
+impl PyWriteTransaction {
+
+
+    /// This is for testing
+    pub fn set_do_not_commit(&self, do_not_commit: bool, py : Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.set_do_not_commit(do_not_commit))
+    }
+    /// This is for testing
+    pub fn set_error_on_commit(&mut self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.set_error_on_commit(error_on_commit))
+    }
+
+    pub fn open_for_write(&self, path: &str, py: Python<'_>) -> PyResult<PyWFile> {
+        rust_async!(py, self.pwt.lock().await.open_for_write(path).await)
+    }
+
+    pub fn set_ready(&mut self, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.set_ready().await)
+    }
+
+    pub fn finish_write_one(&mut self, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.finish_write_one().await)
+    }
+    
+    pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
+        rust_async!(py, self.pwt.lock().await.transaction_size().await)
+    }
+
+    pub fn commit(&self, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.commit().await)
+    }
+
+    pub fn cancel(&self, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.cancel().await)
+    }
+    pub fn delete(&self, path: &str, py : Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.delete(path).await)
+    }
+    
+    pub fn copy(
+        &self,
+        src_branch: &str,
+        src_path: &str,
+        target_path: &str,
+        py: Python<'_>,
+    ) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.copy(src_branch, src_path, target_path).await)
+    }
+
+    pub fn mv(&self, src_path: &str, target_path: &str, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.pwt.lock().await.mv(src_path, target_path).await)
+    }
+    pub fn closed(&self, py : Python<'_>) -> PyResult<bool> {
+        rust_async!(py, self.pwt.lock().await.closed())
+    }
+
+    #[getter]
+    pub fn new_files(&self, py : Python<'_>) -> PyResult<Vec<String>> {
+        rust_async!(py, anyhow::Ok(self.pwt.lock().await.new_files.clone()))
+    }
+
+    #[getter]
+    pub fn copies(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
+rust_async!(py, anyhow::Ok(self.pwt.lock().await.copies.clone()))
+    }
+
+    #[getter]
+    pub fn deletes(&self, py : Python<'_>) -> PyResult<Vec<String>> {
+rust_async!(py, anyhow::Ok(self.pwt.lock().await.deletes.clone()))
+
+    }
+
+    #[getter]
+    pub fn moves(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
+rust_async!(py, anyhow::Ok(self.pwt.lock().await.moves.clone()))
+    }
+
+
 }
 
 #[pyclass(subclass)]

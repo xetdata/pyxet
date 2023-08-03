@@ -260,19 +260,6 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
 def _root_copy(source, destination, message, recursive=False):
     dest_fs, dest_path = _get_fs_and_path(destination)
     destproto_is_xet = dest_fs.protocol == 'xet'
-    dest_isdir = _isdir(dest_fs, dest_path)
-
-    # Our target is an existing directory and src is not a wildcard copy
-    # i.e. we are getting cp src/some/path to dest/some/where
-    # but dest/some/where exists as a directory
-    # So we will need to make the dest dest/some/where/path
-    if dest_isdir and '*' not in source:
-        # split up the final component from source path and add it
-        # to the destination
-        final_source_component = source.split('/')[-1]
-        if not destination.endswith('/'):
-            destination += '/'
-        destination += final_source_component
 
     if destproto_is_xet:
         dest_fs.start_transaction(message)

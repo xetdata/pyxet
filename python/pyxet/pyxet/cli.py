@@ -207,8 +207,12 @@ def _build_source_destination_list_internal(src_fs, src_path, dest_fs, dest_path
             src_fs, os.path.join(src_path, '*'), dest_fs, dest_dir, recursive)
 
         return cp_commands, [(dest_fs, dest_dir)] + dest_directories
-
-    return [(src_fs, src_path, dest_fs, dest_path)], []
+    else:
+        if _isdir(dest_fs, dest_path):
+            _, src_name = os.path.split(src_path) 
+            return [(src_fs, src_path, dest_fs, os.path.join(dest_path, src_name))], []
+        else:
+            return [(src_fs, src_path, dest_fs, dest_path)], []
 
 
 

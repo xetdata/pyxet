@@ -4,10 +4,6 @@
 
 ---
 
-<p align="center">
-   <img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
-</p>
-
 # pyxet - The SDK for XetHub
 
 [![Version](https://img.shields.io/pypi/v/pyxet.svg?style=flat)](https://pypi.python.org/pypi/pyxet/)
@@ -21,12 +17,10 @@
 
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
 
-This project is just getting started and we have not moved all our code over to this repository yet. We intend to develop this package in public under the BSD license.
-
-| Version     | Estimated Release Date | Updates|
+| Version     |  Updates|
 | ------------|------------------------|--------|
-| pyxet 0.0.8 | 7/12/2023	             | pyxet and xet-core codebases are open source! <br/> Experimental support for >10TB repositories <br/>Windows support <br/>XetHub moves to an open-core software model |
-| pyxet 0.1   | 7/27/2023              | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories |
+| pyxet 0.0.8 | pyxet and xet-core codebases are open source! <br/> Experimental support for >10TB repositories <br/>Windows support <br/>XetHub moves to an open-core software model |
+| pyxet 0.1   | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories |
 
 Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved. To stay informed about updates, star this repo and sign up for [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 

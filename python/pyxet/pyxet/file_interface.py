@@ -106,6 +106,8 @@ class XetFile:
             raise ValueError("I/O operation on closed file.")
         if self._do_not_write:
             return
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         self.handle.write(data)
 
     def __del__(self):

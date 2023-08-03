@@ -71,7 +71,10 @@ class CommitTransaction(fsspec.transaction.Transaction):
     def open_for_write(self, repo_info):
         assert(repo_info.remote == self.repo_info.remote)
         assert(repo_info.branch == self.repo_info.branch)
-        return XetFile(self._transaction_handler.open_for_write(repo_info.path), self._transaction_handler)
+        with self.lock:
+            tr = self._transaction_handler
+            write_transaction = tr.open_for_write(repo_info.path) 
+            return XetFile(write_transaction, tr)
 
     def check_transaction_limit(self):
         if self.fs is None:
@@ -268,6 +271,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         deletes = []
         new_files = []
         copies = []
+        moves = []
         for v in self._transaction_pool.values():
             deletes.extend(v._transaction_handler.deletes)
             new_files.extend(v._transaction_handler.new_files)

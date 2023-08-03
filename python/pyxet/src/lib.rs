@@ -722,7 +722,7 @@ impl PyWriteTransaction {
         rust_async!(py, self.pwt.lock().await.set_do_not_commit(do_not_commit))
     }
     /// This is for testing
-    pub fn set_error_on_commit(&mut self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
+    pub fn set_error_on_commit(&self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.set_error_on_commit(error_on_commit))
     }
 
@@ -730,11 +730,11 @@ impl PyWriteTransaction {
         rust_async!(py, self.pwt.lock().await.open_for_write(path).await)
     }
 
-    pub fn set_ready(&mut self, py: Python<'_>) -> PyResult<()> {
+    pub fn set_ready(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.set_ready().await)
     }
 
-    pub fn finish_write_one(&mut self, py: Python<'_>) -> PyResult<()> {
+    pub fn finish_write_one(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.finish_write_one().await)
     }
     

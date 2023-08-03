@@ -218,6 +218,8 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
 
     # Prefetch all the hints appropriately.  
     prefetch_urls = []
+    background_urls = []
+
     xet_fs = None
     for (src_fs, _, dest_fs, dest_path) in cp_list:
         if dest_fs.protocol == "xet" and src_fs.protocol != "xet":

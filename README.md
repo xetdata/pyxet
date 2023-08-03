@@ -18,7 +18,7 @@
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
 
 | Version     |  Updates|
-| ------------|------------------------|--------|
+| ------------|------------------------|
 | pyxet 0.0.8 | pyxet and xet-core codebases are open source! <br/> Experimental support for >10TB repositories <br/>Windows support <br/>XetHub moves to an open-core software model |
 | pyxet 0.1   | Code of Conduct published, contributions welcome!  <br/>Production support for >10TB repositories |
 

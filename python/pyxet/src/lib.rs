@@ -12,7 +12,6 @@ use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use xetblob::*;
 
 #[pyclass]
@@ -45,32 +44,28 @@ fn anyhow_to_runtime_error(e: anyhow::Error) -> PyErr {
     PyRuntimeError::new_err(format!("{e:?}"))
 }
 
-macro_rules! rust_async {
-    ($py:ident, $xp:expr) => {{
-        let mut res = Option::<Result<_, _>>::None;
-        let mut err_res = Option::<anyhow::Error>::None;
-        $py.allow_threads(|| {
-            if let Err(e) = pyo3_asyncio::tokio::get_runtime().block_on(async {
-                let r: Result<_, _> = { $xp };
-                res = Some(r.map_err(|e| PyRuntimeError::new_err(format!("{e:?}"))));
-
-                anyhow::Ok(())
-            }) {
-                err_res = Some(e);
-            }
+// Runs an async expression synchronously which returns an anyhow::Result<T>
+macro_rules! exec_async_anyhow {
+    ($xp:expr) => {{
+        let mut res = None;
+        pyo3_asyncio::tokio::get_runtime().block_on(async {
+            res = Some($xp);
         });
+        let res = res
+            .ok_or(PyRuntimeError::new_err("Failed to block on tokio runtime"))?
+            .map_err(anyhow_to_runtime_error)?;
+        res
+    }};
+}
 
-        let ret: PyResult<_> = {
-            if let Some(e) = err_res {
-                Err(anyhow_to_runtime_error(e))
-            } else {
-                res.unwrap_or(Err(PyRuntimeError::new_err(
-                    "Failed to block on tokio runtime",
-                )))
-            }
-        };
-
-        ret
+// Runs an async expression synchronously which returns a T
+macro_rules! exec_async {
+    ($xp:expr) => {{
+        let mut res = None;
+        pyo3_asyncio::tokio::get_runtime().block_on(async {
+            res = Some($xp);
+        });
+        res.ok_or(PyRuntimeError::new_err("Failed to block on tokio runtime"))?
     }};
 }
 
@@ -87,21 +82,21 @@ pub fn configure_login(
     token: String,
     no_auth: bool,
     no_overwrite: bool,
-    py: Python<'_>,
 ) -> PyResult<()> {
-    rust_async!(py, {
-        let command = Command::Login(LoginArgs {
-            host,
-            user,
-            email,
-            password: token,
-            force: no_auth,
-            no_overwrite,
-        });
+    let command = Command::Login(LoginArgs {
+        host,
+        user,
+        email,
+        password: token,
+        force: no_auth,
+        no_overwrite,
+    });
+    let config = XetConfig::new(None, None, ConfigGitPathOption::NoPath)
+        .map_err(|x| anyhow!("Unable to obtain default config {x}"))
+        .map_err(anyhow_to_runtime_error)?;
 
-        let config = XetConfig::new(None, None, ConfigGitPathOption::NoPath)?;
-        command.run(config).await
-    })
+    exec_async_anyhow!(command.run(config).await.map_err(|x| anyhow!("{x:?}")));
+    Ok(())
 }
 
 #[pyfunction]
@@ -111,7 +106,6 @@ pub fn perform_mount(
     path: String,
     reference: String,
     prefetch: Option<usize>,
-    py: Python<'_>,
 ) -> PyResult<()> {
     let prefetch = prefetch.unwrap_or(2);
     #[cfg(target_os = "windows")]
@@ -150,7 +144,8 @@ pub fn perform_mount(
         .map_err(|x| anyhow!("Unable to obtain default config {x}"))
         .map_err(anyhow_to_runtime_error)?;
 
-    rust_async!(py, command.run(config).await)
+    exec_async_anyhow!(command.run(config).await.map_err(|x| anyhow!("{x:?}")));
+    Ok(())
 }
 
 #[pyfunction]
@@ -162,7 +157,6 @@ pub fn perform_mount_curdir(
     prefetch: usize,
     ip: String,
     writable: bool,
-    py: Python<'_>,
 ) -> PyResult<()> {
     let signal = if signal < 0 { None } else { Some(signal) };
     let command = Command::MountCurdir(MountCurdirArgs {
@@ -180,7 +174,8 @@ pub fn perform_mount_curdir(
         .map_err(|x| anyhow!("Unable to obtain default config {x}"))
         .map_err(anyhow_to_runtime_error)?;
 
-    rust_async!(py, command.run(config).await)
+    exec_async_anyhow!(command.run(config).await.map_err(|x| anyhow!("{x:?}")));
+    Ok(())
 }
 
 #[pymethods]
@@ -210,7 +205,6 @@ impl PyRepoManager {
         remote: &str,
         branch: &str,
         path: &str,
-        py: Python<'_>,
     ) -> PyResult<(Vec<String>, Vec<FileAttributes>)> {
         // strip trailing slashes
         #![allow(clippy::manual_strip)]
@@ -224,7 +218,7 @@ impl PyRepoManager {
         } else {
             path
         };
-        let listing = rust_async!(py, self.manager.listdir(remote, branch, path).await)?;
+        let listing = exec_async_anyhow!(self.manager.listdir(remote, branch, path).await);
         let mut ret_names = vec![];
         let mut ret_attrs = vec![];
         for i in listing {
@@ -246,14 +240,13 @@ impl PyRepoManager {
         op: &str,
         http_command: &str,
         body: &str,
-        py: Python<'_>,
     ) -> PyResult<Vec<u8>> {
-        rust_async!(
-            py,
+        let res = exec_async_anyhow!(
             self.manager
                 .perform_api_query(remote, op, http_command, body)
                 .await
-        )
+        );
+        Ok(res)
     }
 
     /// Gets status of a path
@@ -263,35 +256,26 @@ impl PyRepoManager {
         user_token: &str,
         email: Option<&str>,
         host: Option<&str>,
-        py: Python<'_>,
     ) -> PyResult<()> {
-        rust_async!(
-            py,
+        exec_async_anyhow!(
             self.manager
                 .override_login_config(user_name, user_token, email, host)
                 .await
-        )
+        );
+        Ok(())
     }
 
     /// Gets status of a path
-    pub fn stat(
-        &self,
-        remote: &str,
-        branch: &str,
-        path: &str,
-        py: Python<'_>,
-    ) -> PyResult<Option<FileAttributes>> {
-        let ent: Option<DirEntry> = rust_async!(py, self.manager.stat(remote, branch, path).await)?;
-
+    pub fn stat(&self, remote: &str, branch: &str, path: &str) -> PyResult<Option<FileAttributes>> {
+        let ent: Option<DirEntry> =
+            exec_async_anyhow!(self.manager.stat(remote, branch, path).await);
         Ok(ent.map(|x| x.into()))
     }
 
     /// Obtains access to a repo
-    pub fn get_repo(&mut self, remote: &str, py: Python<'_>) -> PyResult<PyRepo> {
-        rust_async!(py, {
-            let repo = self.manager.get_repo(None, remote).await?;
-            anyhow::Ok(PyRepo { repo })
-        })
+    pub fn get_repo(&mut self, remote: &str) -> PyResult<PyRepo> {
+        let repo = exec_async_anyhow!(self.manager.get_repo(None, remote).await);
+        Ok(PyRepo { repo })
     }
 }
 #[pyclass]
@@ -300,21 +284,22 @@ struct PyRepo {
 }
 #[pymethods]
 impl PyRepo {
-    pub fn open_for_read(&self, branch: &str, path: &str, py: Python<'_>) -> PyResult<PyRFile> {
-        rust_async!(
-            py,
-            PyRFile::new(self.repo.open_for_read(branch, path).await?))
-        
+    pub fn open_for_read(&self, branch: &str, path: &str) -> PyResult<PyRFile> {
+        let reader = exec_async_anyhow!(self.repo.open_for_read(branch, path).await);
+        PyRFile::new(reader)
     }
     pub fn begin_write_transaction(
         &self,
         branch: &str,
         commit_message: &str,
-        py: Python<'_>,
     ) -> PyResult<PyWriteTransaction> {
-        let transaction = rust_async!(py, 
-             self.repo.begin_write_transaction(branch, None, None).await)?;
-        PyWriteTransaction::new(transaction,branch, commit_message)
+        let transaction: XetRepoWriteTransaction =
+            exec_async_anyhow!(self.repo.begin_write_transaction(branch, None, None).await);
+        Ok(PyWriteTransaction {
+            transaction: Some(transaction),
+            message: commit_message.to_owned(),
+            ..Default::default()
+        })
     }
 
     /// Fetch shards that could be useful for dedup, according to the given endpoints.
@@ -330,16 +315,16 @@ impl PyRepo {
         &self,
         file_paths: Vec<(&str, &str)>,
         min_dedup_bytes_for_shard_downloading: Option<usize>,
-        py: Python<'_>,
     ) -> PyResult<()> {
-       rust_async!(py,
+        let res = exec_async_anyhow!(
             self.repo
                 .fetch_hinted_shards_for_dedup(
                     &file_paths,
                     min_dedup_bytes_for_shard_downloading.unwrap_or(0)
                 )
                 .await
-        )
+        );
+        Ok(res)
     }
 }
 
@@ -364,7 +349,7 @@ impl PyRFile {
         })
     }
 
-    pub async fn readline_impl(&mut self, size: i64) -> anyhow::Result<Vec<u8>> {
+    pub fn readline_impl(&mut self, size: i64) -> PyResult<Vec<u8>> {
         let mut ret = Vec::new();
         let mut done: bool = false;
         while !done {
@@ -381,7 +366,7 @@ impl PyRFile {
             }
 
             // actually do the read
-            let fs_read = self.reader.read(self.pos, read_size as u32).await?;
+            let fs_read = exec_async_anyhow!(self.reader.read(self.pos, read_size as u32).await);
             let (mut buf, eof) = fs_read;
             // if we find the '\n' we append that to the return buffer and flag done
             if let Some(pos) = buf.iter().position(|&x| x == b'\n') {
@@ -402,8 +387,8 @@ impl PyRFile {
         Ok(ret)
     }
 
-    pub async fn read_impl(&mut self, size: u32) -> anyhow::Result<Vec<u8>> {
-        let fs_read = self.reader.read(self.pos, size).await?;
+    pub fn read_impl(&mut self, size: u32) -> PyResult<Vec<u8>> {
+        let fs_read = exec_async_anyhow!(self.reader.read(self.pos, size).await);
 
         let (buf, _) = fs_read;
         self.pos += buf.len() as u64;
@@ -413,7 +398,7 @@ impl PyRFile {
 
 #[pymethods]
 impl PyRFile {
-    pub fn is_closed(&self) -> PyResult<bool> {
+    pub fn is_closed(&mut self) -> PyResult<bool> {
         Ok(self.closed)
     }
     pub fn close(&mut self) -> PyResult<()> {
@@ -459,30 +444,19 @@ impl PyRFile {
     // why does IOBase have readline? this is not very nice.
     #[pyo3(signature = (size=-1))]
     pub fn readline(&mut self, size: i64, py: Python<'_>) -> PyResult<PyObject> {
-        let ret = rust_async!(py, self.readline_impl(size).await)?;
+        let ret = self.readline_impl(size)?;
         Ok(PyBytes::new(py, &ret).into())
     }
-
     #[pyo3(signature = (num_lines=-1))]
     pub fn readlines(&mut self, num_lines: i64, py: Python<'_>) -> PyResult<PyObject> {
-        let v_buf = rust_async!(py, {
-            let mut v_buf = Vec::new();
-
-            while num_lines <= 0 || (v_buf.len() as i64) < num_lines {
-                let buf = self.readline_impl(-1).await?; // TODO: This has to be wrong re num_lines, given the API??
-                if !buf.is_empty() {
-                    v_buf.push(buf);
-                } else {
-                    break;
-                }
-            }
-            anyhow::Ok(v_buf)
-        })?;
-
         let ret = PyList::empty(py);
-
-        for buf in v_buf {
-            ret.append(PyBytes::new(py, &buf))?;
+        while num_lines <= 0 || (ret.len() as i64) < num_lines {
+            let buf = self.readline_impl(-1)?;
+            if !buf.is_empty() {
+                let _ = ret.append(PyBytes::new(py, &buf));
+            } else {
+                break;
+            }
         }
         Ok(ret.into())
     }
@@ -493,38 +467,30 @@ impl PyRFile {
         if size <= 0 {
             return self.readall(py);
         }
-        let ret = rust_async!(py, {
-            let size = std::cmp::min(size as u64, u32::MAX as u64);
-            self.read_impl(size as u32).await
-        })?;
+        let size = std::cmp::min(size as u64, u32::MAX as u64);
+        let ret = self.read_impl(size as u32)?;
         Ok(PyBytes::new(py, &ret).into())
     }
-
     pub fn readall(&mut self, py: Python<'_>) -> PyResult<PyObject> {
-        let ret = rust_async!(py, {
-            let mut ret = Vec::new();
-            while self.pos < self.file_len {
-                ret.extend(self.read_impl(MAX_READ_SIZE as u32).await?);
-            }
-            anyhow::Ok(ret)
-        })?;
+        let mut ret = Vec::new();
+        while self.pos < self.file_len {
+            ret.extend(self.read_impl(MAX_READ_SIZE as u32)?);
+        }
         Ok(PyBytes::new(py, &ret).into())
     }
     pub fn readinto1(&mut self, b: &PyAny, py: Python<'_>) -> PyResult<u64> {
         let buf = PyByteArray::from(py, b)?;
         let buflen = buf.len();
-        let bufbytes = unsafe { buf.as_bytes_mut() };
 
-        rust_async!(py, {
-            let read_size = std::cmp::min(buflen as u64, MAX_READ_SIZE);
-            let readres = self.read_impl(read_size as u32).await?;
-            let readlen = readres.len();
+        let read_size = std::cmp::min(buflen as u64, MAX_READ_SIZE);
+        let readres = self.read_impl(read_size as u32)?;
+        let readlen = readres.len();
 
-            if readlen > 0 {
-                bufbytes[..readlen].copy_from_slice(&readres);
-            }
-            anyhow::Ok(readlen as u64)
-        })
+        if readlen > 0 {
+            let bufbytes = unsafe { buf.as_bytes_mut() };
+            bufbytes[..readlen].copy_from_slice(&readres);
+        }
+        Ok(readlen as u64)
     }
 
     pub fn readinto(&mut self, b: &PyAny, py: Python<'_>) -> PyResult<u64> {
@@ -532,18 +498,16 @@ impl PyRFile {
         let buflen = buf.len();
         let bufbytes = unsafe { buf.as_bytes_mut() };
 
-        rust_async!(py, {
-            let mut curoff: usize = 0;
-            while self.pos < self.file_len {
-                let read_size = std::cmp::min(buflen - curoff, MAX_READ_SIZE as usize);
-                let readres = self.read_impl(read_size as u32).await?;
-                let readlen = readres.len();
+        let mut curoff: usize = 0;
+        while self.pos < self.file_len {
+            let read_size = std::cmp::min(buflen - curoff, MAX_READ_SIZE as usize);
+            let readres = self.read_impl(read_size as u32)?;
+            let readlen = readres.len();
 
-                bufbytes[curoff..curoff + readlen].copy_from_slice(&readres);
-                curoff += readlen;
-            }
-            anyhow::Ok(curoff as u64)
-        })
+            bufbytes[curoff..curoff + readlen].copy_from_slice(&readres);
+            curoff += readlen;
+        }
+        Ok(curoff as u64)
     }
 
     pub fn write(&mut self, _b: &PyAny, _py: Python<'_>) -> PyResult<()> {
@@ -551,13 +515,18 @@ impl PyRFile {
     }
 }
 
+#[pyclass(subclass)]
 #[derive(Default)]
-struct PyWriteTransactionInternal {
+struct PyWriteTransaction {
     transaction: Option<XetRepoWriteTransaction>,
     branch: String,
+    #[pyo3(get)]
     new_files: Vec<String>,
+    #[pyo3(get)]
     copies: Vec<(String, String)>,
+    #[pyo3(get)]
     deletes: Vec<String>,
+    #[pyo3(get)]
     moves: Vec<(String, String)>,
     do_not_commit: bool,
     error_on_commit: bool,
@@ -566,232 +535,125 @@ struct PyWriteTransactionInternal {
     message: String,
 }
 
-
-impl PyWriteTransactionInternal {
+#[pymethods]
+impl PyWriteTransaction {
     /// This is for testing
-    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> anyhow::Result<()> {
+    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> PyResult<()> {
         self.do_not_commit = do_not_commit;
         Ok(())
     }
     /// This is for testing
-    pub fn set_error_on_commit(&mut self, error_on_commit: bool) -> anyhow::Result<()> {
+    pub fn set_error_on_commit(&mut self, error_on_commit: bool) -> PyResult<()> {
         self.error_on_commit = error_on_commit;
         Ok(())
     }
-
-    pub async fn open_for_write(&mut self, path: &str) -> anyhow::Result<PyWFile> {
+    pub fn open_for_write(&mut self, path: &str) -> PyResult<PyWFile> {
         if let Some(ref mut tr) = self.transaction {
             self.new_files
                 .push(format!("{}/{path}", self.branch).to_string());
-            let writer = tr.open_for_write(path).await?;
+            let writer = exec_async_anyhow!(tr.open_for_write(path).await);
             self.pending_write_files.fetch_add(1, Ordering::SeqCst);
 
             Ok(PyWFile { writer })
         } else {
-            Err(anyhow!("Transaction already committed"))
+            Err(PyRuntimeError::new_err("Transaction already committed"))
         }
     }
-    pub async fn set_ready(&mut self) -> anyhow::Result<()> {
+    pub fn set_ready(&mut self) -> PyResult<()> {
         let val = self.pending_write_files.load(Ordering::SeqCst);
 
         // We need to check here because if all write files finished before this
         // then none of them sees the ready signal.
         if val == 0 {
             // All write files finished
-            self.commit().await
+            self.commit()
         } else {
             // Some files are pending, signal them to commit when they finish
             self.ready_to_commit = true;
             Ok(())
         }
     }
-    pub async fn finish_write_one(&mut self) -> anyhow::Result<()> {
+    pub fn finish_write_one(&mut self) -> PyResult<()> {
         let val = self.pending_write_files.fetch_sub(1, Ordering::SeqCst);
         // The last write just finished
         if val == 1 && self.ready_to_commit {
-            self.commit().await
+            self.commit()
         } else {
             Ok(())
         }
     }
-    pub async fn transaction_size(&self) -> anyhow::Result<usize> {
+    pub fn transaction_size(&self) -> PyResult<usize> {
         if let Some(ref tr) = self.transaction {
-            Ok(tr.transaction_size().await)
+            let ret = exec_async!(tr.transaction_size().await);
+            Ok(ret)
         } else {
             Ok(0)
         }
     }
-    pub async fn commit(&mut self) -> anyhow::Result<()> {
+    pub fn commit(&mut self) -> PyResult<()> {
         if self.error_on_commit {
-            return Err(anyhow!("Error on commit flagged"));
+            return Err(PyRuntimeError::new_err("Error on commit flagged"));
         }
         if self.do_not_commit {
-            return self.cancel().await;
+            return self.cancel();
         }
         let mut transaction = None;
         std::mem::swap(&mut self.transaction, &mut transaction);
-
         if transaction.is_none() {
-            return Err(anyhow!("Transaction already committed"));
+            return Err(PyRuntimeError::new_err("Transaction already committed"));
         }
         let transaction = transaction.unwrap();
-        transaction.commit(&self.message).await?;
-        Ok(())
+        Ok(exec_async_anyhow!(transaction.commit(&self.message).await))
     }
-    pub async fn cancel(&mut self) -> anyhow::Result<()> {
+    pub fn cancel(&mut self) -> PyResult<()> {
         let mut transaction = None;
         std::mem::swap(&mut self.transaction, &mut transaction);
         if transaction.is_none() {
-            return Err(anyhow!("Transaction already committed"));
+            return Err(PyRuntimeError::new_err("Transaction already committed"));
         }
         let transaction = transaction.unwrap();
-        transaction.cancel().await?;
+        let _ = exec_async!(transaction.cancel().await);
         Ok(())
     }
-    pub async fn delete(&mut self, path: &str) -> anyhow::Result<()> {
+    pub fn delete(&mut self, path: &str) -> PyResult<()> {
         if let Some(ref mut tr) = self.transaction {
-                    self.deletes
+            self.deletes
                 .push(format!("{}/{path}", self.branch).to_string());
-            tr.delete(path).await?;
+            exec_async_anyhow!(tr.delete(path).await);
             Ok(())
         } else {
-            Err(anyhow!("Transaction already committed"))
+            Err(PyRuntimeError::new_err("Transaction already committed"))
         }
     }
-    pub async fn copy(
-        &mut self,
-        src_branch: &str,
-        src_path: &str,
-        target_path: &str,
-    ) -> anyhow::Result<()> {
+    pub fn copy(&mut self, src_branch: &str, src_path: &str, target_path: &str) -> PyResult<()> {
         if let Some(ref mut tr) = self.transaction {
             self.copies.push((
                 format!("{src_branch}/{src_path}").to_string(),
                 format!("{}/{target_path}", self.branch).to_string(),
             ));
-            tr.copy(src_branch, src_path, target_path).await?;
+            exec_async_anyhow!(tr.copy(src_branch, src_path, target_path).await);
             Ok(())
         } else {
-            Err(anyhow!("Transaction already committed"))
+            Err(PyRuntimeError::new_err("Transaction already committed"))
         }
     }
 
-    pub async fn mv(&mut self, src_path: &str, target_path: &str) -> anyhow::Result<()> {
+    pub fn mv(&mut self, src_path: &str, target_path: &str) -> PyResult<()> {
         // can't call this move cos move is taken
         if let Some(ref mut tr) = self.transaction {
             self.moves.push((
                 format!("{}/{src_path}", self.branch).to_string(),
                 format!("{}/{target_path}", self.branch).to_string(),
             ));
-            tr.mv(src_path, target_path).await?;
+            exec_async_anyhow!(tr.mv(src_path, target_path).await);
             Ok(())
         } else {
-            Err(anyhow!("Transaction already committed"))
+            Err(PyRuntimeError::new_err("Transaction already committed"))
         }
     }
-    pub fn closed(&self) -> anyhow::Result<bool> {
+    pub fn closed(&self) -> PyResult<bool> {
         Ok(self.transaction.is_none())
     }
-}
-
-#[pyclass(subclass)]
-struct PyWriteTransaction {
-    pwt : Mutex<PyWriteTransactionInternal>
-}
-
-
-impl PyWriteTransaction {
-    fn new(transaction : XetRepoWriteTransaction, branch : &str, commit_message : &str) -> PyResult<Self> {
-        Ok(Self { 
-            pwt : Mutex::new(PyWriteTransactionInternal { 
-                transaction : Some(transaction), 
-                branch : branch.to_string(),
-                message : commit_message.to_string(),
-                ..Default::default()
-            })
-        })
-    }
-}
-
-#[pymethods]
-impl PyWriteTransaction {
-
-
-    /// This is for testing
-    pub fn set_do_not_commit(&self, do_not_commit: bool, py : Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.set_do_not_commit(do_not_commit))
-    }
-    /// This is for testing
-    pub fn set_error_on_commit(&self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.set_error_on_commit(error_on_commit))
-    }
-
-    pub fn open_for_write(&self, path: &str, py: Python<'_>) -> PyResult<PyWFile> {
-        rust_async!(py, self.pwt.lock().await.open_for_write(path).await)
-    }
-
-    pub fn set_ready(&self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.set_ready().await)
-    }
-
-    pub fn finish_write_one(&self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.finish_write_one().await)
-    }
-    
-    pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
-        rust_async!(py, self.pwt.lock().await.transaction_size().await)
-    }
-
-    pub fn commit(&self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.commit().await)
-    }
-
-    pub fn cancel(&self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.cancel().await)
-    }
-    pub fn delete(&self, path: &str, py : Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.delete(path).await)
-    }
-    
-    pub fn copy(
-        &self,
-        src_branch: &str,
-        src_path: &str,
-        target_path: &str,
-        py: Python<'_>,
-    ) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.copy(src_branch, src_path, target_path).await)
-    }
-
-    pub fn mv(&self, src_path: &str, target_path: &str, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.mv(src_path, target_path).await)
-    }
-    pub fn closed(&self, py : Python<'_>) -> PyResult<bool> {
-        rust_async!(py, self.pwt.lock().await.closed())
-    }
-
-    #[getter]
-    pub fn new_files(&self, py : Python<'_>) -> PyResult<Vec<String>> {
-        rust_async!(py, anyhow::Ok(self.pwt.lock().await.new_files.clone()))
-    }
-
-    #[getter]
-    pub fn copies(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.copies.clone()))
-    }
-
-    #[getter]
-    pub fn deletes(&self, py : Python<'_>) -> PyResult<Vec<String>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.deletes.clone()))
-
-    }
-
-    #[getter]
-    pub fn moves(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.moves.clone()))
-    }
-
-
 }
 
 #[pyclass(subclass)]
@@ -801,16 +663,16 @@ struct PyWFile {
 
 #[pymethods]
 impl PyWFile {
-    pub fn is_closed(&self, py : Python<'_>) -> PyResult<bool> {
-        rust_async!(py, anyhow::Ok(self.writer.is_closed().await))
+    pub fn is_closed(&self) -> PyResult<bool> {
+        Ok(exec_async!(self.writer.is_closed().await))
     }
-    pub fn close(&mut self, py : Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.writer.close().await)
+    pub fn close(&mut self) -> PyResult<()> {
+        Ok(exec_async_anyhow!(self.writer.close().await))
     }
     pub fn write(&mut self, b: &PyAny, py: Python<'_>) -> PyResult<()> {
         let buf = PyByteArray::from(py, b)?;
         let bufbytes = unsafe { buf.as_bytes() };
-        rust_async!(py, self.writer.write(bufbytes).await)
+        Ok(exec_async_anyhow!(self.writer.write(bufbytes).await))
     }
     pub fn readable(&self) -> PyResult<bool> {
         Ok(false)

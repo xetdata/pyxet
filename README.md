@@ -1,8 +1,7 @@
----
+<p align="center">
+	<img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
 
-### :construction: :construction: pyxet is new and under active development :construction: :construction:
-
----
+</p>
 
 # pyxet - The SDK for XetHub
 

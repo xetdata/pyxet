@@ -23,7 +23,6 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
     If partial_remote==True, allows [repo] to be optional. i.e. it will
     parse /user or xet://user
     """
-    print(f"URL: url = {url}")
     url = url.lstrip('/')
     parse = urlparse(url)
     if parse.scheme == '':
@@ -63,9 +62,7 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
         if partial_remote and len(components) == 2:
             replacement_parse_path = '/'.join(components)
             parse = parse._replace(path=replacement_parse_path, scheme=scheme)
-            ret = XetPathInfo(parse.geturl(), "", "")
-            print(f"URL 1: parsed as = {ret}")
-            return ret
+            return XetPathInfo(parse.geturl(), "", "")
         raise ValueError("Invalid Xet URL format: Expecting xet://user/repo/[branch]/[path]")
 
     branch = ""
@@ -81,11 +78,7 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
     parse = parse._replace(path=replacement_parse_path, scheme=scheme)
 
 
-    ret = XetPathInfo(parse.geturl(), branch, path)
-
-    print(f"URL 2: parsed as = {ret}")
-    return ret
-
+    return XetPathInfo(parse.geturl(), branch, path)
 
 
 class ParseUrlTest(unittest.TestCase):

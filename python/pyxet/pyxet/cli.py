@@ -136,9 +136,8 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
     if recursive:
         src_listing = src_fs.find(src_dir, detail=True).items()
     else:
-        src_listing = src_fs.glob(
-            os.join(src_dir, glob_pattern if glob_pattern is not None else '*'),
-            detail=True)
+        pattern = os.path.join(src_dir, glob_pattern if glob_pattern is not None else '*')
+        src_listing = src_fs.glob(pattern, detail=True).items()
         glob_pattern = None
 
     dest_directories = {dest_dir}

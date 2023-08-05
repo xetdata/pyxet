@@ -588,7 +588,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         all the paths given by `paths`.  Once fetched, new data will be deduplicated against 
         any binary content given by `paths`.  
         """
-        
+        if isinstance(path_urls, str):
+            path_urls = [path_urls] 
         url_paths = [parse_url(url, self.domain, partial_remote = True) for url in path_urls]
 
         self._add_deduplication_hints_by_url(url_paths)

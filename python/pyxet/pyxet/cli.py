@@ -65,7 +65,7 @@ def _get_fs_and_path(uri):
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
-                     buffer_size=CHUNK_SIZE):
+                     buffer_size=CHUNK_SIZE, size_hint = None):
     if dest_path.split('/')[-1] == '.gitattributes':
         print("Skipping .gitattributes as that is required for Xet Magic")
         return
@@ -76,6 +76,10 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
         return
     with MAX_CONCURRENT_COPIES:
         try:
+            # Heuristic for now -- if the size of the source is larger than 50MB,
+            # then make sure we have any shards for the destination that work.
+            if dest_fs.protocol == "xet" and size_hint is not None and size_hint >= 50000000:
+                dest_fs.add_deduplication_hints(dest_path)
             with src_fs.open(src_path, "rb") as source_file:
                 with dest_fs.open(dest_path, "wb", auto_mkdir=True) as dest_file:
                     # Buffered copy in chunks
@@ -165,16 +169,29 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
                 dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
                 dest_fs.makedirs(dest_dir, exist_ok=True)
 
-                futures.append(
-                    executor.submit(
-                        _copy,
-                        f"{src_fs.protocol}://{path}",
-                        f"{dest_fs.protocol}://{dest_for_this_path}",
-                        recursive=True,
-                        _src_fs=src_fs,
-                        _dest_fs=dest_fs,
+                if info['type'] == 'directory':
+                    futures.append(
+                        executor.submit(
+                            _copy,
+                            f"{src_fs.protocol}://{path}",
+                            f"{dest_fs.protocol}://{dest_for_this_path}",
+                            recursive=True,
+                            _src_fs=src_fs,
+                            _dest_fs=dest_fs,
+                        )
                     )
-                )
+                else:
+                    futures.append(
+                        executor.submit(
+                            _single_file_copy,
+                            src_fs,
+                            f"{path}",
+                            dest_fs,
+                            dest_for_this_path,
+                            size_hint = info.get('size', None)
+                        ))
+
+
             for future in futures:
                 future.result()
         return
@@ -208,7 +225,9 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
                             src_fs,
                             f"{path}",
                             dest_fs,
-                            dest_for_this_path))
+                            dest_for_this_path,
+                            size_hint = info.get('size', None)
+                            ))
             # Waiting for all copy jobs to complete
             for future in futures:
                 future.result()

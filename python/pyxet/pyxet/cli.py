@@ -256,8 +256,6 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
         # start from end as the copying will outpace this
         if len(cp_list) >= n_prefetch:
             # Prefetch stuff for the largest n_prefetch files.
-            print(cp_list[:10])
-            print(dest_dir_list[:10])
             prefetch_paths = set(dest_path for (_, dest_path, _) in heapq.nlargest(
                 n_prefetch, cp_list, key=lambda t: t[2]))
 

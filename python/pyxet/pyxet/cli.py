@@ -141,7 +141,7 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
             detail=True)
         glob_pattern = None
 
-    dest_directories = set(dest_dir)
+    dest_directories = {dest_dir}
     cp_files = []
 
     for src_path, info in src_listing:
@@ -149,7 +149,7 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
             # Find is already recursive, and glob is not recursive
             continue
 
-        rel_path = os.path.relpath(src_dir, src_path)
+        rel_path = os.path.relpath(src_path, src_dir)
 
         if glob_pattern is not None:
             if not fnmatch(rel_path, glob_pattern):
@@ -163,7 +163,7 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
 
         cp_files.append((src_path, dest_path, info.get('size', 0)))
 
-    return list(dest_directories), cp_files
+    return cp_files, list(dest_directories)
 
 
 def __build_src_dest_list__file_src(src_fs, src_file, dest_fs, dest_path):
@@ -207,9 +207,20 @@ def _build_source_destination_list_internal(src_fs, src_path, dest_fs, dest_path
         if not recursive:
             raise ValueError(
                 "Specify recursive flag '-r' to copy directories.")
+        try:
+            dest_info = dest_fs.info(dest_path)
+            if dest_info['type'] == 'directory':
+                # The destination directory is actually the source 
+                _, end_component = os.path.split(src_path)
+                processed_path = os.path.join(dest_path, end_component)
+            else:
+                raise ValueError(
+                    "Destination path not a directory.")
+        except FileNotFoundError:
+            processed_path = dest_path
 
         return __build_src_dest_list__dir_src(
-            src_fs, src_path, dest_fs, dest_path, recursive, None)
+            src_fs, src_path, dest_fs, processed_path, recursive, None)
     else:
         return __build_src_dest_list__file_src(src_fs, src_path, dest_fs, dest_path)
 
@@ -246,8 +257,10 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
         # start from end as the copying will outpace this
         if len(cp_list) >= n_prefetch:
             # Prefetch stuff for the largest n_prefetch files.
+            print(cp_list[:10])
+            print(dest_dir_list[:10])
             prefetch_paths = set(dest_path for (_, dest_path, _) in heapq.nlargest(
-                cp_list, n_prefetch, key=lambda _sp, _dp, s: s))
+                n_prefetch, cp_list, key=lambda t: t[2]))
 
             # background all the rest that are large enough.
             background_paths = [dest_path for (
@@ -261,7 +274,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
 
 
     # Now, create all the directories
-    for dest_fs, dest_dir in dest_dir_list:
+    for dest_dir in dest_dir_list:
         dest_fs.makedirs(dest_dir, exist_ok=True)
 
     # Now, go through and do all the actual copying.

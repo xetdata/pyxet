@@ -163,7 +163,7 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
 
         cp_files.append((src_path, dest_path, info.get('size', 0)))
 
-    list(dest_directories), cp_files
+    return list(dest_directories), cp_files
 
 
 def __build_src_dest_list__file_src(src_fs, src_file, dest_fs, dest_path):
@@ -230,7 +230,7 @@ def _build_source_destination_list(source, destination, recursive, _src_fs, _des
     cp_paths, dest_dir_list = _build_source_destination_list_internal(
         src_fs, src_path, dest_fs, dest_path, recursive)
 
-    (src_fs, dest_fs, cp_paths, dest_dir_list)
+    return (src_fs, dest_fs, cp_paths, dest_dir_list)
 
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):

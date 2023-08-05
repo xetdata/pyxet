@@ -76,10 +76,15 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
         return
     with MAX_CONCURRENT_COPIES:
         try:
-            # Heuristic for now -- if the size of the source is larger than 50MB,
-            # then make sure we have any shards for the destination that work.
-            if dest_fs.protocol == "xet" and size_hint is not None and size_hint >= 50000000:
-                dest_fs.add_deduplication_hints(dest_path)
+            if dest_fs.protocol == "xet":
+                if size_hint is None:
+                    size_hint = src_fs.info(src_path).get('size', None)
+       
+                # Heuristic for now -- if the size of the source is larger than 50MB,
+                # then make sure we have any shards for the destination that work.
+                if size_hint is not None and size_hint >= 50000000:
+                    dest_fs.add_deduplication_hints(dest_path)
+
             with src_fs.open(src_path, "rb") as source_file:
                 with dest_fs.open(dest_path, "wb", auto_mkdir=True) as dest_file:
                     # Buffered copy in chunks

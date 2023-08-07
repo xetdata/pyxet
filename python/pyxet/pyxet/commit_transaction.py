@@ -37,7 +37,6 @@ class CommitTransaction(fsspec.transaction.Transaction):
         self._transaction_handler = fs._create_transaction_handler(repo_info, commit_message)
         self.fs = fs
         self.repo_info = repo_info
-        self.lock = threading.Lock()
 
         super().__init__(fs)
 
@@ -73,23 +72,11 @@ class CommitTransaction(fsspec.transaction.Transaction):
         assert(repo_info.branch == self.repo_info.branch)
         return XetFile(self._transaction_handler.open_for_write(repo_info.path), self._transaction_handler)
 
-    def check_transaction_limit(self):
-        if self.fs is None:
-            raise RuntimeError("Transaction object has been invalidated")
-        if self._transaction_handler.transaction_size() >= TRANSACTION_LIMIT:
-            with self.lock:
-                if self._transaction_handler.transaction_size() >= TRANSACTION_LIMIT:
-                    sys.stderr.write("Transaction limit has been reached. Forcing a commit.\n")
-                    sys.stderr.flush()
-                    self._transaction_handler.set_ready()
-                    self._transaction_handler = self.fs._create_transaction_handler(self.repo_info, self.commit_message)
-
     def copy(self, src_repo_info, dest_repo_info):
         if self.fs is None:
             raise RuntimeError("Transaction object has been invalidated")
         assert(src_repo_info.remote == dest_repo_info.remote)
         assert(dest_repo_info.remote == self.repo_info.remote)
-        self.check_transaction_limit()
         self._transaction_handler.copy(src_repo_info.branch,
                                        src_repo_info.path,
                                        dest_repo_info.path)
@@ -99,7 +86,6 @@ class CommitTransaction(fsspec.transaction.Transaction):
             raise RuntimeError("Transaction object has been invalidated")
         assert(repo_info.remote == self.repo_info.remote)
         assert(repo_info.branch == self.repo_info.branch)
-        self.check_transaction_limit()
         self._transaction_handler.delete(repo_info.path)
 
     def mv(self, src_repo_info, dest_repo_info):
@@ -107,9 +93,13 @@ class CommitTransaction(fsspec.transaction.Transaction):
             raise RuntimeError("Transaction object has been invalidated")
         assert(src_repo_info.remote == dest_repo_info.remote)
         assert(dest_repo_info.remote == self.repo_info.remote)
-        self.check_transaction_limit()
-        with self.lock:
-            self._transaction_handler.mv(src_repo_info.path, dest_repo_info.path)
+        self._transaction_handler.mv(src_repo_info.path, dest_repo_info.path)
+
+    def transaction_size(self):
+        return self._transaction_handler.transaction_size()
+
+    def set_ready(self):
+        self._transaction_handler.set_ready()
 
 
 def repo_info_key(repo_info):
@@ -128,14 +118,14 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         This class should not be used directly.
         it is preferred to use fs.transaction.
         """
+        self.lock = threading.Lock()
         self.commit_message = None
         self._transaction_pool = {}
         self.fs = fs
-        self.set_commit_message(commit_message)
-        self.lock = threading.Lock()
+        self._set_commit_message(commit_message)
 
         super().__init__(fs)
-
+    
     def set_commit_message(self, commit_message):
         """
         Sets the commit message to be used. This applies to every
@@ -143,6 +133,11 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         If commit_message is None, a default message "Commit [current datetime]"
         is used.
         """
+        with self.lock:
+            self._set_commit_message(commit_message)
+
+
+    def _set_commit_message(self, commit_message):
         if commit_message is None:
             import datetime
             commit_message = "Commit " + datetime.datetime.now().isoformat()
@@ -151,10 +146,12 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             v.commit_message = self.commit_message
 
     def __repr__(self):
-        return f"MultiCommitTransaction for [{self._transaction_pool.keys()}]"
+        with self.lock:
+            return f"MultiCommitTransaction for [{self._transaction_pool.keys()}]"
 
     def __str__(self):
-        return f"MultiCommitTransaction for [{self._transaction_pool.keys()}]"
+        with self.lock:
+            return f"MultiCommitTransaction for [{self._transaction_pool.keys()}]"
 
     def __enter__(self):
         self.start()
@@ -169,11 +166,25 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
     def get_handler_for_repo_info(self, repo_info):
         with self.lock:
             key = repo_info_key(repo_info)
+
             if key not in self._transaction_pool:
-                self._transaction_pool[key] = CommitTransaction(self.fs,
-                                                                repo_info,
-                                                                self.commit_message)
-            return self._transaction_pool[key]
+                tr = CommitTransaction(self.fs, repo_info, self.commit_message)
+                self._transaction_pool[key] = tr
+                return tr
+            
+            else:
+                tr = self._transaction_pool[key]
+                if tr.transaction_size() >= TRANSACTION_LIMIT:
+                    sys.stderr.write("Transaction limit has been reached. Forcing a commit.\n")
+                    sys.stderr.flush()
+                    tr.set_ready()
+
+                    tr = CommitTransaction(self.fs, repo_info, self.commit_message)
+                    self._transaction_pool[key] = tr
+                    return tr
+                else:
+                    return tr
+
 
     def open_for_write(self, repo_info):
         """
@@ -181,9 +192,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
-        with self.lock:
-            handler.check_transaction_limit()
-            return handler.open_for_write(repo_info)
+        return handler.open_for_write(repo_info)
 
     def start(self):
         """
@@ -198,21 +207,22 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         Finalizes and commits or cancels this transaction.
         The transaction can be restarted with start()
         """
-        ret_except = None
-        for k, v in self._transaction_pool.items():
-            try:
-                v.complete(commit)
-            except Exception as e:
-                sys.stderr.write(f"Failed to commit {k}: {e}\n")
-                sys.stderr.flush()
-                if ret_except is None:
-                    ret_except = e
-        # reset all the transaction state
-        self._transaction_pool = {}
-        self.fs.intrans = False
-        self.set_commit_message(None)
-        if ret_except is not None:
-            raise ret_except
+        with self.lock:  # Should not be called while other things are in progress, but better be safe.
+            ret_except = None
+            for k, v in self._transaction_pool.items():
+                try:
+                    v.complete(commit)
+                except Exception as e:
+                    sys.stderr.write(f"Failed to commit {k}: {e}\n")
+                    sys.stderr.flush()
+                    if ret_except is None:
+                        ret_except = e
+            # reset all the transaction state
+            self._transaction_pool = {}
+            self.fs.intrans = False
+            self._set_commit_message(None)
+            if ret_except is not None:
+                raise ret_except
 
     def copy(self, src_repo_info, dest_repo_info):
         """
@@ -221,9 +231,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(dest_repo_info)
-        with self.lock:
-            handler.check_transaction_limit()
-            handler.copy(src_repo_info, dest_repo_info)
+        handler.copy(src_repo_info, dest_repo_info)
 
     def mv(self, src_repo_info, dest_repo_info):
         """
@@ -232,9 +240,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(dest_repo_info)
-        with self.lock:
-            handler.check_transaction_limit()
-            handler.mv(src_repo_info, dest_repo_info)
+        handler.mv(src_repo_info, dest_repo_info)
 
     def rm(self, repo_info):
         """
@@ -242,9 +248,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         repo_info is the return value of `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
-        with self.lock:
-            handler.check_transaction_limit()
-            handler.rm(repo_info)
+        handler.rm(repo_info)
 
     def _set_do_not_commit(self, flag):
         """
@@ -252,8 +256,9 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         Flags all active transactions to not attempt to push
         the commit, but will silently succeed.
         """
-        for v in self._transaction_pool.values():
-            v._transaction_handler.set_do_not_commit(flag)
+        with self.lock:
+            for v in self._transaction_pool.values():
+                v._transaction_handler.set_do_not_commit(flag)
 
     def _set_error_on_commit(self, flag):
         """
@@ -261,8 +266,9 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         Flags all active transactions to not attempt to push
         the commit, but will just raise an exception
         """
-        for v in self._transaction_pool.values():
-            v._transaction_handler.set_error_on_commit(flag)
+        with self.lock:
+            for v in self._transaction_pool.values():
+                v._transaction_handler.set_error_on_commit(flag)
 
     def get_change_list(self):
         deletes = []

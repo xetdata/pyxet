@@ -248,7 +248,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         ret = json.loads(bytes(_manager.api_query(origin.remote, "duplicate", "post", "")))
         if 'full_name' not in ret:
             raise RuntimeError("Duplication failed")
-        return self.rename_repo('xet://' + ret['full_name'], dest_path)
+        src_name = 'xet://' + ret['full_name']
+        if src_name == dest_path:
+            return ret
+        return self.rename_repo(src_name, dest_path)
 
 
     def rename_repo(self, origin_path, dest_path, **kwargs):

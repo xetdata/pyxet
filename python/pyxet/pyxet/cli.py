@@ -698,7 +698,7 @@ class RepoCLI:
                 print(repos)
             else:
                 print(tabulate(repos, headers="keys"))
-            return ls
+            return repos
         except Exception as e:
             print(f"{e}")
             return

@@ -268,6 +268,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         deletes = []
         new_files = []
         copies = []
+        moves = []
         for v in self._transaction_pool.values():
             deletes.extend(v._transaction_handler.deletes)
             new_files.extend(v._transaction_handler.new_files)

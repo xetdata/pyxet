@@ -27,6 +27,41 @@ MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16*1024*1024
 
 
+
+def _get_lcp(s:str)->str:
+    valid_chars = []
+    for char, xet_char in zip(s, 'xet://'):
+        if char != xet_char:
+            break
+        valid_chars.append(char)
+    return ''.join(valid_chars)
+
+def _get_listing(path: str = ''):
+    fs, path = _get_fs_and_path(path)
+    return fs.ls(path, detail=True)
+
+
+def ls_autocomplete(query: str):
+
+    incomplete = query
+    if not query:
+        incomplete = 'xet://'
+    elif not query.startswith('xet://'):
+        prefix = _get_lcp(incomplete)
+        if len(prefix) < len(query):  # we have a prefix which is not part of xet://
+            incomplete = 'xet://' + query
+        else:
+            incomplete = 'xet://' + query[len(prefix):]
+    filedir, filename = os.path.dirname(incomplete), os.path.basename(incomplete)
+    if filedir == 'xet:' or filedir == '':  # less than xet://
+        filedir = 'xet://'
+
+    listing = _get_listing(filedir)  # not working for branches
+
+    for value in listing:
+        yield f"{value['name']}", value['type']
+
+
 def _ltrim_match(s, match):
     """
     Trims the string 'match' from the left of the string 's'
@@ -79,7 +114,7 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
             if dest_fs.protocol == "xet":
                 if size_hint is None:
                     size_hint = src_fs.info(src_path).get('size', None)
-       
+
                 # Heuristic for now -- if the size of the source is larger than 50MB,
                 # then make sure we have any shards for the destination that work.
                 if size_hint is not None and size_hint >= 50000000:
@@ -149,7 +184,7 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
     if dest_path != '/':
         dest_path = dest_path.rstrip('/')
     src_isdir = _isdir(src_fs, src_path)
-    
+
     # Handling wildcard cases
     if '*' in src_path:
         # validate
@@ -268,6 +303,13 @@ def _root_copy(source, destination, message, recursive=False):
 class PyxetCLI:
     @staticmethod
     @cli.command()
+    def ac(path: Annotated[str, typer.Argument(help="Source file or folder which will be copied", autocompletion=ls_autocomplete)]):
+        if not path.startswith('xet://'):
+            path = f"xet://{path}"
+        return PyxetCLI.ls(path)
+
+    @staticmethod
+    @cli.command()
     def login(email: Annotated[str, typer.Option("--email", "-e", help="email address associated with account")],
               user: Annotated[str, typer.Option("--user", "-u", help="user name")],
               password: Annotated[str, typer.Option("--password", "-p", help="password")],
@@ -313,7 +355,7 @@ class PyxetCLI:
         """
         Internal Do not use
         """
-        rpyxet.perform_mount_curdir(path=path, 
+        rpyxet.perform_mount_curdir(path=path,
                                     reference=reference,
                                     signal=signal,
                                     autostop=autostop,

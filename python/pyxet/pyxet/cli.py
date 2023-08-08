@@ -80,7 +80,7 @@ class PyxetCLI:
         if pyxet.core._validate_git_xet() is False:
             print("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
             return
-        pyxet.core._clone(source, args)
+        pyxet.core._clone(source, *args)
 
     @staticmethod
     @cli.command()

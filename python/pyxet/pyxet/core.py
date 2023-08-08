@@ -518,12 +518,13 @@ def _clone(source: str, *args):
     Returns
     -------
     """
+
     fs = XetFS()
     source = parse_url(source, fs.domain)
-    commands = ["git-xet", "clone"] + [source.remote] + args
+    commands = ["git-xet", "clone"] + [source.remote] + list(args)
     strcommand = ' '.join(commands)
     print(f"Running '{strcommand}'")
-    subprocess.run(["git-xet", "clone"] + [source.remote] + args)
+    subprocess.run(strcommand, shell=True)
 
 
 def clone(source: str, *args):

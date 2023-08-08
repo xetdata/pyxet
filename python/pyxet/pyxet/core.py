@@ -363,15 +363,40 @@ def configure_login(email: str, user: str, password: str, host: str = "xethub.co
     return rpyxet.configure_login(host, user, email, password, force, no_overwrite)
 
 
-def perform_mount(remote, path, branch, prefetch):
-    return rpyxet.perform_mount(sys.executable, remote, path, branch, prefetch)
+def _mount(source: str, path: str, prefetch: int = 2):
+    """
+    Mounts a repository on a local path
+
+    Parameters
+    ----------
+    source [str]: Repository and branch of the form xet://user/repo/branch"
+    path [str]: Path to mount to. (or a drive letter on windows)
+    prefetch [int]: Prefetch blocks in multiple of 16MB. Default=2
+
+    Returns
+    -------
+
+    """
+    fs = XetFS()
+    source = parse_url(source, fs.domain)
+    if source.path != '':
+        raise ValueError("Cannot have a path when mounting. Expecting only xet://user/repo/branch")
+    if source.branch == '':
+        raise ValueError("Branch or revision must be specified")
+    if os.name == 'nt':
+        # path must be a drive letter (X, or X: or X:\\)
+        letter = path[0]
+        if path != letter and path != letter + ':' and path != letter + ':\\':
+            raise ValueError("Path must be a drive letter of the form X:")
+        path = letter
+    rpyxet.perform_mount(sys.executable, source.remote, path, source.branch, prefetch)
 
 
-def perform_mount_curdir(path, reference, signal, autostop, prefetch, ip, writable):
-    return rpyxet.perform_mount_curdir(path=path,
-                                       reference=reference,
-                                       signal=signal,
-                                       autostop=autostop,
-                                       prefetch=prefetch,
-                                       ip=ip,
-                                       writable=writable)
+def _perform_mount_curdir(path, reference, signal, autostop, prefetch, ip, writable):
+    return rpyxet._perform_mount_curdir(path=path,
+                                        reference=reference,
+                                        signal=signal,
+                                        autostop=autostop,
+                                        prefetch=prefetch,
+                                        ip=ip,
+                                        writable=writable)

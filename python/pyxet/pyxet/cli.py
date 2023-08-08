@@ -46,19 +46,7 @@ class PyxetCLI:
         """
         Mounts a repository on a local path
         """
-        fs = XetFS()
-        source = parse_url(source, fs.domain)
-        if source.path != '':
-            raise ValueError("Cannot have a path when mounting. Expecting only xet://user/repo/branch")
-        if source.branch == '':
-            raise ValueError("Branch or revision must be specified")
-        if os.name == 'nt':
-            # path must be a drive letter (X, or X: or X:\\)
-            letter = path[0]
-            if path != letter and path != letter + ':' and path != letter + ':\\':
-                raise ValueError("Path must be a drive letter of the form X:")
-            path = letter
-        pyxet.core.perform_mount(source.remote, path, source.branch, prefetch)
+        pyxet.core._mount(source, path, prefetch)
 
     @staticmethod
     @cli.command(name="mount-curdir", hidden=True)
@@ -74,13 +62,13 @@ class PyxetCLI:
         """
         Internal Do not use
         """
-        pyxet.core.perform_mount_curdir(path=path,
-                                        reference=reference,
-                                        signal=signal,
-                                        autostop=autostop,
-                                        prefetch=prefetch,
-                                        ip=ip,
-                                        writable=writable)
+        pyxet.core._perform_mount_curdir(path=path,
+                                         reference=reference,
+                                         signal=signal,
+                                         autostop=autostop,
+                                         prefetch=prefetch,
+                                         ip=ip,
+                                         writable=writable)
 
     @staticmethod
     @cli.command()

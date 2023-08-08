@@ -77,16 +77,10 @@ class PyxetCLI:
         """
         Clones a repository on a local path
         """
-        res = subprocess.run(["git-xet", "-V"], capture_output=True)
-        if res.returncode != 0:
+        if pyxet.core._validate_git_xet() is False:
             print("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
             return
-        fs = XetFS()
-        source = parse_url(source, fs.domain)
-        commands = ["git-xet", "clone"] + [source.remote] + args
-        strcommand = ' '.join(commands)
-        print(f"Running '{strcommand}'")
-        subprocess.run(["git-xet", "clone"] + [source.remote] + args)
+        pyxet.core._clone(source, args)
 
     @staticmethod
     @cli.command()
@@ -310,9 +304,8 @@ class RepoCLI:
         """
         list repositories of a user.
         """
-        fs = XetFS()
         try:
-            repos = fs.list_repos(raw)
+            repos = pyxet.core._list_repos(raw)
             if raw:
                 print(repos)
             else:
@@ -329,8 +322,7 @@ class RepoCLI:
         """
         Forks a new repository from an existing repository.
         """
-        fs = XetFS()
-        fs.rename_repo(source, dest)
+        pyxet._rename_repo(source, dest)
 
     @staticmethod
     @repo.command()

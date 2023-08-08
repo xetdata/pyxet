@@ -1,3 +1,4 @@
+import subprocess
 import threading
 import typing
 
@@ -436,3 +437,96 @@ def _info_branch(repo: str, branch: str):
     fs, path = _get_fs_and_path(repo)
     assert (fs.protocol == XET)
     return fs.find_ref(repo, branch)
+
+
+def _make_repo(name: str, private: bool = False, public: bool = False):
+    if private == public:
+        raise ValueError("One of --private or --public must be set")
+    fs = XetFS()
+    ret = fs.make_repo(name)
+    if private:
+        fs.set_repo_attr(name, "private", True)
+    return ret
+
+
+def _fork_repo(source: str, dest: str = None) -> dict:
+    """
+            Forks a copy of a repository from xet://[user]/[repo] to your own account.
+            Defaults to original repository private/public settings.
+            If dest is not provided, xet://[yourusername]/[repo] is used.
+            Use `xet duplicate` if you want a detached private fork.
+            """
+    fs = XetFS()
+    if dest is None:
+        repo_name = source.rstrip('/').split('/')[-1]
+        dest = "xet://" + fs.get_username() + "/" + repo_name
+    fs.fork_repo(source, dest)
+
+
+def _list_repos(raw: bool = False) -> typing.List[typing.Union[dict, str]]:
+    """
+    Lists all repositories
+    Parameters
+    ----------
+    raw: bool = False: If True, returns a list of dictionaries with the following keys:
+
+    Returns
+    -------
+
+    """
+    fs = XetFS()
+    return fs.list_repos(raw)
+
+
+def _rename_repo(source: str, dest: str):
+    """
+    Renames a repository
+    Parameters
+    ----------
+    source [str]: origin repo to rename from (of the form xet://user/repo)
+    dest [str]: repo to rename to (xet://user/repo)
+
+    Returns
+    -------
+
+    """
+    fs = XetFS()
+    return fs.rename_repo(source, dest)
+
+
+def _validate_git_xet():
+    """
+    Validates that git-xet is installed
+    Returns True if git-xet is installed, False otherwise
+    -------
+    """
+    res = subprocess.run(["git-xet", "-V"], capture_output=True)
+    if res.returncode != 0:
+        print("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
+        return False
+    return True
+
+
+def _clone(source: str, *args):
+    """
+
+    Parameters
+    ----------
+    source [str]: Repository and branch of the form xet://user/repo""
+    args [list]: Arguments to be passed to git-xet clone
+
+    Returns
+    -------
+    """
+    fs = XetFS()
+    source = parse_url(source, fs.domain)
+    commands = ["git-xet", "clone"] + [source.remote] + args
+    strcommand = ' '.join(commands)
+    print(f"Running '{strcommand}'")
+    subprocess.run(["git-xet", "clone"] + [source.remote] + args)
+
+
+def clone(source: str, *args):
+    if _validate_git_xet() is False:
+        raise ValueError("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
+    _clone(source, *args)

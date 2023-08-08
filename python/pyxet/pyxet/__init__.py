@@ -1,6 +1,7 @@
 from .file_system import open, login, XetFS
 from .version import __version__
 from .cli import PyxetCLI, BranchCLI, RepoCLI
+from .core import _copy as copy, _mv as move, _rm as remove, _info as info, _duplicate as duplicate
 
 """
 PyXet

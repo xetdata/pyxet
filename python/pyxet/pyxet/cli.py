@@ -4,13 +4,10 @@ import pyxet
 
 import sys
 import threading
-import os
 import typing
 from tabulate import tabulate
 from .file_system import XetFS
-from .url_parsing import parse_url
 from .version import __version__
-import subprocess
 from pyxet.config import CHUNK_SIZE
 import pyxet.core
 

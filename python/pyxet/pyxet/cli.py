@@ -36,7 +36,7 @@ class PyxetCLI:
         """
         Configures the login information. Stores the config in ~/.xetconfig
         """
-        pyxet.core.configure_login(email, user, password,host, force, no_overwrite)
+        pyxet.core.configure_login(email, user, password, host, force, no_overwrite)
 
     @staticmethod
     @cli.command()
@@ -107,8 +107,6 @@ class PyxetCLI:
            parallel: Annotated[
                int, typer.Option("--parallel", "-p", help="Maximum amount of parallelism")] = 32):
         """copy files and folders"""
-        if not message:
-            message = f"copy {source} to {target}" if not recursive else f"copy {source} to {target} recursively"
         max_concurrent_copies = threading.Semaphore(parallel)
         pyxet.core._root_copy(source, target, message, recursive=recursive, max_concurrent_copies=max_concurrent_copies)
 
@@ -117,9 +115,8 @@ class PyxetCLI:
     def ls(path: Annotated[str, typer.Argument(help="Source file or folder which will be copied")] = "xet://",
            raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """list files and folders"""
-        fs, path = pyxet.core._get_fs_and_path(path)
         try:
-            listing = fs.ls(path, detail=True)
+            listing = pyxet.core._list(path, detail=True)
             if raw:
                 print(listing)
             else:
@@ -215,10 +212,7 @@ class BranchCLI:
 
             xet branch make xet://user/repo main new_branch
         """
-        fs, remote = pyxet.core._get_fs_and_path(repo)
-        assert (fs.protocol == 'xet')
-        assert ('/' not in dest_branch)
-        fs.make_branch(remote, src_branch, dest_branch)
+        pyxet.core._make_branch(repo, src_branch, dest_branch)
 
     @staticmethod
     @branch.command()
@@ -227,10 +221,8 @@ class BranchCLI:
         """
         list branches of a project.
         """
-        fs, path = pyxet.core_get_fs_and_path(repo)
-        assert (fs.protocol == 'xet')
         try:
-            listing = fs.list_branches(repo, raw)
+            listing = pyxet.core._list_branches(repo, raw)
             if raw:
                 print(listing)
             else:
@@ -256,9 +248,7 @@ class BranchCLI:
         print("", file=sys.stderr)
         if yes:
             print("--yes is set. Issuing deletion", file=sys.stderr)
-            fs, path = pyxet.core_get_fs_and_path(repo)
-            assert (fs.protocol == 'xet')
-            return fs.delete_branch(repo, branch)
+            return pyxet.core._delete_branch(repo, branch)
         else:
             print("Add --yes to delete", file=sys.stderr)
 
@@ -269,9 +259,7 @@ class BranchCLI:
         """
         Prints information about a branch
         """
-        fs, path = pyxet.core_get_fs_and_path(repo)
-        assert (fs.protocol == 'xet')
-        ret = fs.find_ref(repo, branch)
+        ret = pyxet.core._info_branch(repo, branch)
         print(ret)
         return ret
 

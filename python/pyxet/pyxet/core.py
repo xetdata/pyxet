@@ -12,6 +12,8 @@ from .url_parsing import parse_url
 from .rpyxet import rpyxet
 from .file_system import XetFS
 
+XET = 'xet'
+
 
 def _ltrim_match(s, match):
     """
@@ -39,7 +41,7 @@ def _get_fs_and_path(uri):
         split = uri.split("://")
         if len(split) != 2:
             print(f"Invalid URL: {uri}", file=sys.stderr)
-        if split[0] == 'xet':
+        if split[0] == XET:
             fs = pyxet.XetFS()
         else:
             fs = fsspec.filesystem(split[0])
@@ -58,7 +60,7 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
         return
     print(f"Copying {src_path} to {dest_path}...")
 
-    if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
+    if src_fs.protocol == XET and dest_fs.protocol == XET:
         dest_fs.cp_file(src_path, dest_path)
         return
     with max_concurrent_copies:
@@ -96,14 +98,14 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
     srcproto = src_fs.protocol
     destproto = dest_fs.protocol
     # if src is a xet, there must be a branch to copy from
-    if srcproto == 'xet':
+    if srcproto == XET:
         src_fs.branch_info(src_path)
 
-    if destproto == 'xet':
+    if destproto == XET:
         # check dest branch exists
         # exists before we try to do any copying
         # An exception is that if this operation would create a branch
-        if srcproto == 'xet':
+        if srcproto == XET:
             src_parse = parse_url(src_path, src_fs.domain)
             dest_parse = parse_url(dest_path, dest_fs.domain)
             if src_parse.path == '' and dest_parse.path == '':
@@ -114,7 +116,7 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
 
 
 def _isdir(fs, path):
-    if fs.protocol == 'xet':
+    if fs.protocol == XET:
         return fs.isdir_or_branch(path)
     else:
         return fs.isdir(path)
@@ -197,7 +199,7 @@ def _copy(source: str, destination: str, recursive: bool = True,
     if src_isdir:
         # Recursively copy
         # xet cp_file can cp directories
-        if srcproto == 'xet' and destproto == 'xet':
+        if srcproto == XET and destproto == XET:
             print(f"Copying {src_path} to {dest_path}...")
             dest_fs.cp_file(src_path, dest_path)
             return
@@ -242,7 +244,7 @@ def _mv(source: str, target: str, recursive: bool, message: str):
         print(
             "Unable to move between different protocols {src_fs.protocol}, {dest_fs.protocol}\nYou may want to copy instead",
             file=sys.stderr)
-    destproto_is_xet = dest_fs.protocol == 'xet'
+    destproto_is_xet = dest_fs.protocol == XET
     try:
         if destproto_is_xet:
             dest_fs.start_transaction(message)
@@ -259,7 +261,7 @@ def _rm(paths=typing.List[str], message=str):
         message = f"delete {paths}"
     fs, _ = _get_fs_and_path(paths[0])
     try:
-        destproto_is_xet = fs.protocol == 'xet'
+        destproto_is_xet = fs.protocol == XET
         if destproto_is_xet:
             for path in paths:
                 parsed_path = parse_url(path, fs.domain)
@@ -319,8 +321,10 @@ def _duplicate(source: str = None,
 
 
 def _root_copy(source, destination, message, recursive=False, max_concurrent_copies=MAX_CONCURRENT_COPIES):
+    if not message:
+        message = f"copy {source} to {destination}" if not recursive else f"copy {source} to {destination} recursively"
     dest_fs, dest_path = _get_fs_and_path(destination)
-    destproto_is_xet = dest_fs.protocol == 'xet'
+    destproto_is_xet = dest_fs.protocol == XET
     dest_isdir = _isdir(dest_fs, dest_path)
 
     # Our target is an existing directory and src is not a wildcard copy
@@ -340,6 +344,11 @@ def _root_copy(source, destination, message, recursive=False, max_concurrent_cop
     _copy(source, destination, recursive, max_concurrent_copies=max_concurrent_copies)
     if destproto_is_xet:
         dest_fs.end_transaction()
+
+
+def _list(path: str, detail: bool = True):
+    fs, path = _get_fs_and_path(path)
+    return fs.ls(path, detail=detail)
 
 
 def configure_login(email: str, user: str, password: str, host: str = "xethub.com", force: bool = False,
@@ -400,3 +409,30 @@ def _perform_mount_curdir(path, reference, signal, autostop, prefetch, ip, writa
                                         prefetch=prefetch,
                                         ip=ip,
                                         writable=writable)
+
+
+def _make_branch(repo: str,
+                 src_branch: str,
+                 dest_branch: str):
+    fs, remote = _get_fs_and_path(repo)
+    assert (fs.protocol == XET)
+    assert ('/' not in dest_branch)
+    fs.make_branch(remote, src_branch, dest_branch)
+
+
+def _list_branches(repo: str, raw: bool = False):
+    fs, path = _get_fs_and_path(repo)
+    assert (fs.protocol == XET)
+    return fs.list_branches(repo, raw)
+
+
+def _delete_branch(repo: str, branch: str):
+    fs, path = _get_fs_and_path(repo)
+    assert (fs.protocol == XET)
+    return fs.delete_branch(repo, branch)
+
+
+def _info_branch(repo: str, branch: str):
+    fs, path = _get_fs_and_path(repo)
+    assert (fs.protocol == XET)
+    return fs.find_ref(repo, branch)

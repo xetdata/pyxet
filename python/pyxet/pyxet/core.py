@@ -412,34 +412,34 @@ def _perform_mount_curdir(path, reference, signal, autostop, prefetch, ip, writa
                                         writable=writable)
 
 
-def _make_branch(repo: str,
-                 src_branch: str,
-                 dest_branch: str):
+def make_branch(repo: str,
+                src_branch: str,
+                dest_branch: str):
     fs, remote = _get_fs_and_path(repo)
     assert (fs.protocol == XET)
     assert ('/' not in dest_branch)
     fs.make_branch(remote, src_branch, dest_branch)
 
 
-def _list_branches(repo: str, raw: bool = False):
+def list_branches(repo: str, raw: bool = False):
     fs, path = _get_fs_and_path(repo)
     assert (fs.protocol == XET)
     return fs.list_branches(repo, raw)
 
 
-def _delete_branch(repo: str, branch: str):
+def delete_branch(repo: str, branch: str):
     fs, path = _get_fs_and_path(repo)
     assert (fs.protocol == XET)
     return fs.delete_branch(repo, branch)
 
 
-def _info_branch(repo: str, branch: str):
+def get_branch_info(repo: str, branch: str):
     fs, path = _get_fs_and_path(repo)
     assert (fs.protocol == XET)
     return fs.find_ref(repo, branch)
 
 
-def _make_repo(name: str, private: bool = False, public: bool = False):
+def make_repo(name: str, private: bool = False, public: bool = False):
     if private == public:
         raise ValueError("One of --private or --public must be set")
     fs = XetFS()
@@ -449,7 +449,7 @@ def _make_repo(name: str, private: bool = False, public: bool = False):
     return ret
 
 
-def _fork_repo(source: str, dest: str = None) -> dict:
+def fork_repo(source: str, dest: str = None) -> dict:
     """
             Forks a copy of a repository from xet://[user]/[repo] to your own account.
             Defaults to original repository private/public settings.
@@ -463,7 +463,7 @@ def _fork_repo(source: str, dest: str = None) -> dict:
     fs.fork_repo(source, dest)
 
 
-def _list_repos(raw: bool = False) -> typing.List[typing.Union[dict, str]]:
+def list_repos(raw: bool = False) -> typing.List[typing.Union[dict, str]]:
     """
     Lists all repositories
     Parameters
@@ -478,7 +478,7 @@ def _list_repos(raw: bool = False) -> typing.List[typing.Union[dict, str]]:
     return fs.list_repos(raw)
 
 
-def _rename_repo(source: str, dest: str):
+def rename_repo(source: str, dest: str):
     """
     Renames a repository
     Parameters

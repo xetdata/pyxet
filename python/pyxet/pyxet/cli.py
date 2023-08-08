@@ -206,7 +206,7 @@ class BranchCLI:
 
             xet branch make xet://user/repo main new_branch
         """
-        pyxet.core._make_branch(repo, src_branch, dest_branch)
+        pyxet.core.make_branch(repo, src_branch, dest_branch)
 
     @staticmethod
     @branch.command()
@@ -216,7 +216,7 @@ class BranchCLI:
         list branches of a project.
         """
         try:
-            listing = pyxet.core._list_branches(repo, raw)
+            listing = pyxet.core.list_branches(repo, raw)
             if raw:
                 print(listing)
             else:
@@ -242,7 +242,7 @@ class BranchCLI:
         print("", file=sys.stderr)
         if yes:
             print("--yes is set. Issuing deletion", file=sys.stderr)
-            return pyxet.core._delete_branch(repo, branch)
+            return pyxet.core.delete_branch(repo, branch)
         else:
             print("Add --yes to delete", file=sys.stderr)
 
@@ -253,7 +253,7 @@ class BranchCLI:
         """
         Prints information about a branch
         """
-        ret = pyxet.core._info_branch(repo, branch)
+        ret = pyxet.core.get_branch_info(repo, branch)
         print(ret)
         return ret
 
@@ -305,7 +305,7 @@ class RepoCLI:
         list repositories of a user.
         """
         try:
-            repos = pyxet.core._list_repos(raw)
+            repos = pyxet.core.list_repos(raw)
             if raw:
                 print(repos)
             else:

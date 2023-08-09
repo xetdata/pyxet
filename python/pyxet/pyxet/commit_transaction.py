@@ -3,9 +3,9 @@ from .url_parsing import parse_url
 from .file_interface import XetFile
 import sys
 import threading
+from .rpyxet import rpyxet
 
-TRANSACTION_LIMIT = 2048
-
+TRANSACTION_FILE_LIMIT = 1
 
 def _validate_repo_info_for_transaction(repo_info):
     if repo_info.remote == '':
@@ -105,6 +105,17 @@ class CommitTransaction(fsspec.transaction.Transaction):
 def repo_info_key(repo_info):
     return f"{repo_info.remote}/{repo_info.branch}"
 
+class _TransactionGuard: 
+
+    def __init__(self, tr):
+        tr.adjust_access_count(1)
+        self.tr = tr 
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        self.tr.adjust_access_count(-1)
 
 class MultiCommitTransaction(fsspec.transaction.Transaction):
     """
@@ -118,6 +129,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         This class should not be used directly.
         it is preferred to use fs.transaction.
         """
+
         self.lock = threading.Lock()
         self.commit_message = None
         self._transaction_pool = {}
@@ -170,20 +182,24 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             if key not in self._transaction_pool:
                 tr = CommitTransaction(self.fs, repo_info, self.commit_message)
                 self._transaction_pool[key] = tr
-                return tr
+                ret = (tr, 
             
             else:
                 tr = self._transaction_pool[key]
-                if tr.transaction_size() >= TRANSACTION_LIMIT:
+                if tr.transaction_size() >= TRANSACTION_FILE_LIMIT:
                     sys.stderr.write("Transaction limit has been reached. Forcing a commit.\n")
                     sys.stderr.flush()
                     tr.set_ready()
 
                     tr = CommitTransaction(self.fs, repo_info, self.commit_message)
                     self._transaction_pool[key] = tr
-                    return tr
+                    ret = (tr
                 else:
-                    return tr
+                    ret = (tr
+            
+            # HACKY AS DUCK
+            # While still under the lock, increment the open_for_write counter, but then decrement it 
+            # When whatever operation down to 
 
 
     def open_for_write(self, repo_info):

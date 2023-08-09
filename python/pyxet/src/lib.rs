@@ -7,13 +7,20 @@ use gitxetcore::config::ConfigGitPathOption::NoPath;
 use gitxetcore::config::XetConfig;
 use gitxetcore::git_integration::git_repo::is_user_identity_set;
 use gitxetcore::log::initialize_tracing_subscriber;
+use lazy_static::lazy_static;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Semaphore};
 use xetblob::*;
+use tracing::debug;
+
+
+lazy_static! {
+    static ref MAX_NUM_CONCURRENT_TRANSACTIONS : AtomicUSize = 2;
+}
 
 #[pyclass]
 pub struct FileAttributes {
@@ -303,8 +310,8 @@ impl PyRepo {
     pub fn open_for_read(&self, branch: &str, path: &str, py: Python<'_>) -> PyResult<PyRFile> {
         rust_async!(
             py,
-            PyRFile::new(self.repo.open_for_read(branch, path).await?))
-        
+            PyRFile::new(self.repo.open_for_read(branch, path).await?)
+        )
     }
     pub fn begin_write_transaction(
         &self,
@@ -312,9 +319,13 @@ impl PyRepo {
         commit_message: &str,
         py: Python<'_>,
     ) -> PyResult<PyWriteTransaction> {
-        let transaction = rust_async!(py, 
-             self.repo.begin_write_transaction(branch, None, None).await)?;
-        PyWriteTransaction::new(transaction,branch, commit_message)
+        rust_async!(py, {
+            let transaction = self
+                .repo
+                .begin_write_transaction(branch, None, None)
+                .await?;
+            PyWriteTransaction::new(transaction, branch, commit_message).await
+        })
     }
 
     /// Fetch shards that could be useful for dedup, according to the given endpoints.
@@ -332,7 +343,8 @@ impl PyRepo {
         min_dedup_bytes_for_shard_downloading: Option<usize>,
         py: Python<'_>,
     ) -> PyResult<()> {
-       rust_async!(py,
+        rust_async!(
+            py,
             self.repo
                 .fetch_hinted_shards_for_dedup(
                     &file_paths,
@@ -551,7 +563,11 @@ impl PyRFile {
     }
 }
 
-#[derive(Default)]
+lazy_static! {
+    /// This is an example for using doc comment attributes
+    static ref TRANSACTION_LIMIT_LOCK: Arc<Semaphore> = Arc::new(Semaphore::new(MAX_NUM_CONCURRENT_TRANSACTIONS));
+}
+
 struct PyWriteTransactionInternal {
     transaction: Option<XetRepoWriteTransaction>,
     branch: String,
@@ -564,8 +580,8 @@ struct PyWriteTransactionInternal {
     ready_to_commit: bool,
     pending_write_files: AtomicU32,
     message: String,
+    _transaction_permit: tokio::sync::OwnedSemaphorePermit,
 }
-
 
 impl PyWriteTransactionInternal {
     /// This is for testing
@@ -579,7 +595,7 @@ impl PyWriteTransactionInternal {
         Ok(())
     }
 
-    pub async fn open_for_write(&mut self, path: &str) -> anyhow::Result<PyWFile> {
+    pub async fn open_for_write(&mut self, path: &str) -> anyhow::Result<Option<PyWFile>> {
         if let Some(ref mut tr) = self.transaction {
             self.new_files
                 .push(format!("{}/{path}", self.branch).to_string());
@@ -591,6 +607,7 @@ impl PyWriteTransactionInternal {
             Err(anyhow!("Transaction already committed"))
         }
     }
+
     pub async fn set_ready(&mut self) -> anyhow::Result<()> {
         let val = self.pending_write_files.load(Ordering::SeqCst);
 
@@ -650,7 +667,7 @@ impl PyWriteTransactionInternal {
     }
     pub async fn delete(&mut self, path: &str) -> anyhow::Result<()> {
         if let Some(ref mut tr) = self.transaction {
-                    self.deletes
+            self.deletes
                 .push(format!("{}/{path}", self.branch).to_string());
             tr.delete(path).await?;
             Ok(())
@@ -696,19 +713,34 @@ impl PyWriteTransactionInternal {
 
 #[pyclass(subclass)]
 struct PyWriteTransaction {
-    pwt : Mutex<PyWriteTransactionInternal>
+    pwt: Mutex<PyWriteTransactionInternal>,
 }
 
-
 impl PyWriteTransaction {
-    fn new(transaction : XetRepoWriteTransaction, branch : &str, commit_message : &str) -> PyResult<Self> {
-        Ok(Self { 
-            pwt : Mutex::new(PyWriteTransactionInternal { 
-                transaction : Some(transaction), 
-                branch : branch.to_string(),
-                message : commit_message.to_string(),
-                ..Default::default()
-            })
+    async fn new(
+        transaction: XetRepoWriteTransaction,
+        branch: &str,
+        commit_message: &str,
+    ) -> anyhow::Result<Self> {
+
+        debug!("PyWriteTransaction::new(): Acquiring transaction permit.");
+        let transaction_permit = TRANSACTION_LIMIT_LOCK.clone().acquire_owned().await?;
+
+        Ok(Self {
+            pwt: Mutex::new(PyWriteTransactionInternal {
+                transaction: Some(transaction),
+                branch: branch.to_string(),
+                message: commit_message.to_string(),
+                copies: Vec::new(),
+                deletes: Vec::new(),
+                moves: Vec::new(),
+                new_files: Vec::new(),
+                do_not_commit: false,
+                error_on_commit: false,
+                ready_to_commit: false,
+                pending_write_files: AtomicU32::new(0),
+                _transaction_permit: transaction_permit,
+            }),
         })
     }
 }
@@ -717,13 +749,20 @@ impl PyWriteTransaction {
 impl PyWriteTransaction {
 
 
+
+    pub fn acquire_usable_transaction(&self) -> MutexGuard
+
+
     /// This is for testing
-    pub fn set_do_not_commit(&self, do_not_commit: bool, py : Python<'_>) -> PyResult<()> {
+    pub fn set_do_not_commit(&self, do_not_commit: bool, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.set_do_not_commit(do_not_commit))
     }
     /// This is for testing
     pub fn set_error_on_commit(&self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.set_error_on_commit(error_on_commit))
+        rust_async!(
+            py,
+            self.pwt.lock().await.set_error_on_commit(error_on_commit)
+        )
     }
 
     pub fn open_for_write(&self, path: &str, py: Python<'_>) -> PyResult<PyWFile> {
@@ -737,7 +776,7 @@ impl PyWriteTransaction {
     pub fn finish_write_one(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.finish_write_one().await)
     }
-    
+
     pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
         rust_async!(py, self.pwt.lock().await.transaction_size().await)
     }
@@ -749,10 +788,10 @@ impl PyWriteTransaction {
     pub fn cancel(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.cancel().await)
     }
-    pub fn delete(&self, path: &str, py : Python<'_>) -> PyResult<()> {
+    pub fn delete(&self, path: &str, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.delete(path).await)
     }
-    
+
     pub fn copy(
         &self,
         src_branch: &str,
@@ -760,38 +799,42 @@ impl PyWriteTransaction {
         target_path: &str,
         py: Python<'_>,
     ) -> PyResult<()> {
-        rust_async!(py, self.pwt.lock().await.copy(src_branch, src_path, target_path).await)
+        rust_async!(
+            py,
+            self.pwt
+                .lock()
+                .await
+                .copy(src_branch, src_path, target_path)
+                .await
+        )
     }
 
     pub fn mv(&self, src_path: &str, target_path: &str, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.pwt.lock().await.mv(src_path, target_path).await)
     }
-    pub fn closed(&self, py : Python<'_>) -> PyResult<bool> {
+    pub fn closed(&self, py: Python<'_>) -> PyResult<bool> {
         rust_async!(py, self.pwt.lock().await.closed())
     }
 
     #[getter]
-    pub fn new_files(&self, py : Python<'_>) -> PyResult<Vec<String>> {
+    pub fn new_files(&self, py: Python<'_>) -> PyResult<Vec<String>> {
         rust_async!(py, anyhow::Ok(self.pwt.lock().await.new_files.clone()))
     }
 
     #[getter]
-    pub fn copies(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.copies.clone()))
+    pub fn copies(&self, py: Python<'_>) -> PyResult<Vec<(String, String)>> {
+        rust_async!(py, anyhow::Ok(self.pwt.lock().await.copies.clone()))
     }
 
     #[getter]
-    pub fn deletes(&self, py : Python<'_>) -> PyResult<Vec<String>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.deletes.clone()))
-
+    pub fn deletes(&self, py: Python<'_>) -> PyResult<Vec<String>> {
+        rust_async!(py, anyhow::Ok(self.pwt.lock().await.deletes.clone()))
     }
 
     #[getter]
-    pub fn moves(&self, py : Python<'_>) -> PyResult<Vec<(String, String)>> {
-rust_async!(py, anyhow::Ok(self.pwt.lock().await.moves.clone()))
+    pub fn moves(&self, py: Python<'_>) -> PyResult<Vec<(String, String)>> {
+        rust_async!(py, anyhow::Ok(self.pwt.lock().await.moves.clone()))
     }
-
-
 }
 
 #[pyclass(subclass)]
@@ -801,10 +844,10 @@ struct PyWFile {
 
 #[pymethods]
 impl PyWFile {
-    pub fn is_closed(&self, py : Python<'_>) -> PyResult<bool> {
+    pub fn is_closed(&self, py: Python<'_>) -> PyResult<bool> {
         rust_async!(py, anyhow::Ok(self.writer.is_closed().await))
     }
-    pub fn close(&mut self, py : Python<'_>) -> PyResult<()> {
+    pub fn close(&mut self, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, self.writer.close().await)
     }
     pub fn write(&mut self, b: &PyAny, py: Python<'_>) -> PyResult<()> {
@@ -822,6 +865,7 @@ impl PyWFile {
         Ok(true)
     }
 }
+
 /// This module is implemented in Rust.
 #[pymodule]
 pub fn rpyxet(_py: Python<'_>, m: &PyModule) -> PyResult<()> {

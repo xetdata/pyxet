@@ -487,7 +487,11 @@ class PyxetCLI:
         fs = XetFS()
         if dest is None:
             repo_name = source.rstrip('/').split('/')[-1]
-            dest = "xet://" + fs.get_username() + "/" + repo_name
+            username = fs.get_username().strip()
+            if not bool(username):
+                print("Failed to infer a user name to duplicate the repo, please provide a full dest name")
+                return
+            dest = "xet://" + username + "/" + repo_name
             print(f"Duplicating to {dest}")
         else:
             repo_name = source.rstrip('/').split('/')[-1]

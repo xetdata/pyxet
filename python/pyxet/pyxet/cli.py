@@ -489,7 +489,7 @@ class PyxetCLI:
             repo_name = source.rstrip('/').split('/')[-1]
             username = fs.get_username().strip()
             if not bool(username):
-                print("Failed to infer a user name to duplicate the repo, please provide a full dest name")
+                print("Failed to infer a user name to duplicate the repo, please provide a full target name")
                 return
             dest = "xet://" + username + "/" + repo_name
             print(f"Duplicating to {dest}")

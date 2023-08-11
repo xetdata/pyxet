@@ -13,109 +13,8 @@ def _validate_repo_info_for_transaction(repo_info):
     if repo_info.branch == '':
         raise ValueError("No branch specified")
 
-
-class CommitTransaction(fsspec.transaction.Transaction):
-    """
-    Handles a commit using the transaction interface. A transaction can only
-    be performed within the context of a single repository and branch.
-
-    There is a transaction limit of 2048 entries. If the number of changes
-    exceed this limit, an automatic commit will be performed.
-    """
-
-    def __init__(self, fs, repo_info, commit_message=None):
-        """
-        This class should not be used directly.
-        it is preferred to use fs.transaction.
-        """
-        _validate_repo_info_for_transaction(repo_info)
-        if commit_message is None:
-            import datetime
-            commit_message = "Commit " + datetime.datetime.now().isoformat()
-
-        self.commit_message = commit_message
-        self._transaction_handler = fs._create_transaction_handler(repo_info, commit_message)
-        self.fs = fs
-        self.repo_info = repo_info
-
-        super().__init__(fs)
-
-    def __repr__(self):
-        if self.fs is None:
-            return f"Invalidated transaction for {self.repo_info}"
-        else:
-            return f"Transaction for {self.repo_info}"
-
-    def __str__(self):
-        if self.fs is None:
-            return f"Invalidated transaction for {self.repo_info}"
-        else:
-            return f"Transaction for {self.repo_info}"
-
-    def complete(self, commit=True):
-        """
-        Finalizes and commits or cancels this transaction.
-        This transaction object will no longer be usable and is fully detached
-        from the originating XetFS object
-        """
-        if self.fs is None:
-            return
-        handler = self._transaction_handler
-        if handler is not None:
-            if commit:
-                handler.commit()
-            else:
-                handler.cancel()
-
-    def open_for_write(self, repo_info):
-        assert(repo_info.remote == self.repo_info.remote)
-        assert(repo_info.branch == self.repo_info.branch)
-        return 
-
-    def copy(self, src_repo_info, dest_repo_info):
-        if self.fs is None:
-            raise RuntimeError("Transaction object has been invalidated")
-        assert(src_repo_info.remote == dest_repo_info.remote)
-        assert(dest_repo_info.remote == self.repo_info.remote)
-        self._transaction_handler.copy(src_repo_info.branch,
-                                       src_repo_info.path,
-                                       dest_repo_info.path)
-
-    def rm(self, repo_info):
-        if self.fs is None:
-            raise RuntimeError("Transaction object has been invalidated")
-        assert(repo_info.remote == self.repo_info.remote)
-        assert(repo_info.branch == self.repo_info.branch)
-        self._transaction_handler.delete(repo_info.path)
-
-    def mv(self, src_repo_info, dest_repo_info):
-        if self.fs is None:
-            raise RuntimeError("Transaction object has been invalidated")
-        assert(src_repo_info.remote == dest_repo_info.remote)
-        assert(dest_repo_info.remote == self.repo_info.remote)
-        self._transaction_handler.mv(src_repo_info.path, dest_repo_info.path)
-
-    def transaction_size(self):
-        return self._transaction_handler.transaction_size()
-
-    def set_ready(self):
-        self._transaction_handler.set_ready()
-
-
 def repo_info_key(repo_info):
     return f"{repo_info.remote}/{repo_info.branch}"
-
-class _TransactionGuard: 
-
-    def __init__(self, tr):
-        tr.adjust_access_count(1)
-        self.tr = tr 
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, _exc_type, _exc_val, _exc_tb):
-        self.tr.adjust_access_count(-1)
 
 class MultiCommitTransaction(fsspec.transaction.Transaction):
     """
@@ -179,11 +78,15 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
 
             try:
                 tr = self._transaction_pool[key]
+
+                if tr.transaction_size() >= TRANSACTION_FILE_LIMIT:
+                    tr.commit_and_restart()
+
             except KeyError:
                 tr = self.fs._create_transaction_handler(repo_info, self.commit_message) 
                 self._transaction_pool[key] = tr
 
-            return (tr, tr.get_access_token())
+            return tr.create_access_token()
 
 
     def open_for_write(self, repo_info):
@@ -211,7 +114,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             ret_except = None
             for k, v in self._transaction_pool.items():
                 try:
-                    v.complete(commit)
+                    v.complete(commit, blocking = True)
                 except Exception as e:
                     sys.stderr.write(f"Failed to commit {k}: {e}\n")
                     sys.stderr.flush()

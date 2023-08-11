@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use std::sync::Arc;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, Semaphore};
-use tracing::{debug, error, info};
+use tokio::sync::{RwLock, Semaphore};
+use tracing::{debug, info};
 use xetblob::*;
 
 lazy_static! {
@@ -30,6 +30,9 @@ pub struct WriteTransaction {
     // For testing: generate an error on the commit to make sure everything works
     // above this.
     error_on_commit: bool,
+
+    // For tensting, things succeed but don't actually push.
+    do_not_commit: bool,
 
     // For testing: go through everything, but don't actually do the last bit of the commit.
     commit_canceled: bool,
@@ -57,6 +60,7 @@ impl WriteTransaction {
             deletes: Vec::new(),
             moves: Vec::new(),
             new_files: Vec::new(),
+            do_not_commit: false,
             error_on_commit: false,
             commit_when_ready: false,
             _transaction_permit: transaction_permit,
@@ -86,6 +90,10 @@ impl WriteTransaction {
             info!("PyWriteTransactionInternal::complete: Cancelling commit.");
             self.transaction.cancel().await?;
         } else {
+            if self.do_not_commit {
+                return Ok(());
+            }
+
             self.transaction.commit(&self.commit_message).await?;
         }
 
@@ -97,9 +105,14 @@ impl WriteTransaction {
         Ok(())
     }
 
-    /// This is for testing
     pub fn set_cancel_flag(&mut self, cancel_commit: bool) -> Result<()> {
         self.commit_canceled = cancel_commit;
+        Ok(())
+    }
+
+    /// This is for testing
+    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> Result<()> {
+        self.do_not_commit = do_not_commit;
         Ok(())
     }
 
@@ -183,7 +196,7 @@ impl WriteTransaction {
     // when calling close() while ensuring that all combinations of two pathways
     // (Drop or explicit close) to closing a writing never leave the transaction in a
     // bad state.
-    pub async fn release_write_handle(handle: Arc<RwLock<WriteTransaction>>) -> Result<()> {
+    pub async fn release_write_token(handle: Arc<RwLock<WriteTransaction>>) -> Result<()> {
         // Only shut down if this is the last reference to self.  This works only if this is the
         // only reference to the PyWriteTransactionInternal
         // object.

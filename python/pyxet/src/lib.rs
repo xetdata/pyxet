@@ -10,10 +10,9 @@ use gitxetcore::log::initialize_tracing_subscriber;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, Semaphore};
-use tracing::{debug, error, info};
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tracing::{error, info};
 use xetblob::*;
 
 mod transactions;
@@ -316,7 +315,6 @@ impl PyRepo {
         &self,
         branch: &str,
         commit_message: &str,
-        max_writes_before_commit: usize,
         py: Python<'_>,
     ) -> PyResult<PyWriteTransaction> {
         rust_async!(
@@ -574,6 +572,7 @@ impl PyRFile {
 // completion propegate properly and transactions are not left in a bad state if there are
 // errors elsewhere.
 //
+#[pyclass(subclass)]
 #[derive(Clone)]
 pub struct PyWriteTransaction {
     pwt: Option<Arc<RwLock<WriteTransaction>>>,
@@ -601,9 +600,57 @@ impl PyWriteTransaction {
         } else {
             // This means we've called close() on the transaction, then tried to use it.
             Err(anyhow!(
-                "Transaction operation attempted after transaction handle closed."
+                "Transaction operation attempted after transaction completed."
             ))
         }
+    }
+
+    async fn complete_impl(&mut self, commit: bool, blocking: bool) -> Result<()> {
+        let Some(tr) = self.pwt.take() else {
+            // This means we've called close() on the transaction, then tried to use it.
+            return Err(anyhow!("Complete called after transaction closed."));
+        };
+
+        if commit {
+            tr.write().await.set_commit_when_ready(true)?;
+        } else {
+            tr.write().await.set_cancel_flag(true)?;
+        }
+
+        if blocking {
+            let count = Arc::strong_count(&tr);
+
+            if count > 1 {
+                info!("PyWriteTransaction: blocking complete: Waiting for other operations to complete.");
+
+                loop {
+                    // Sleep >= 50 milliseconds, then poll again.
+                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+                    let count = Arc::strong_count(&tr);
+
+                    if count == 1 {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If there is only one count, this will shut down the transaction
+        // and propegate any errors
+        WriteTransaction::release_write_token(tr).await?;
+
+        Ok(())
+    }
+
+    async fn commit_and_restart_impl(&mut self) -> Result<()> {
+        // Complete the current transaction, but not blocking.
+        self.complete_impl(true, false).await?;
+
+        // Create a new write transaction wrapper
+        let inner = WriteTransaction::new(&self.repo, &self.branch, &self.commit_message).await?;
+        self.pwt = Some(Arc::new(RwLock::new(inner)));
+
+        Ok(())
     }
 }
 
@@ -612,7 +659,7 @@ impl Drop for PyWriteTransaction {
         // This should only occurs in case of errors elsewhere, but must be cleaned up okay.
         if let Some(handle) = self.pwt.take() {
             pyo3_asyncio::tokio::get_runtime().block_on(async {
-                let res = WriteTransaction::release_write_handle(handle).await;
+                let res = WriteTransaction::release_write_token(handle).await;
                 if let Err(e) = res {
                     error!("Error deregistering write handle in transaction : {e:?}");
                 }
@@ -625,26 +672,42 @@ impl Drop for PyWriteTransaction {
 #[pymethods]
 impl PyWriteTransaction {
     pub fn complete(&mut self, commit: bool, blocking: bool, py: Python<'_>) -> PyResult<()> {
-        todo!()
+        rust_async!(py, self.complete_impl(commit, blocking).await)
     }
 
     pub fn commit_and_restart(&mut self, py: Python<'_>) -> PyResult<()> {
-        todo!()
+        rust_async!(py, self.commit_and_restart_impl().await)
     }
 
-    pub fn create_access_token(&self, py: Python<'_>) -> PyResult<PyWriteTransactionAccessToken> {
-        todo!()
+    pub fn create_access_token(&self) -> PyResult<PyWriteTransactionAccessToken> {
+        Ok(PyWriteTransactionAccessToken {
+            tr: Some(
+                self.access_inner()
+                    .map_err(anyhow_to_runtime_error)?
+                    .clone(),
+            ),
+        })
     }
 
     pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
-        todo!()
+        rust_async!(
+            py,
+            self.access_inner()?.read().await.transaction_size().await
+        )
     }
 
-    /// This is for testing
     pub fn set_cancel_flag(&self, do_not_commit: bool, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
             (self.access_inner()?.write().await).set_cancel_flag(do_not_commit)
+        )
+    }
+
+    /// This is for testing
+    pub fn set_do_not_commit(&self, do_not_commit: bool, py: Python<'_>) -> PyResult<()> {
+        rust_async!(
+            py,
+            (self.access_inner()?.write().await).set_do_not_commit(do_not_commit)
         )
     }
 
@@ -690,54 +753,79 @@ impl PyWriteTransaction {
 }
 
 #[pyclass(subclass)]
+#[derive(Clone)]
 pub struct PyWriteTransactionAccessToken {
     tr: Option<Arc<RwLock<WriteTransaction>>>,
 }
 
+impl PyWriteTransactionAccessToken {
+    async fn access_transaction_for_write<'a>(
+        &'a self,
+    ) -> Result<RwLockWriteGuard<'a, WriteTransaction>> {
+        todo!()
+    }
+
+    async fn access_transaction_for_read<'a>(
+        &'a self,
+    ) -> Result<RwLockReadGuard<'a, WriteTransaction>> {
+        todo!()
+    }
+
+    // release the handle.
+    async fn release(&mut self) -> Result<()> {
+        if let Some(handle) = self.tr.take() {
+            WriteTransaction::release_write_token(handle).await?;
+        }
+        Ok(())
+    }
+}
+
+impl Drop for PyWriteTransactionAccessToken {
+    fn drop(&mut self) {
+        // This should only occurs in case of errors elsewhere, but must be cleaned up okay.
+        if let Some(handle) = self.tr.take() {
+            pyo3_asyncio::tokio::get_runtime().block_on(async {
+                let res = WriteTransaction::release_write_token(handle).await;
+                if let Err(e) = res {
+                    error!("Error deregistering transaction write token: {e:?}");
+                }
+            });
+        }
+    }
+}
+
 #[pymethods]
 impl PyWriteTransactionAccessToken {
-    pub fn finished(&self, py: Python<'_>) -> PyResult<()> {
-        todo!()
+    pub fn close(&mut self, py: Python<'_>) -> PyResult<()> {
+        // This just allows errors that may happen when a transaction is committed.
+        rust_async!(py, {
+            if let Some(handle) = self.tr.take() {
+                WriteTransaction::release_write_token(handle).await?;
+            }
+            anyhow::Ok(())
+        })
     }
 
     pub fn open_for_write(&self, path: &str, py: Python<'_>) -> PyResult<PyWFile> {
         rust_async!(py, {
-            // Use a write lock here only because we might upgrade this.
-            let mut tr_handle_lock = self.access_token.write().await;
+            let writer = self
+                .access_transaction_for_write()
+                .await?
+                .open_for_write(path)
+                .await?;
 
-            loop {
-                let mut pwt_lg = tr_handle_lock.write().await?;
-
-                if pwt_lg.transaction_size().await? >= self.max_size_before_commit {
-                    pwt_lg.set_commit_when_ready(true)?;
-
-                    drop(pwt_lg); // Release the lock on the actual transaction, since we won't need to access it more.
-
-                    let new_tr =
-                        WriteTransaction::new(&self.repo, &self.branch, &self.commit_message)
-                            .await?;
-
-                    // Release our transaction write handle, setting it to point to the new one
-                    tr_handle_lock.release_and_set_transaction(new_tr).await?;
-
-                    // Restarting the loop will now acquire the lock on the new transaction object
-                    continue;
-                } else {
-                    let writer = pwt_lg.open_for_write(path).await?;
-
-                    break anyhow::Ok(PyWFile {
-                        writer,
-                        transaction_write_handle: tr_handle_lock.clone(),
-                    });
-                }
-            }
+            anyhow::Ok(PyWFile {
+                writer,
+                transaction_write_handle: self.clone(),
+            })
         })
     }
 
     pub fn delete(&self, path: &str, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
-            (self.access_token.read().await.write().await?)
+            self.access_transaction_for_write()
+                .await?
                 .delete(path)
                 .await
         )
@@ -752,7 +840,8 @@ impl PyWriteTransactionAccessToken {
     ) -> PyResult<()> {
         rust_async!(
             py,
-            (self.access_token.read().await.write().await?)
+            self.access_transaction_for_write()
+                .await?
                 .copy(src_branch, src_path, target_path)
                 .await
         )
@@ -762,69 +851,18 @@ impl PyWriteTransactionAccessToken {
         rust_async!(
             py,
             // HMM.  Why does mv take two arguments and copy three?  Where do branches come in here?
-            (self.access_token.read().await.write().await?)
+            self.access_transaction_for_write()
+                .await?
                 .mv(src_path, target_path)
-                .await
-        )
-    }
-
-    // Convenience functions to check access and acquire locks on the inner objects.
-    async fn write<'a>(&'a self) -> Result<RwLockWriteGuard<'a, WriteTransaction>> {
-        Ok(self.access_inner()?.write().await)
-    }
-
-    async fn read<'a>(&'a self) -> Result<RwLockReadGuard<'a, WriteTransaction>> {
-        Ok(self.access_inner()?.read().await)
-    }
-
-    // release the handle.
-    async fn release(&mut self) -> Result<()> {
-        if let Some(handle) = self.pwt.take() {
-            WriteTransaction::release_write_handle(handle).await?;
-        }
-        Ok(())
-    }
-}
-
-#[pymethods]
-impl PyTransactionAccessToken {
-    pub fn release(&mut self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.token.release().await)
-    }
-}
-
-#[pymethods]
-impl PyWriteTransactionToken {
-    pub fn set_commit_when_ready(&self, py: Python<'_>) -> PyResult<()> {
-        rust_async!(
-            py,
-            (self.access_token.read().await.write().await)?.set_commit_when_ready(true)
-        )
-    }
-
-    /// Creates a new access token that will keep the transaction alive.
-    pub fn get_access_token(&self, py: Python<'_>) -> PyResult<PyTransactionAccessToken> {
-        rust_async!(
-            py,
-            anyhow::Ok(PyTransactionAccessToken {
-                token: self.access_token.read().await.duplicate_token().await?
-            })
-        )
-    }
-    pub fn transaction_size(&self, py: Python<'_>) -> PyResult<usize> {
-        rust_async!(
-            py,
-            (self.access_token.read().await.read().await?)
-                .transaction_size()
                 .await
         )
     }
 }
 
 #[pyclass(subclass)]
-struct PyWFile {
+pub struct PyWFile {
     writer: Arc<XetWFileObject>,
-    transaction_write_handle: PyWriteTransaction,
+    transaction_write_handle: PyWriteTransactionAccessToken,
 }
 
 #[pymethods]
@@ -848,7 +886,7 @@ impl PyWFile {
         rust_async!(py, {
             if self
                 .transaction_write_handle
-                .read()
+                .access_transaction_for_read()
                 .await?
                 .commit_canceled()
             {
@@ -876,8 +914,8 @@ pub fn rpyxet(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     let _ = initialize_tracing_subscriber(&cfg);
     m.add_class::<PyRepoManager>()?;
     m.add_class::<PyRepo>()?;
-    m.add_class::<PyTransactionAccessToken>()?;
-    m.add_class::<PyWriteTransactionToken>()?;
+    m.add_class::<PyWriteTransaction>()?;
+    m.add_class::<PyWriteTransactionAccessToken>()?;
     m.add_class::<PyWFile>()?;
     m.add_class::<PyRFile>()?;
     m.add_function(wrap_pyfunction!(configure_login, m)?)?;

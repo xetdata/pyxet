@@ -154,8 +154,6 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             import datetime
             commit_message = "Commit " + datetime.datetime.now().isoformat()
         self.commit_message = commit_message
-        for v in self._transaction_pool.values():
-            v.commit_message = self.commit_message
 
     def __repr__(self):
         with self.lock:
@@ -182,7 +180,6 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             if key not in self._transaction_pool:
                 tr = CommitTransaction(self.fs, repo_info, self.commit_message)
                 self._transaction_pool[key] = tr
-                ret = (tr, 
             
             else:
                 tr = self._transaction_pool[key]

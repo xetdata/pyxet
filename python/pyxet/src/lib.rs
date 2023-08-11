@@ -706,10 +706,9 @@ impl PyWriteTransactionInternal {
         if self.commit_canceled || !self.commit_when_ready {
             info!("PyWriteTransactionInternal::complete: Cancelling commit.");
             self.transaction.cancel().await?;
-            return Ok(());
+        } else {
+            self.transaction.commit(&self.commit_message).await?;
         }
-
-        self.transaction.commit(&self.commit_message).await?;
 
         Ok(())
     }

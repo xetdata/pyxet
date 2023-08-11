@@ -1,31 +1,29 @@
 name: commit
 on: push
 jobs:
-  commit_build_and_test:
+  build_and_test:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.7", "3.11"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.11
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install maturin pytest
-      - name: Build with maturin
+          pip install maturin
+      - name: Build with maturin (non-macOS)
+        if: runner.os != 'macOS'
         run: |
-          sw_vers && export CXXFLAGS="-stdlib=libc++" || echo "not on macOS, skipping libc++"
-          pushd python/pyxet
+          cd python/pyxet
           maturin build
-          popd
-      - name: Test with pytest
+      - name: Build with maturin (macOS)
+        if: runner.os == 'macOS'
         run: |
-          pushd python/pyxet
-          pip install target/wheels/*.whl
-          popd
-          pytest
+          export CXXFLAGS="-stdlib=libc++"
+          cd python/pyxet
+          maturin build

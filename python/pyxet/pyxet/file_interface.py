@@ -22,10 +22,7 @@ class XetFile:
 
     def close(self):
         if not self.closed:
-            ret = self.handle.close()
-            if self.write_transaction is not None:
-                self.write_transaction.finish_write_one()
-            return ret
+            return self.handle.close()
 
     def isatty(self):
         return False

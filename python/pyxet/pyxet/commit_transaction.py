@@ -70,7 +70,7 @@ class CommitTransaction(fsspec.transaction.Transaction):
     def open_for_write(self, repo_info):
         assert(repo_info.remote == self.repo_info.remote)
         assert(repo_info.branch == self.repo_info.branch)
-        return XetFile(self._transaction_handler.open_for_write(repo_info.path), self._transaction_handler)
+        return 
 
     def copy(self, src_repo_info, dest_repo_info):
         if self.fs is None:
@@ -177,26 +177,13 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         with self.lock:
             key = repo_info_key(repo_info)
 
-            if key not in self._transaction_pool:
-                tr = CommitTransaction(self.fs, repo_info, self.commit_message)
-                self._transaction_pool[key] = tr
-            
-            else:
+            try:
                 tr = self._transaction_pool[key]
-                if tr.transaction_size() >= TRANSACTION_FILE_LIMIT:
-                    sys.stderr.write("Transaction limit has been reached. Forcing a commit.\n")
-                    sys.stderr.flush()
-                    tr.set_ready()
+            except KeyError:
+                tr = self.fs._create_transaction_handler(repo_info, self.commit_message) 
+                self._transaction_pool[key] = tr
 
-                    tr = CommitTransaction(self.fs, repo_info, self.commit_message)
-                    self._transaction_pool[key] = tr
-                    ret = (tr
-                else:
-                    ret = (tr
-            
-            # HACKY AS DUCK
-            # While still under the lock, increment the open_for_write counter, but then decrement it 
-            # When whatever operation down to 
+            return (tr, tr.get_access_token())
 
 
     def open_for_write(self, repo_info):
@@ -205,7 +192,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
-        return handler.open_for_write(repo_info)
+        return XetFile(handler.open_for_write(repo_info.path), handler)
 
     def start(self):
         """

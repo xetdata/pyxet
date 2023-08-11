@@ -248,8 +248,13 @@ dependencies = [
 
 [[package]]
 name = "cache"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-trait",
@@ -273,8 +278,13 @@ dependencies = [
 
 [[package]]
 name = "cas_client"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-trait",
@@ -696,8 +706,13 @@ dependencies = [
 
 [[package]]
 name = "data_analysis"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "approx",
  "cxx",
@@ -1098,8 +1113,13 @@ dependencies = [
 
 [[package]]
 name = "gitxetcore"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1548,8 +1568,13 @@ dependencies = [
 
 [[package]]
 name = "libmagic"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "phf",
@@ -1657,8 +1682,13 @@ dependencies = [
 
 [[package]]
 name = "mdb_shard"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -1697,8 +1727,13 @@ dependencies = [
 
 [[package]]
 name = "merkledb"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "async-trait",
  "bincode",
@@ -1727,8 +1762,13 @@ dependencies = [
 
 [[package]]
 name = "merklehash"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "blake3",
  "generic-array",
@@ -2171,8 +2211,13 @@ dependencies = [
 
 [[package]]
 name = "parutils"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -2339,8 +2384,13 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "pointer_file"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "toml",
  "tracing",
@@ -2423,8 +2473,13 @@ dependencies = [
 
 [[package]]
 name = "progress_reporting"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "atty",
  "crossterm",
@@ -2451,8 +2506,13 @@ dependencies = [
 
 [[package]]
 name = "prometheus_dict_encoder"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "memchr",
  "prometheus",
@@ -2615,7 +2675,7 @@ dependencies = [
 
 [[package]]
 name = "pyxet"
-version = "0.1.1"
+version = "0.1.2-rc1"
 dependencies = [
  "anyhow",
  "cc",
@@ -2832,8 +2892,13 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 
 [[package]]
 name = "retry_strategy"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "tokio-retry",
 ]
@@ -3029,8 +3094,13 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "s3"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "chrono",
  "more-asserts 0.3.1",
@@ -3223,8 +3293,13 @@ dependencies = [
 
 [[package]]
 name = "shard_client"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4082,8 +4157,13 @@ dependencies = [
 
 [[package]]
 name = "utils"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "chrono",
@@ -4406,8 +4486,13 @@ dependencies = [
 
 [[package]]
 name = "xet_config"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "config",
  "dirs",
@@ -4419,8 +4504,13 @@ dependencies = [
 
 [[package]]
 name = "xetblob"
+<<<<<<< HEAD
 version = "0.11.1"
 source = "git+https://github.com/xetdata/xet-core#aa652b85335011b7305a53499ead2aaca4a2f5ae"
+=======
+version = "0.11.2"
+source = "git+https://github.com/xetdata/xet-core#791f2177dcecbee6a0545fdaad904447dbb685cf"
+>>>>>>> hoytak/270811-upgrade-git-xet-core-version
 dependencies = [
  "anyhow",
  "async-trait",

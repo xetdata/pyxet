@@ -26,4 +26,4 @@ jobs:
         run: |
           export CXXFLAGS="-stdlib=libc++"
           cd python/pyxet
-          maturin build
+          maturin build --target universal2-apple-darwin

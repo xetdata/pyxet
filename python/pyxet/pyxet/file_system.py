@@ -139,7 +139,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         parse = urlparse(url_path.remote)
         path = parse.path
-        components = path.lstrip('/').rstrip('/').split('/')
+        components = list(filter(None, path.lstrip('/').rstrip('/').split('/')))
         if len(components) < 2:
             raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
         prefix = '/'.join(components[:2]) + '/' + url_path.branch
@@ -212,7 +212,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise ValueError(f"{origin_path} is not a repo")
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
-        user_and_repo = dest_path.split('://')[-1].split('/')
+        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
         if len(user_and_repo) != 2:
             raise ValueError("Expecting xet://user/repo for destination")
         # validate username
@@ -236,7 +236,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise ValueError(f"{origin_path} is not a repo")
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
-        user_and_repo = dest_path.split('://')[-1].split('/')
+        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
         if len(user_and_repo) != 2:
             raise ValueError("Expecting xet://user/repo for destination")
         # validate username
@@ -266,12 +266,12 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
 
-        user_and_repo = origin_path.split('://')[-1].split('/')
+        user_and_repo = list(filter(None, origin_path.split('://')[-1].split('/')))
         if len(user_and_repo) != 2:
             raise ValueError("Expecting xet://user/repo for destination")
         old_user = user_and_repo[0]
 
-        user_and_repo = dest_path.split('://')[-1].split('/')
+        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
         if len(user_and_repo) != 2:
             raise ValueError("Expecting xet://user/repo for destination")
         new_user, new_repo = user_and_repo[0], user_and_repo[1]

@@ -762,13 +762,25 @@ impl PyWriteTransactionAccessToken {
     async fn access_transaction_for_write<'a>(
         &'a self,
     ) -> Result<RwLockWriteGuard<'a, WriteTransaction>> {
-        todo!()
+        let Some(t) = &self.tr else { 
+            // This should only happen if it's been closed explicitly, then 
+            // access is attempted.
+            return Err(anyhow!("Transaction accessed for write after being closed."));
+        };
+
+        Ok(t.write().await)
     }
 
     async fn access_transaction_for_read<'a>(
         &'a self,
     ) -> Result<RwLockReadGuard<'a, WriteTransaction>> {
-        todo!()
+        let Some(t) = &self.tr else { 
+            // This should only happen if it's been closed explicitly, then 
+            // access is attempted.
+            return Err(anyhow!("Transaction accessed for read after being closed."));
+        };
+
+        Ok(t.read().await)
     }
 
     // release the handle.

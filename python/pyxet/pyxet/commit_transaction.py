@@ -5,7 +5,7 @@ import sys
 import threading
 from .rpyxet import rpyxet
 
-TRANSACTION_FILE_LIMIT = 1
+TRANSACTION_FILE_LIMIT = 2048
 
 def _validate_repo_info_for_transaction(repo_info):
     if repo_info.remote == '':

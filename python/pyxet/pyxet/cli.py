@@ -166,7 +166,7 @@ def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive
 
 
 def __build_src_dest_list__file_src(src_fs, src_file, dest_fs, dest_path):
-    if _isdir(dest_fs, dest_path):
+    if _isdir(dest_fs, dest_path):  # Also tests yes if dest is a branch
         _, src_name = os.path.split(src_file)
         return [(src_file, os.path.join(dest_path, src_name), 0)], []
     else:

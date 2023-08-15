@@ -373,7 +373,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         url_path = parse_url(path, self.domain)
 
         if url_path.branch == '':
-            return self.list_branches(path)
+            branches = self.list_branches(path)
+            return [{'name':path + '/' + n['name'], 'type':'branch'} for n in branches]
 
 
         parse = urlparse(url_path.remote)

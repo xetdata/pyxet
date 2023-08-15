@@ -374,6 +374,9 @@ class PyxetCLI:
             if raw:
                 print(listing)
             else:
+                if fs.protocol == 'xet':
+                    for entry in listing:
+                        entry['name'] = 'xet://' + entry['name']
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:
@@ -643,7 +646,7 @@ class RepoCLI:
                 print(repos)
             else:
                 print(tabulate(repos, headers="keys"))
-            return ls
+            return repos
         except Exception as e:
             print(f"{e}")
             return

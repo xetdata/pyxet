@@ -365,7 +365,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def ls(path: Annotated[str, typer.Argument(help="Source file or folder to copy")] = "xet://",
+    def ls(path: Annotated[str, typer.Argument(help="Source file or folder to list")] = "xet://",
            raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """list files and folders"""
         fs, path = _get_fs_and_path(path)
@@ -657,7 +657,7 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def rename(source: Annotated[str, typer.Argument(help="Origin repo to rename from in format xet://[user]/[repo])"],
+    def rename(source: Annotated[str, typer.Argument(help="Origin repo to rename from in format xet://[user]/[repo])")],
                dest: Annotated[str, typer.Argument(help="Repo to rename to in format xet://[user]/[repo]")]):
         """
         Forks a new repository from an existing repository.

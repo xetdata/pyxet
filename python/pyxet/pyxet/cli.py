@@ -368,15 +368,22 @@ class PyxetCLI:
     def ls(path: Annotated[str, typer.Argument(help="Source file or folder which will be copied")] = "xet://",
            raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """list files and folders"""
+        original_path = path
         fs, path = _get_fs_and_path(path)
         try:
             listing = fs.ls(path, detail=True)
             if raw:
                 print(listing)
             else:
+                if fs.protocol == 'xet':
+                    for entry in listing:
+                        entry['name'] = 'xet://' + entry['name']
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:
+            # this failed to list. retry as a file
+            if fs.protocol == 'xet':
+                return PyxetCLI.info(original_path, raw)
             print(f"{e}")
             return
 
@@ -464,7 +471,9 @@ class PyxetCLI:
             if raw:
                 print(info)
             else:
-                print(tabulate([info]))
+                if fs.protocol == 'xet':
+                    info['name'] = 'xet://' + info['name']
+                print(tabulate([info], headers="keys"))
             return info
         except Exception as e:
             print(f"{e}")
@@ -643,7 +652,7 @@ class RepoCLI:
                 print(repos)
             else:
                 print(tabulate(repos, headers="keys"))
-            return ls
+            return repos
         except Exception as e:
             print(f"{e}")
             return

@@ -281,8 +281,8 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mount(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://[user]/[repo]/[branch]")],
-              path: Annotated[str, typer.Argument(help="Path to mount to. (or a drive letter on windows)")],
+    def mount(source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
+              path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
               prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
         """
         Mounts a repository on a local path
@@ -290,14 +290,14 @@ class PyxetCLI:
         fs = XetFS()
         source = parse_url(source, fs.domain)
         if source.path != '':
-            raise ValueError("Cannot have a path when mounting. Expecting only xet://[user]/[repo]/[branch]")
+            raise ValueError("Cannot have a path when mounting. Expecting xet://[user]/[repo]/[branch]")
         if source.branch == '':
             raise ValueError("Branch or revision must be specified")
         if os.name == 'nt':
             # path must be a drive letter (X, or X: or X:\\)
             letter = path[0]
             if path != letter and path != letter + ':' and path != letter + ':\\':
-                raise ValueError("Path must be a drive letter of the form X:")
+                raise ValueError("Path must be a Windows drive letter of the form X:")
             path = letter
         rpyxet.perform_mount(sys.executable, source.remote, path, source.branch, prefetch)
 
@@ -323,7 +323,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def clone(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://[user]/[repo]")],
+    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://[user]/[repo]")],
               args: Annotated[typing.List[str], typer.Argument(help="Arguments to be passed to git-xet clone")] = None):
         """
         Clones a repository on a local path
@@ -349,7 +349,7 @@ class PyxetCLI:
         print(__version__)
 
     @cli.command()
-    def cp(source: Annotated[str, typer.Argument(help="Source file or folder which will be copied")],
+    def cp(source: Annotated[str, typer.Argument(help="Source file or folder to copy")],
            target: Annotated[str, typer.Argument(help="Target location of the file or folder")],
            recursive: Annotated[
                bool, typer.Option("--recursive", "-r", help="Recursively copy files and folders ")] = False,
@@ -365,7 +365,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def ls(path: Annotated[str, typer.Argument(help="Source file or folder which will be copied")] = "xet://",
+    def ls(path: Annotated[str, typer.Argument(help="Source file or folder to copy")] = "xet://",
            raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """list files and folders"""
         fs, path = _get_fs_and_path(path)
@@ -382,7 +382,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def cat(path: Annotated[str, typer.Argument(help="Source file or folder which will be printed")],
+    def cat(path: Annotated[str, typer.Argument(help="Source file or folder to print")],
            limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
         """Prints a file to stdout"""
         fs, path = _get_fs_and_path(path)
@@ -403,7 +403,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder which will be deleted")],
+    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder to delete")],
            message: Annotated[
                str, typer.Option("--message", "-m", help="A commit message")] = ""):
         """delete files and folders"""
@@ -429,7 +429,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mv(source: Annotated[str, typer.Argument(help="Source Xet file or folder to move")],
+    def mv(source: Annotated[str, typer.Argument(help="Source file or folder to move")],
            target: Annotated[str, typer.Argument(help="Target location or name to move to")],
            recursive: Annotated[
                bool, typer.Option("--recursive", "-r", help="Recursively copy files and folders ")] = False,
@@ -455,7 +455,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def info(uri: Annotated[str, typer.Argument(help="a uri of the structure xet://[user]/[repo]/[branch]")],
+    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]/[branch]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """Provide information about a repository branch"""
         fs, path = _get_fs_and_path(uri)
@@ -472,8 +472,8 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def duplicate(source: Annotated[str, typer.Argument(help="origin repo to fork from")],
-                  dest: Annotated[str, typer.Argument(help="new repository name")] = None,
+    def duplicate(source: Annotated[str, typer.Argument(help="Origin repo to fork from")],
+                  dest: Annotated[str, typer.Argument(help="New repository name")] = None,
                   private: Annotated[bool, typer.Option('--private', help="make repository private")] = False,
                   public: Annotated[bool, typer.Option('--public', help="make repository public")] = False,
              ):
@@ -489,7 +489,7 @@ class PyxetCLI:
             repo_name = source.rstrip('/').split('/')[-1]
             username = fs.get_username().strip()
             if not bool(username):
-                print("Failed to infer a user name to duplicate the repo, please provide a full target name")
+                print("Failed to infer a username to duplicate the repo, please provide a full target name")
                 return
             dest = "xet://" + username + "/" + repo_name
             print(f"Duplicating to {dest}")
@@ -498,11 +498,11 @@ class PyxetCLI:
         fs.duplicate_repo(source, dest)
         try:
             if private:
-                print(f"Duplicate Success. Changing permissions...")
+                print(f"Duplicate successful. Changing permissions...")
                 fs.set_repo_attr(dest, "private", True)
                 print(f"Repo permissions set successfully")
             if public:
-                print(f"Duplicate Success. Changing permissions...")
+                print(f"Duplicate successful. Changing permissions...")
                 fs.set_repo_attr(dest, "public", False)
                 print(f"Repo permissions set successfully")
         except Exception as e:
@@ -515,12 +515,12 @@ class PyxetCLI:
 class BranchCLI:
     @staticmethod
     @branch.command()
-    def make(repo: Annotated[str, typer.Argument(help="a repository name xet://[user]/[repo]")],
-             src_branch: Annotated[str, typer.Argument(help="src branch to copy")],
-             dest_branch: Annotated[str, typer.Argument(help="new branch name")]):
+    def make(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             src_branch: Annotated[str, typer.Argument(help="Source branch to copy")],
+             dest_branch: Annotated[str, typer.Argument(help="New branch name")]):
         """
         make a new branch copying another branch.
-        Branch names with "/" in them are not supported.
+        Branch names with "/" are not supported.
 
         Example: Create a new branch from the main branch
 
@@ -533,14 +533,14 @@ class BranchCLI:
 
     @staticmethod
     @branch.command()
-    def ls(repo: Annotated[str, typer.Argument(help="a repository name xet://[user]/[repo]")],
+    def ls(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """
         list branches of a repository.
         """
         fs, path = _get_fs_and_path(repo)
         if fs.protocol != 'xet':
-            print("Please specify a valid repository name xet://[user]/[repo]")
+            print("Please specify a valid repository name in format xet://[user]/[repo]")
             return
         try:
             listing = fs.list_branches(repo, raw)
@@ -556,9 +556,9 @@ class BranchCLI:
 
     @staticmethod
     @branch.command()
-    def delete(repo: Annotated[str, typer.Argument(help="a repository name xet://[user]/[repo]")],
-               branch: Annotated[str, typer.Argument(help="branch to delete")],
-               yes: Annotated[bool, typer.Option(help="Say yes to delete")] = False):
+    def delete(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+               branch: Annotated[str, typer.Argument(help="Branch to delete")],
+               yes: Annotated[bool, typer.Option(help="Type yes to delete")] = False):
         """
         Deletes a branch. Note that this is not an easily reversible operation.
         """
@@ -581,14 +581,14 @@ class BranchCLI:
 
     @staticmethod
     @branch.command()
-    def info(repo: Annotated[str, typer.Argument(help="a repository name xet://[user]/[repo]")],
-             branch: Annotated[str, typer.Argument(help="branch to query")]):
+    def info(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             branch: Annotated[str, typer.Argument(help="Branch to query")]):
         """
         Prints information about a branch
         """
         fs, path = _get_fs_and_path(repo)
         if fs.protocol != 'xet':
-            print("Please specify a valid repository name xet://[user]/[repo]")
+            print("Please specify a valid repository name in format xet://[user]/[repo]")
             return
         ret = fs.find_ref(repo, branch)
         print(ret)
@@ -598,20 +598,20 @@ class BranchCLI:
 class RepoCLI:
     @staticmethod
     @repo.command()
-    def make(name: Annotated[str, typer.Argument(help="repository name of the form xet://[user]/[repo]")],
-             private: Annotated[bool, typer.Option('--private', help="make repository private")] = False,
-             public: Annotated[bool, typer.Option('--public', help="make repository public")] = False,
+    def make(name: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             private: Annotated[bool, typer.Option('--private', help="Make repository private")] = False,
+             public: Annotated[bool, typer.Option('--public', help="Make repository public")] = False,
              ):
         """
         make a new empty repository. Either --private or --public must be set
         """
         if private == public:
-            print("One of --private or --public must be set")
+            print("Either --private or --public must be set")
             return
         fs = XetFS()
         ret = fs.make_repo(name)
         if private:
-            print("Creation Success. Changing permissions...")
+            print("Creation successful. Changing permissions...")
             fs.set_repo_attr(name, "private", True)
             print("Repo permissions set successfully")
         print(ret)
@@ -619,8 +619,8 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def fork(source: Annotated[str, typer.Argument(help="origin repo to fork from")],
-             dest: Annotated[str, typer.Argument(help="new repository name")] = None,
+    def fork(source: Annotated[str, typer.Argument(help="Origin repo to fork from")],
+             dest: Annotated[str, typer.Argument(help="New repository name")] = None,
              ):
         """
         Forks a copy of a repository from xet://[user]/[repo] to your own account.
@@ -657,8 +657,8 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def rename(source: Annotated[str, typer.Argument(help="origin repo to rename from (of the form xet://[user]/[repo])")],
-               dest: Annotated[str, typer.Argument(help="repo to rename to (xet://user/repo)")]):
+    def rename(source: Annotated[str, typer.Argument(help="Origin repo to rename from in format xet://[user]/[repo])"],
+               dest: Annotated[str, typer.Argument(help="Repo to rename to in format xet://[user]/[repo]")]):
         """
         Forks a new repository from an existing repository.
         """
@@ -667,7 +667,7 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def clone(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://[user]/[repo]")],
+    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://[user]/[repo]")],
               args: Annotated[typing.List[str], typer.Argument(help="Arguments to be passed to git-xet clone")] = None):
         """
         Clones a repository on a local path
@@ -676,7 +676,7 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def info(uri: Annotated[str, typer.Argument(help="A uri of a xet://[user]/[repo]")]):
+    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]")]):
         """
         provide information on the repo\n
 

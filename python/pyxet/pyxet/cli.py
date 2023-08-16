@@ -297,7 +297,7 @@ class PyxetCLI:
             # path must be a drive letter (X, or X: or X:\\)
             letter = path[0]
             if path != letter and path != letter + ':' and path != letter + ':\\':
-                raise ValueError("Path must be a Windows drive letter of the form X:")
+                raise ValueError("Path must be a Windows drive letter in format X:")
             path = letter
         rpyxet.perform_mount(sys.executable, source.remote, path, source.branch, prefetch)
 

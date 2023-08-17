@@ -1,5 +1,6 @@
 import fsspec
 import io
+from copy import deepcopy
 
 class XetFile:
     """
@@ -15,6 +16,9 @@ class XetFile:
         self.handle = handle
         self.write_transaction = write_transaction
         self._do_not_write = False
+
+    def __copy__(self):
+        deepcopy(self)
 
     @property
     def closed(self):

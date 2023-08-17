@@ -89,8 +89,9 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
                             break
                         dest_file.write(chunk)
         except Exception as e:
-            proto = src_fs.protocol
-            print(f"Failed to copy {proto}://{src_path}: {e}")
+            raise
+        #    proto = src_fs.protocol
+        #    print(f"Failed to copy {proto}://{src_path}: {e}")
 
 
 def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):

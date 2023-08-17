@@ -79,7 +79,7 @@ macro_rules! rust_async {
 
 #[pyclass]
 struct PyRepoManager {
-    manager: XetRepoManager,
+    manager: RwLock<XetRepoManager>,
 }
 
 #[pyfunction]
@@ -197,14 +197,15 @@ impl PyRepoManager {
 \n\n  git config --global user.name \"<Name>\"\n  git config --global user.email \"<Email>\""
             );
         }
-        Ok(PyRepoManager { manager })
+        Ok(PyRepoManager { manager : RwLock::new(manager) })
     }
 
     // return the current user name
-    pub fn get_inferred_username(&self, remote: &str) -> PyResult<String> {
-        self.manager
+    pub fn get_inferred_username(&self, remote: &str, py : Python<'_>) -> PyResult<String> {
+        rust_async!(py, 
+        self.manager.read().await
             .get_inferred_username(remote)
-            .map_err(anyhow_to_runtime_error)
+            .map_err(anyhow_to_runtime_error))
     }
 
     /// Performs a file listing.
@@ -216,7 +217,8 @@ impl PyRepoManager {
         py: Python<'_>,
     ) -> PyResult<(Vec<String>, Vec<FileAttributes>)> {
         // strip trailing slashes
-        #![allow(clippy::manual_strip)]
+        rust_async!(py, {
+            #![allow(clippy::manual_strip)]
         let path = if path.ends_with('/') {
             &path[..path.len() - 1]
         } else {
@@ -227,7 +229,7 @@ impl PyRepoManager {
         } else {
             path
         };
-        let listing = rust_async!(py, self.manager.listdir(remote, branch, path).await)?;
+        let listing = self.manager.read().await.listdir(remote, branch, path).await?;
         let mut ret_names = vec![];
         let mut ret_attrs = vec![];
         for i in listing {
@@ -239,7 +241,8 @@ impl PyRepoManager {
             ret_attrs.push(i.into());
         }
 
-        Ok((ret_names, ret_attrs))
+        anyhow::Ok((ret_names, ret_attrs))
+    })
     }
 
     /// Performs a general api query.
@@ -253,7 +256,7 @@ impl PyRepoManager {
     ) -> PyResult<Vec<u8>> {
         rust_async!(
             py,
-            self.manager
+            self.manager.read().await
                 .perform_api_query(remote, op, http_command, body)
                 .await
         )
@@ -261,7 +264,7 @@ impl PyRepoManager {
 
     /// Gets status of a path
     pub fn override_login_config(
-        &mut self,
+        &self,
         user_name: &str,
         user_token: &str,
         email: Option<&str>,
@@ -270,7 +273,7 @@ impl PyRepoManager {
     ) -> PyResult<()> {
         rust_async!(
             py,
-            self.manager
+            self.manager.write().await
                 .override_login_config(user_name, user_token, email, host)
                 .await
         )
@@ -284,15 +287,15 @@ impl PyRepoManager {
         path: &str,
         py: Python<'_>,
     ) -> PyResult<Option<FileAttributes>> {
-        let ent: Option<DirEntry> = rust_async!(py, self.manager.stat(remote, branch, path).await)?;
+        let ent: Option<DirEntry> = rust_async!(py, self.manager.read().await.stat(remote, branch, path).await)?;
 
         Ok(ent.map(|x| x.into()))
     }
 
     /// Obtains access to a repo
-    pub fn get_repo(&mut self, remote: &str, py: Python<'_>) -> PyResult<PyRepo> {
+    pub fn get_repo(&self, remote: &str, py: Python<'_>) -> PyResult<PyRepo> {
         rust_async!(py, {
-            let repo = self.manager.get_repo(None, remote).await?;
+            let repo = self.manager.write().await.get_repo(None, remote).await?;
             anyhow::Ok(PyRepo { repo })
         })
     }
@@ -351,6 +354,7 @@ impl PyRepo {
 }
 
 #[pyclass(subclass)]
+#[derive(Clone)]
 struct PyRFile {
     reader: XetRFileObject,
     pos: u64,
@@ -556,6 +560,14 @@ impl PyRFile {
     pub fn write(&mut self, _b: &PyAny, _py: Python<'_>) -> PyResult<()> {
         Err(PyRuntimeError::new_err("Readonly file"))
     }
+
+    pub fn __copy__(&self) -> PyResult<PyRFile> {
+        Ok(self.clone())
+    }
+    pub fn __deepcopy__(&self) -> PyResult<PyRFile> {
+        Ok(self.clone())
+    }
+
 }
 
 // This functions as a reference to access the internal transaction object.
@@ -869,9 +881,20 @@ impl PyWriteTransactionAccessToken {
                 .await
         )
     }
+    
+    pub fn __copy__(&self) -> PyResult<Self> {
+        Ok(self.clone())
+    }
+    
+    pub fn __deepcopy__(&self) -> PyResult<Self> {
+        Ok(self.clone())
+    }
+
+
 }
 
 #[pyclass(subclass)]
+#[derive(Clone)]
 pub struct PyWFile {
     writer: Arc<XetWFileObject>,
     transaction_write_handle: PyWriteTransactionAccessToken,
@@ -917,6 +940,15 @@ impl PyWFile {
     pub fn writable(&self) -> PyResult<bool> {
         Ok(true)
     }
+    
+    pub fn __copy__(&self) -> PyResult<Self> {
+        Ok(self.clone())
+    }
+    
+    pub fn __deepcopy__(&self) -> PyResult<Self> {
+        Ok(self.clone())
+    }
+
 }
 
 /// This module is implemented in Rust.

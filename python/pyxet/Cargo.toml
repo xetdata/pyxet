@@ -17,8 +17,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.18.0", features = ["extension-module", "abi3-py37", "generate-import-lib"] }
-xetblob = { git = "https://github.com/xetdata/xet-core" }
-gitxetcore = { git = "https://github.com/xetdata/xet-core" }
+gitxetcore = { path = "/Users/hoytak/workspace/xet-core/rust/gitxetcore" }
+xetblob = { path = "/Users/hoytak/workspace/xet-core/rust/xetblob" }
+# xetblob = { git = "https://github.com/xetdata/xet-core" }
+# gitxetcore = { git = "https://github.com/xetdata/xet-core" }
 tempfile = "3.2.0"
 pyo3-asyncio = { version = "0.18", features = ["attributes", "tokio-runtime"] }
 libc = "0.2"

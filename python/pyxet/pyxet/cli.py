@@ -268,6 +268,8 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
 
         if prefetch_paths:
             dest_fs.add_deduplication_hints(prefetch_paths)
+    else:
+        background_paths = []
 
 
     # Now, create all the directories

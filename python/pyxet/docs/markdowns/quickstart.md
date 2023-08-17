@@ -6,8 +6,9 @@ This library allows you to access XetHub from Python.
 
 ## Installation
 
-1. [Create an account or sign in](https://xethub.com) 
-2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment variable.
+1. [Create an account or sign in](https://xethub.com)
+2. Get a personal access token [here](https://xethub.com/user/settings/pat) and set it `XETHUB_TOKEN` environment
+   variable.
 3. Install the library
 
 `pip install pyxet`
@@ -15,6 +16,7 @@ This library allows you to access XetHub from Python.
 ## Usage
 
 We'll start with a simple machine learning example of the [titanic dataset](https://www.kaggle.com/c/titanic).
+
 ```python
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -31,7 +33,7 @@ predictions = model.predict(test[features])
 print(classification_report(test[target], predictions, target_names=['die', 'survive']))
 ```
 
-Let's create a new repo and save everything relevant to reproduce our model there. 
+Let's create a new repo and save everything relevant to reproduce our model there.
 
 ```python
 import pyxet
@@ -62,23 +64,27 @@ with repo.open("model.pkl") as f:
 
 
 ```
+
 Of course you can save your code as well, and upload it with the command:    
 `xet cp <train.py> xet://<username>/titanic-tutorial.git/main/train.py`
 
-You can also save your [FastAPI app](https://fastapi.tiangolo.com), checkpoints, logs directories, and even your [docker image](https://docs.docker.com/engine/reference/commandline/images/) to XetHub.
-> This will work no matter the size of your data, model or logs. 
+You can also save your [FastAPI app](https://fastapi.tiangolo.com), checkpoints, logs directories, and even
+your [docker image](https://docs.docker.com/engine/reference/commandline/images/) to XetHub.
+> This will work no matter the size of your data, model or logs.
 
 ## Next steps
+
 Do you want to experiment with another model?   
-you can clone the repo, create a new branch and try a different model. 
+you can clone the repo, create a new branch and try a different model.
+
 * All models will be saved, managed and versioned using git.
 * All metrics and logs will be saved such that you can compare them easily.
 * You can share your repo with your team and collaborate on it.
-  * Sharing data
-  * Pushing code
-  * Running experiments
-  * Saving models
-  * Saving logs
+    * Sharing data
+    * Pushing code
+    * Running experiments
+    * Saving models
+    * Saving logs
 
 Have a look [here]() for more examples.
 

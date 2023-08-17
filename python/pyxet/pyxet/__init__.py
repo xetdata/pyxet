@@ -35,8 +35,9 @@ contents = f.read()
 f.close()
 ```
 
-To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class.
- This class provides a file system handle for a XetHub repository, allowing you to perform read-only operations like ls, glob, and open. The initialization of this class requires a repository URL and optional arguments for branch, user, and token.
+To work with a XetHub repository as a file system, you can use the `pyxet.XetFS` class. This class provides a file 
+system handle for a XetHub repository, allowing you to perform read-only operations like ls, glob, and open. The 
+initialization of this class requires a repository URL and optional arguments for branch, user, and token.
 
 Example usage of `pyxet.XetFS`:
 
@@ -77,7 +78,7 @@ URLs:
 Xet URLs should be of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`,
 with the <path-to-file> being optional when opening a repository.  
 The xet:// prefix is inferred as needed or if the url is given as https://.  
-If branch is given as an explicit argument, it may be ommitted 
+If branch is given as an explicit argument, it may be committed 
 from the url.  
 
 For private repos use pyxet.login to set authentication:

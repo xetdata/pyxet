@@ -1,13 +1,13 @@
-import pyxet
-from utils import CONSTANTS, skip_if_no
 import hashlib
-import time
-import joblib
 import pickle
+import time
+
 import cloudpickle
-import pathlib
-import pytest
 import pandas as pd
+import pytest
+
+import pyxet
+from utils import CONSTANTS
 
 
 class Model:
@@ -60,16 +60,14 @@ def test_stat():
     fs = pyxet.XetFS()
     stat = fs.stat('xdssio/titanic/main/data/titanic_0.parquet')
     print(stat)
-    assert(stat['name'] == 'xdssio/titanic/main/data/titanic_0.parquet')
+    assert (stat['name'] == 'xdssio/titanic/main/data/titanic_0.parquet')
 
 
 def test_info():
     fs = pyxet.XetFS()
     stat = fs.info('xdssio/titanic/main/data/titanic_0.parquet')
     print(stat)
-    assert(stat['name'] == 'xdssio/titanic/main/data/titanic_0.parquet')
-
-
+    assert (stat['name'] == 'xdssio/titanic/main/data/titanic_0.parquet')
 
 
 def test_actual_read_write():
@@ -98,11 +96,11 @@ def test_fake_write_model_pickle():
         pickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
         fs.transaction._set_do_not_commit(True)
         clist = fs.transaction.get_change_list()
-        assert(len(clist['new_files']) == 1)
-        assert(len(clist['deletes']) == 0)
-        assert(len(clist['copies']) == 0)
+        assert (len(clist['new_files']) == 1)
+        assert (len(clist['deletes']) == 0)
+        assert (len(clist['copies']) == 0)
 
-    assert(fs.intrans == False)
+    assert (fs.intrans is False)
 
 
 def test_fake_write_model_cloudpickle():
@@ -115,10 +113,10 @@ def test_fake_write_model_cloudpickle():
         cloudpickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
         fs.transaction._set_do_not_commit(True)
         clist = fs.transaction.get_change_list()
-        assert(len(clist['new_files']) == 1)
-        assert(len(clist['deletes']) == 0)
-        assert(len(clist['copies']) == 0)
-    assert(fs.intrans is False)
+        assert (len(clist['new_files']) == 1)
+        assert (len(clist['deletes']) == 0)
+        assert (len(clist['copies']) == 0)
+    assert (fs.intrans is False)
 
 
 def test_fake_write_model_cloudpickle_with_explicit_transaction():
@@ -130,11 +128,11 @@ def test_fake_write_model_cloudpickle_with_explicit_transaction():
     cloudpickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
     fs.transaction._set_do_not_commit(True)
     clist = fs.transaction.get_change_list()
-    assert(len(clist['new_files']) == 1)
-    assert(len(clist['deletes']) == 0)
-    assert(len(clist['copies']) == 0)
+    assert (len(clist['new_files']) == 1)
+    assert (len(clist['deletes']) == 0)
+    assert (len(clist['copies']) == 0)
     fs.end_transaction()
-    assert(fs.intrans is False)
+    assert (fs.intrans is False)
 
 
 def test_fake_write_with_errors():
@@ -147,7 +145,7 @@ def test_fake_write_with_errors():
     fs._transaction._set_error_on_commit(True)
     with pytest.raises(RuntimeError):
         fs.end_transaction()
-    assert(fs.intrans is False)
+    assert (fs.intrans is False)
 
 
 def test_failed_transaction_in_scope():
@@ -159,7 +157,7 @@ def test_failed_transaction_in_scope():
             f.write("hello")
             f.close()
             fs._transaction._set_error_on_commit(True)
-    assert(fs.intrans is False)
+    assert (fs.intrans is False)
 
 
 def test_recursive_transaction():
@@ -182,10 +180,10 @@ def test_copy():
         fs.copy(f"{prefix}/main/test_data.dat", f"{prefix}/branch/blah3")
         fs._transaction._set_do_not_commit(True)
         clist = fs.transaction.get_change_list()
-        assert(len(clist['new_files']) == 0)
-        assert(len(clist['deletes']) == 0)
-        assert(len(clist['copies']) == 2)
-        assert(len(fs.transaction._transaction_pool) == 2)
+        assert (len(clist['new_files']) == 0)
+        assert (len(clist['deletes']) == 0)
+        assert (len(clist['copies']) == 2)
+        assert (len(fs.transaction._transaction_pool) == 2)
 
 
 def test_delete():
@@ -197,6 +195,6 @@ def test_delete():
         fs.rm(f"{prefix}/branch/blah")
         fs._transaction._set_do_not_commit(True)
         clist = fs.transaction.get_change_list()
-        assert(len(clist['new_files']) == 0)
-        assert(len(clist['deletes']) == 2)
-        assert(len(fs.transaction._transaction_pool) == 2)
+        assert (len(clist['new_files']) == 0)
+        assert (len(clist['deletes']) == 2)
+        assert (len(fs.transaction._transaction_pool) == 2)

@@ -1,7 +1,9 @@
-import pytest
 import io
-from utils import skip_if_no, CONSTANTS
+
+import pytest
+
 import pyxet
+from utils import skip_if_no, CONSTANTS
 
 
 @pytest.mark.skip("Not sure if pyxet will implement read_arrow - TODO")
@@ -40,6 +42,7 @@ def test_pyarrow_stream():
     with pa_fs.open_input_stream(CONSTANTS.TITANIC_CSV) as stream:
         df = pd.read_csv(io.BytesIO(stream.readall()))
     assert df.shape == (891, 12)
+
 
 @pytest.mark.skip("cp not implemented")
 def test_pyarrow_stream_cp():

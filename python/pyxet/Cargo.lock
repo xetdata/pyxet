@@ -2674,7 +2674,6 @@ dependencies = [
  "cc",
  "futures",
  "gitxetcore",
- "lazy_static",
  "libc",
  "pyo3",
  "pyo3-asyncio",

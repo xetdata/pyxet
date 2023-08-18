@@ -22,7 +22,9 @@ class XetFile:
         return self.handle.is_closed()
 
     def close(self):
-        self.write_transaction = None
+        if self.write_transaction:
+            self.write_transaction.close()
+            self.write_transaction = None
         if not self.closed:
             return self.handle.close()
 

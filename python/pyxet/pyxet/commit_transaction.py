@@ -139,7 +139,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(dest_repo_info)
-        handler.copy(src_repo_info, dest_repo_info)
+        handler.copy(src_repo_info.branch, src_repo_info.path, dest_repo_info.path)
 
     def mv(self, src_repo_info, dest_repo_info):
         """

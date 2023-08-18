@@ -10,7 +10,7 @@
 
 ## Local testing
 
-## Data recovery 
+## Data recovery
 
 ## Model monitoring
 

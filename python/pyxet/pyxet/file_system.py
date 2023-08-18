@@ -1,12 +1,13 @@
-import fsspec
-from .url_parsing import parse_url, XetPathInfo
-from .file_interface import XetFile
-from urllib.parse import urlparse
-from .rpyxet import rpyxet
-from .commit_transaction import MultiCommitTransaction
-import sys
 import json
+import sys
+from urllib.parse import urlparse
 
+import fsspec
+
+from .commit_transaction import MultiCommitTransaction
+from .file_interface import XetFile
+from .rpyxet import rpyxet
+from .url_parsing import parse_url, XetPathInfo
 
 _manager = rpyxet.PyRepoManager()
 
@@ -100,7 +101,6 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         return _manager.get_inferred_username(self.domain)
 
-
     def unstrip_protocol(self, name):
         """Format FS-specific path to generic, including protocol"""
         return 'xet://' + name.lstrip('/')
@@ -145,7 +145,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         prefix = '/'.join(components[:2]) + '/' + url_path.branch
         attr = _manager.stat(url_path.remote, url_path.branch, "")
         if attr is None:
-            raise FileNotFoundError(f"Branch or repo not found {url}, remote = {url_path.remote}, branch = {url_path.branch}")
+            raise FileNotFoundError(
+                f"Branch or repo not found {url}, remote = {url_path.remote}, branch = {url_path.branch}")
         return {"name": prefix + '/' + url_path.path,
                 "size": attr.size,
                 "type": attr.ftype}
@@ -191,15 +192,14 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             scheme = domain_split[0]
             domain = domain_split[1]
 
-        #dest_path is of the form xet://user/repo
+        # dest_path is of the form xet://user/repo
         split = dest_path.split('://')[-1].split('/')
-        assert(len(split) == 2)
+        assert (len(split) == 2)
         owner, repo = split[0], split[1]
 
-        query = json.dumps({'name':repo, 'owner':owner})
+        query = json.dumps({'name': repo, 'owner': owner})
         ret = json.loads(bytes(_manager.api_query(f"{scheme}://{domain}", "", "post", query)))
         return ret
-
 
     def fork_repo(self, origin_path, dest_path, **kwargs):
         origin = parse_url(origin_path, self.domain)
@@ -253,7 +253,6 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             return ret
         return self.rename_repo(src_name, dest_path)
 
-
     def rename_repo(self, origin_path, dest_path, **kwargs):
         origin = parse_url(origin_path, self.domain)
         dest = parse_url(dest_path, self.domain)
@@ -306,8 +305,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if raw:
             return res
         else:
-            return [{'name':f['full_name'],
-                     'permissions':f['permissions']} for f in res]
+            return [{'name': f['full_name'],
+                     'permissions': f['permissions']} for f in res]
 
     def list_branches(self, path, raw=False, **kwargs):
         url_path = parse_url(path, self.domain)
@@ -320,8 +319,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if raw:
             return res
         else:
-            return [{'name':r['name'], 'type':'branch'} for r in res]
-
+            return [{'name': r['name'], 'type': 'branch'} for r in res]
 
     def ls(self, path, detail=True, **kwargs):
         """List objects at path.
@@ -361,21 +359,20 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             # list_repos return username/repo so we split the name and 
             # unique the 1st component
             names = set([f['name'].split('/')[0] for f in self.list_repos()])
-            return [{'name':n, 'type':'user'} for n in names]
+            return [{'name': n, 'type': 'user'} for n in names]
         path = path.rstrip('/')
         if len(path.split('/')) == 1:
             # if there exactly 1 component in the path it has to be [username]
             # list_repos return username/repo so we split the name and
             # and match every repo which username == path
-            names = [f['name'] for f in self.list_repos() if f['name'].split('/')[0] == path ]
-            return [{'name':n, 'type':'repo'} for n in names]
+            names = [f['name'] for f in self.list_repos() if f['name'].split('/')[0] == path]
+            return [{'name': n, 'type': 'repo'} for n in names]
 
         url_path = parse_url(path, self.domain)
 
         if url_path.branch == '':
             branches = self.list_branches(path)
-            return [{'name':path + '/' + n['name'], 'type':'branch'} for n in branches]
-
+            return [{'name': path + '/' + n['name'], 'type': 'branch'} for n in branches]
 
         parse = urlparse(url_path.remote)
         path = parse.path
@@ -384,8 +381,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise ValueError('Incomplete path. must be of the form user/repo/[branch]/[path]')
         prefix = '/'.join(components[:2]) + '/' + url_path.branch
 
-        files, file_info = _manager.listdir(url_path.remote, 
-                                            url_path.branch, 
+        files, file_info = _manager.listdir(url_path.remote,
+                                            url_path.branch,
                                             url_path.path)
 
         if detail:
@@ -397,10 +394,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             return files
 
     def _open(
-        self,
-        path,
-        mode="rb",
-        **kwargs,
+            self,
+            path,
+            mode="rb",
+            **kwargs,
     ):
         """
         Return raw bytes-mode file-like from the file-system.
@@ -488,7 +485,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         if not self.is_repo(repo):
             raise ValueError(f"{repo} is not a repository")
-            
+
         has_src_branch = self.branch_exists(repo + "/" + src_branch_name)
         if has_src_branch is False:
             raise ValueError(f"Cannot copy branch as source branch does not exist: {src_branch_name}")
@@ -496,8 +493,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if has_dest_branch:
             raise ValueError(f"Cannot copy branch as destination branch already exists: {target_branch_name}")
 
-        query = {"new_branch_name":target_branch_name,
-                 "old_branch_name":src_branch_name}
+        query = {"new_branch_name": target_branch_name,
+                 "old_branch_name": src_branch_name}
         query = json.dumps(query)
         url_path = parse_url(repo, self.domain)
         _manager.api_query(url_path.remote, "branches", "post", query)
@@ -515,7 +512,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         if not self.is_repo(repo):
             raise ValueError(f"{repo} is not a repository")
-            
+
         has_branch = self.branch_exists(repo + "/" + branch_name)
         if has_branch is False:
             raise ValueError(f"Cannot delete branch as branch does not exist: {branch_name}")
@@ -547,9 +544,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if parsed_path1.remote != parsed_path2.remote:
             raise ValueError("Can only copy between paths in the same repository")
         if len(parsed_path1.branch) == 0:
-            raise ValueError(f"Branch not specified in copy source {path1}") 
+            raise ValueError(f"Branch not specified in copy source {path1}")
         if len(parsed_path2.branch) == 0:
-            raise ValueError(f"Branch not specified in copy dest {path2}") 
+            raise ValueError(f"Branch not specified in copy dest {path2}")
 
         if len(parsed_path1.path) == 0 and len(parsed_path2.path) == 0:
             query = {"new_branch_name": parsed_path2.branch,
@@ -593,28 +590,26 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         any binary content given by `paths`.  
         """
         if isinstance(path_urls, str):
-            path_urls = [path_urls] 
-        url_paths = [parse_url(url, self.domain, partial_remote = True) for url in path_urls]
+            path_urls = [path_urls]
+        url_paths = [parse_url(url, self.domain, partial_remote=True) for url in path_urls]
 
         self._add_deduplication_hints_by_url(url_paths)
-    
 
-    def _add_deduplication_hints_by_url(self, url_paths, min_dedup_byte_threshhold = None):
+    def _add_deduplication_hints_by_url(self, url_paths, min_dedup_byte_threshhold=None):
 
         if min_dedup_byte_threshhold is None:
             # TODO: set this to a more resonable value.  
-            min_dedup_byte_threshhold = 0 
+            min_dedup_byte_threshhold = 0
 
         paths_by_remotes = {}
         for url in url_paths:
-             paths_by_remotes.setdefault(url.remote, []).append(url)
+            paths_by_remotes.setdefault(url.remote, []).append(url)
 
         for (remote, urls) in paths_by_remotes.items():
             repo_handle = _manager.get_repo(remote)
 
-            repo_handle.fetch_hinted_shards_for_dedup([(url.branch, url.path) for url in urls], min_dedup_byte_threshhold)
-
-
+            repo_handle.fetch_hinted_shards_for_dedup([(url.branch, url.path) for url in urls],
+                                                      min_dedup_byte_threshhold)
 
     @property
     def transaction(self):
@@ -673,10 +668,13 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
     def mkdir(path, *args, **kwargs):
         pass
+
     def mkdirs(path, *args, **kwargs):
         pass
+
     def makedir(path, *args, **kwargs):
         pass
+
     def makedirs(path, *args, **kwargs):
         pass
 

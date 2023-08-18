@@ -91,7 +91,7 @@ pub fn configure_login(
         force: no_auth,
         no_overwrite,
     });
-    let config = XetConfig::new(None, None, ConfigGitPathOption::NoPath)
+    let config = XetConfig::new(None, None, NoPath)
         .map_err(|x| anyhow!("Unable to obtain default config {x}"))
         .map_err(anyhow_to_runtime_error)?;
 
@@ -140,7 +140,7 @@ pub fn perform_mount(
         invoked_from_python: Some(python_exe),
         watch: None,
     });
-    let config = XetConfig::new(None, None, ConfigGitPathOption::NoPath)
+    let config = XetConfig::new(None, None, NoPath)
         .map_err(|x| anyhow!("Unable to obtain default config {x}"))
         .map_err(anyhow_to_runtime_error)?;
 

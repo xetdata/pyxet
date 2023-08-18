@@ -1,8 +1,9 @@
-import pyxet
-import re
 import contextlib
-from pathlib import Path as PathlibPath
 import io
+import re
+from pathlib import Path as PathlibPath
+
+import pyxet
 from .url_parsing import get_url_info
 
 

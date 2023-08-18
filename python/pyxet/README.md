@@ -1,11 +1,13 @@
-# pyxet: Python bindings for Xethub
+# pyxet: Python bindings for XetHub
 
 ## What is it?
+
 pyxet is a Python library that provides a lightweight interface for the [XetHub](https://xethub.com/) platform.
 
 ## Main features
+
 1. A filesystem interface.
-    * [fssspec](https://filesystem-spec.readthedocs.io)
+    * [fsspec](https://filesystem-spec.readthedocs.io)
         * copy
         * remove
         * list
@@ -27,15 +29,19 @@ pyxet is a Python library that provides a lightweight interface for the [XetHub]
 For API documentation and full examples, please see the [documentation](https://pyxet.readthedocs.io/en/latest/)
 
 ## Where to get it
+
 ```sh
 git config --global user.name "Foo Bar"
 git config --global user.email "foo@bar.com"
 pip install pyxet
 ```
+
 ## License
+
 [BSD 3](LICENSE)
 
 ## Getting Help
+
 Go to the [GitHub project](https://github.com/xetdata/pyxet/), join the
 [Discord server](https://discord.gg/KCzmjDaDdC), and file
 [issues](https://github.com/xetdata/pyxet/issues)
@@ -43,6 +49,7 @@ Go to the [GitHub project](https://github.com/xetdata/pyxet/), join the
 Development Environment
 -----------------------
 To set up build env, switch to this directory and run:
+
 ```
 python -m venv .env
 source .env/bin/activate
@@ -52,15 +59,16 @@ pip install ipython (for convenience)
 ```
 
 To develop:
+
 ```
 source ./develop.sh
 ```
 
 To build locally
+
 ```
 maturin develop
 ```
-
 
 Then running python and import pyxet should work
 
@@ -69,6 +77,7 @@ See https://www.maturin.rs/develop.html for details
 Building a release
 ------------------
 On mac:
+
 ```
 MACOSX_DEPLOYMENT_TARGET=10.9 maturin build --release --target universal2-apple-darwin
 ```

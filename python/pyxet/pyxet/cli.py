@@ -15,7 +15,6 @@ from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
 
-
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
 branch = typer.Typer(add_completion=False, short_help="sub-commands to manage branches")
@@ -24,7 +23,7 @@ cli.add_typer(repo, name="repo")
 cli.add_typer(branch, name="branch")
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
-CHUNK_SIZE = 16*1024*1024
+CHUNK_SIZE = 16 * 1024 * 1024
 
 
 def _ltrim_match(s, match):
@@ -38,9 +37,9 @@ def _ltrim_match(s, match):
     Used to compute relative paths.
     """
     if len(s) < len(match):
-        raise(ValueError(f"Path {s} not in directory {match}"))
+        raise (ValueError(f"Path {s} not in directory {match}"))
     if s[:len(match)] != match:
-        raise(ValueError(f"Path {s} not in directory {match}"))
+        raise (ValueError(f"Path {s} not in directory {match}"))
     return s[len(match):]
 
 
@@ -65,7 +64,7 @@ def _get_fs_and_path(uri):
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
-                     buffer_size=CHUNK_SIZE, size_hint = None):
+                      buffer_size=CHUNK_SIZE, size_hint=None):
     if dest_path.split('/')[-1] == '.gitattributes':
         print("Skipping .gitattributes as that is required for Xet Magic")
         return
@@ -79,7 +78,7 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
             if dest_fs.protocol == "xet":
                 if size_hint is None:
                     size_hint = src_fs.info(src_path).get('size', None)
-       
+
                 # Heuristic for now -- if the size of the source is larger than 50MB,
                 # then make sure we have any shards for the destination that work.
                 if size_hint is not None and size_hint >= 50000000:
@@ -96,6 +95,7 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
         except Exception as e:
             proto = src_fs.protocol
             print(f"Failed to copy {proto}://{src_path}: {e}")
+
 
 def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
     """
@@ -124,13 +124,15 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
 
         dest_fs.branch_info(dest_path)
 
+
 def _isdir(fs, path):
     if fs.protocol == 'xet':
         return fs.isdir_or_branch(path)
     else:
         return fs.isdir(path)
 
-def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
+
+def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
     dest_fs, dest_path = _get_fs_and_path(destination)
     if _src_fs is not None:
@@ -149,7 +151,7 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
     if dest_path != '/':
         dest_path = dest_path.rstrip('/')
     src_isdir = _isdir(src_fs, src_path)
-    
+
     # Handling wildcard cases
     if '*' in src_path:
         # validate
@@ -193,9 +195,8 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
                             f"{path}",
                             dest_fs,
                             dest_for_this_path,
-                            size_hint = info.get('size', None)
+                            size_hint=info.get('size', None)
                         ))
-
 
             for future in futures:
                 future.result()
@@ -211,7 +212,7 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
             return
         with ThreadPoolExecutor() as executor:
             futures = []
-            for path,info in src_fs.find(src_path, detail=True).items():
+            for path, info in src_fs.find(src_path, detail=True).items():
                 if info['type'] == 'directory' and not recursive:
                     continue
                 # Note that path is a full path
@@ -225,14 +226,14 @@ def _copy(source, destination, recursive = True, _src_fs=None, _dest_fs=None):
                 dest_fs.makedirs(dest_dir, exist_ok=True)
                 # Submitting copy jobs to thread pool
                 futures.append(
-                        executor.submit(
-                            _single_file_copy,
-                            src_fs,
-                            f"{path}",
-                            dest_fs,
-                            dest_for_this_path,
-                            size_hint = info.get('size', None)
-                            ))
+                    executor.submit(
+                        _single_file_copy,
+                        src_fs,
+                        f"{path}",
+                        dest_fs,
+                        dest_for_this_path,
+                        size_hint=info.get('size', None)
+                    ))
             # Waiting for all copy jobs to complete
             for future in futures:
                 future.result()
@@ -272,12 +273,14 @@ class PyxetCLI:
               user: Annotated[str, typer.Option("--user", "-u", help="user name")],
               password: Annotated[str, typer.Option("--password", "-p", help="password")],
               host: Annotated[str, typer.Option("--host", "-h", help="host to authenticate against")] = "xethub.com",
-              force: Annotated[bool, typer.Option("--force", "-f", help="do not perform authentication check and force write to config")] = False,
-              no_overwrite: Annotated[bool, typer.Option("--no_overwrite", help="Do not overwrite if existing auth information is found")] = False):
+              force: Annotated[bool, typer.Option("--force", "-f",
+                                                  help="do not perform authentication check and force write to config")] = False,
+              no_overwrite: Annotated[bool, typer.Option("--no_overwrite",
+                                                         help="Do not overwrite if existing auth information is found")] = False):
         """
         Configures the login information. Stores the config in ~/.xetconfig
         """
-        rpyxet.configure_login(host,user,email,password,force,no_overwrite)
+        rpyxet.configure_login(host, user, email, password, force, no_overwrite)
 
     @staticmethod
     @cli.command()
@@ -304,16 +307,18 @@ class PyxetCLI:
     @staticmethod
     @cli.command(name="mount-curdir", hidden=True)
     def mount_curdir(path: Annotated[str, typer.Argument(help="path to mount to")],
-                     autostop: Annotated[bool, typer.Option('--autostop',help="Automatically terminates on unmount")] = False,
-                     reference: Annotated[str, typer.Option('--reference', '-r', help="branch or revision to mount")] = 'HEAD',
+                     autostop: Annotated[
+                         bool, typer.Option('--autostop', help="Automatically terminates on unmount")] = False,
+                     reference: Annotated[
+                         str, typer.Option('--reference', '-r', help="branch or revision to mount")] = 'HEAD',
                      prefetch: Annotated[int, typer.Option('--prefetch', '-p', help="prefetch aggressiveness")] = 16,
-                     ip: Annotated[str, typer.Option('--ip',help="IP used to host the NFS server")] = "127.0.0.1",
-                     writable: Annotated[bool, typer.Option('--writable',help="Experimental. Do not use")] = False,
-                     signal: Annotated[int, typer.Option('--signal',help="Internal:Sends SIGUSR1 to this pid")] = -1):
+                     ip: Annotated[str, typer.Option('--ip', help="IP used to host the NFS server")] = "127.0.0.1",
+                     writable: Annotated[bool, typer.Option('--writable', help="Experimental. Do not use")] = False,
+                     signal: Annotated[int, typer.Option('--signal', help="Internal:Sends SIGUSR1 to this pid")] = -1):
         """
         Internal Do not use
         """
-        rpyxet.perform_mount_curdir(path=path, 
+        rpyxet.perform_mount_curdir(path=path,
                                     reference=reference,
                                     signal=signal,
                                     autostop=autostop,
@@ -338,7 +343,6 @@ class PyxetCLI:
         strcommand = ' '.join(commands)
         print(f"Running '{strcommand}'")
         subprocess.run(["git-xet", "clone"] + [source.remote] + args)
-
 
     @staticmethod
     @cli.command()
@@ -423,7 +427,9 @@ class PyxetCLI:
                 for path in paths:
                     parsed_path = parse_url(path, fs.domain)
                     if len(parsed_path.path) == 0 and len(parsed_path.branch) > 0:
-                        print("Cannot delete branches with 'rm' as this is a non-reversible operation and history will not be preserved. Use 'xet branch del'", file=sys.stderr)
+                        print(
+                            "Cannot delete branches with 'rm' as this is a non-reversible operation and history will not be preserved. Use 'xet branch del'",
+                            file=sys.stderr)
                         return
                 fs.start_transaction(message)
             for path in paths:
@@ -448,7 +454,9 @@ class PyxetCLI:
         src_fs, src_path = _get_fs_and_path(source)
         dest_fs, dest_path = _get_fs_and_path(target)
         if src_fs.protocol != dest_fs.protocol:
-            print("Unable to move between different protocols {src_fs.protocol}, {dest_fs.protocol}\nYou may want to copy instead", file=sys.stderr)
+            print(
+                "Unable to move between different protocols {src_fs.protocol}, {dest_fs.protocol}\nYou may want to copy instead",
+                file=sys.stderr)
         destproto_is_xet = dest_fs.protocol == 'xet'
         try:
             if destproto_is_xet:
@@ -485,7 +493,7 @@ class PyxetCLI:
                   dest: Annotated[str, typer.Argument(help="New repository name")] = None,
                   private: Annotated[bool, typer.Option('--private', help="make repository private")] = False,
                   public: Annotated[bool, typer.Option('--public', help="make repository public")] = False,
-             ):
+                  ):
         """
         Duplicates (via a detached fork) a copy of a repository from xet://[user]/[repo] to your own account.
         Defaults to original repository private/public settings. Use --private or --public to adjust the repository permissions. 
@@ -536,8 +544,8 @@ class BranchCLI:
             xet branch make xet://user/repo main new_branch
         """
         fs, remote = _get_fs_and_path(repo)
-        assert(fs.protocol == 'xet')
-        assert('/' not in dest_branch)
+        assert (fs.protocol == 'xet')
+        assert ('/' not in dest_branch)
         fs.make_branch(remote, src_branch, dest_branch)
 
     @staticmethod
@@ -587,7 +595,6 @@ class BranchCLI:
         else:
             print("Add --yes to delete", file=sys.stderr)
 
-
     @staticmethod
     @branch.command()
     def info(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
@@ -625,7 +632,6 @@ class RepoCLI:
             print("Repo permissions set successfully")
         print(ret)
 
-
     @staticmethod
     @repo.command()
     def fork(source: Annotated[str, typer.Argument(help="Origin repo to fork from")],
@@ -644,7 +650,6 @@ class RepoCLI:
             dest = "xet://" + fs.get_username() + "/" + repo_name
             print(f"Forking to {dest}")
         fs.fork_repo(source, dest)
-
 
     @staticmethod
     @repo.command()

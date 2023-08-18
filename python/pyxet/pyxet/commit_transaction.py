@@ -1,8 +1,9 @@
-import fsspec
-from .url_parsing import parse_url
-from .file_interface import XetFile
 import sys
 import threading
+
+import fsspec
+
+from .file_interface import XetFile
 
 TRANSACTION_LIMIT = 2048
 
@@ -20,13 +21,13 @@ class CommitTransaction(fsspec.transaction.Transaction):
     be performed within the context of a single repository and branch.
 
     There is a transaction limit of 2048 entries. If the number of changes
-    exceed this limit, an automatic commit will be performed.
+    exceeds this limit, an automatic commit will be performed.
     """
 
     def __init__(self, fs, repo_info, commit_message=None):
         """
         This class should not be used directly.
-        it is preferred to use fs.transaction.
+        It is preferred to use fs.transaction.
         """
         _validate_repo_info_for_transaction(repo_info)
         if commit_message is None:
@@ -69,8 +70,8 @@ class CommitTransaction(fsspec.transaction.Transaction):
                 handler.cancel()
 
     def open_for_write(self, repo_info):
-        assert(repo_info.remote == self.repo_info.remote)
-        assert(repo_info.branch == self.repo_info.branch)
+        assert (repo_info.remote == self.repo_info.remote)
+        assert (repo_info.branch == self.repo_info.branch)
         return XetFile(self._transaction_handler.open_for_write(repo_info.path), self._transaction_handler)
 
     def check_transaction_limit(self):
@@ -87,8 +88,8 @@ class CommitTransaction(fsspec.transaction.Transaction):
     def copy(self, src_repo_info, dest_repo_info):
         if self.fs is None:
             raise RuntimeError("Transaction object has been invalidated")
-        assert(src_repo_info.remote == dest_repo_info.remote)
-        assert(dest_repo_info.remote == self.repo_info.remote)
+        assert (src_repo_info.remote == dest_repo_info.remote)
+        assert (dest_repo_info.remote == self.repo_info.remote)
         self.check_transaction_limit()
         self._transaction_handler.copy(src_repo_info.branch,
                                        src_repo_info.path,
@@ -97,16 +98,16 @@ class CommitTransaction(fsspec.transaction.Transaction):
     def rm(self, repo_info):
         if self.fs is None:
             raise RuntimeError("Transaction object has been invalidated")
-        assert(repo_info.remote == self.repo_info.remote)
-        assert(repo_info.branch == self.repo_info.branch)
+        assert (repo_info.remote == self.repo_info.remote)
+        assert (repo_info.branch == self.repo_info.branch)
         self.check_transaction_limit()
         self._transaction_handler.delete(repo_info.path)
 
     def mv(self, src_repo_info, dest_repo_info):
         if self.fs is None:
             raise RuntimeError("Transaction object has been invalidated")
-        assert(src_repo_info.remote == dest_repo_info.remote)
-        assert(dest_repo_info.remote == self.repo_info.remote)
+        assert (src_repo_info.remote == dest_repo_info.remote)
+        assert (dest_repo_info.remote == self.repo_info.remote)
         self.check_transaction_limit()
         with self.lock:
             self._transaction_handler.mv(src_repo_info.path, dest_repo_info.path)
@@ -123,10 +124,11 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
     by tracking them separately. Simultaneous changes across branches
     will require multiple actual transactions to complete.
     """
+
     def __init__(self, fs, commit_message=None):
         """
         This class should not be used directly.
-        it is preferred to use fs.transaction.
+        It is preferred to use fs.transaction.
         """
         self.commit_message = None
         self._transaction_pool = {}
@@ -139,7 +141,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
     def set_commit_message(self, commit_message):
         """
         Sets the commit message to be used. This applies to every
-        current un-committed transaction and future transactions.
+        current uncommitted transaction and future transactions.
         If commit_message is None, a default message "Commit [current datetime]"
         is used.
         """
@@ -165,7 +167,6 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         # only commit if there was no exception
         self.complete(commit=exc_type is None)
 
-
     def get_handler_for_repo_info(self, repo_info):
         with self.lock:
             key = repo_info_key(repo_info)
@@ -177,8 +178,8 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
 
     def open_for_write(self, repo_info):
         """
-        Opens a file for write. `repo_info` is the result of 
-        `pyxet.parse_url(url)`
+        Opens a file for writing.
+        `repo_info` is the result of `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
         with self.lock:
@@ -268,10 +269,11 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         deletes = []
         new_files = []
         copies = []
+        moves = []
         for v in self._transaction_pool.values():
             deletes.extend(v._transaction_handler.deletes)
             new_files.extend(v._transaction_handler.new_files)
             copies.extend(v._transaction_handler.copies)
             moves.extend(v._transaction_handler.moves)
 
-        return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves':moves}
+        return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves': moves}

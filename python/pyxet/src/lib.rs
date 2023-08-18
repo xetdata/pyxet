@@ -12,7 +12,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::Arc;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tracing::{error, info};
+use tracing::error;
 use xetblob::*;
 
 mod transactions;
@@ -197,15 +197,21 @@ impl PyRepoManager {
 \n\n  git config --global user.name \"<Name>\"\n  git config --global user.email \"<Email>\""
             );
         }
-        Ok(PyRepoManager { manager : RwLock::new(manager) })
+        Ok(PyRepoManager {
+            manager: RwLock::new(manager),
+        })
     }
 
     // return the current user name
-    pub fn get_inferred_username(&self, remote: &str, py : Python<'_>) -> PyResult<String> {
-        rust_async!(py, 
-        self.manager.read().await
-            .get_inferred_username(remote)
-            .map_err(anyhow_to_runtime_error))
+    pub fn get_inferred_username(&self, remote: &str, py: Python<'_>) -> PyResult<String> {
+        rust_async!(
+            py,
+            self.manager
+                .read()
+                .await
+                .get_inferred_username(remote)
+                .map_err(anyhow_to_runtime_error)
+        )
     }
 
     /// Performs a file listing.
@@ -217,32 +223,40 @@ impl PyRepoManager {
         py: Python<'_>,
     ) -> PyResult<(Vec<String>, Vec<FileAttributes>)> {
         // strip trailing slashes
-        rust_async!(py, {
-            #![allow(clippy::manual_strip)]
-        let path = if path.ends_with('/') {
-            &path[..path.len() - 1]
-        } else {
-            path
-        };
-        let path = if path.starts_with('/') {
-            &path[1..]
-        } else {
-            path
-        };
-        let listing = self.manager.read().await.listdir(remote, branch, path).await?;
-        let mut ret_names = vec![];
-        let mut ret_attrs = vec![];
-        for i in listing {
-            if path.is_empty() {
-                ret_names.push(i.name.clone());
-            } else {
-                ret_names.push(format!("{path}/{}", i.name).to_string());
-            }
-            ret_attrs.push(i.into());
-        }
+        rust_async!(
+            py,
+            {
+                #![allow(clippy::manual_strip)]
+                let path = if path.ends_with('/') {
+                    &path[..path.len() - 1]
+                } else {
+                    path
+                };
+                let path = if path.starts_with('/') {
+                    &path[1..]
+                } else {
+                    path
+                };
+                let listing = self
+                    .manager
+                    .read()
+                    .await
+                    .listdir(remote, branch, path)
+                    .await?;
+                let mut ret_names = vec![];
+                let mut ret_attrs = vec![];
+                for i in listing {
+                    if path.is_empty() {
+                        ret_names.push(i.name.clone());
+                    } else {
+                        ret_names.push(format!("{path}/{}", i.name).to_string());
+                    }
+                    ret_attrs.push(i.into());
+                }
 
-        anyhow::Ok((ret_names, ret_attrs))
-    })
+                anyhow::Ok((ret_names, ret_attrs))
+            }
+        )
     }
 
     /// Performs a general api query.
@@ -256,7 +270,9 @@ impl PyRepoManager {
     ) -> PyResult<Vec<u8>> {
         rust_async!(
             py,
-            self.manager.read().await
+            self.manager
+                .read()
+                .await
                 .perform_api_query(remote, op, http_command, body)
                 .await
         )
@@ -273,7 +289,9 @@ impl PyRepoManager {
     ) -> PyResult<()> {
         rust_async!(
             py,
-            self.manager.write().await
+            self.manager
+                .write()
+                .await
                 .override_login_config(user_name, user_token, email, host)
                 .await
         )
@@ -287,7 +305,10 @@ impl PyRepoManager {
         path: &str,
         py: Python<'_>,
     ) -> PyResult<Option<FileAttributes>> {
-        let ent: Option<DirEntry> = rust_async!(py, self.manager.read().await.stat(remote, branch, path).await)?;
+        let ent: Option<DirEntry> = rust_async!(
+            py,
+            self.manager.read().await.stat(remote, branch, path).await
+        )?;
 
         Ok(ent.map(|x| x.into()))
     }
@@ -480,7 +501,7 @@ impl PyRFile {
             let mut v_buf = Vec::new();
 
             while num_lines <= 0 || (v_buf.len() as i64) < num_lines {
-                let buf = self.readline_impl(-1).await?; 
+                let buf = self.readline_impl(-1).await?;
                 if !buf.is_empty() {
                     v_buf.push(buf);
                 } else {
@@ -567,7 +588,6 @@ impl PyRFile {
     pub fn __deepcopy__(&self) -> PyResult<PyRFile> {
         Ok(self.clone())
     }
-
 }
 
 // This functions as a reference to access the internal transaction object.
@@ -596,10 +616,8 @@ pub struct PyWriteTransaction {
 
 impl PyWriteTransaction {
     async fn new(repo: Arc<XetRepo>, branch: &str, commit_message: &str) -> Result<Self> {
-        let inner = WriteTransaction::new(&repo, branch, commit_message).await?;
-
         Ok(Self {
-            pwt: Some(Arc::new(RwLock::new(inner))),
+            pwt: Some(WriteTransaction::new(&repo, branch, commit_message).await?),
             repo,
             branch: branch.to_string(),
             commit_message: commit_message.to_string(),
@@ -617,39 +635,29 @@ impl PyWriteTransaction {
         }
     }
 
-    async fn complete_impl(&mut self, commit: bool, blocking: bool) -> Result<()> {
+    async fn complete_impl(&mut self, commit: bool, cleanup_immediately: bool) -> Result<()> {
         let Some(tr) = self.pwt.take() else {
             // This means we've called close() on the transaction, then tried to use it.
+            error!("Complete called after PyTransaction object committed");
             return Err(anyhow!("Complete called after transaction closed."));
         };
 
-        if commit {
-            tr.write().await.set_commit_when_ready(true)?;
-        } else {
-            tr.write().await.set_cancel_flag(true)?;
-        }
+        {
+            let mut trw = tr.write().await;
 
-        if blocking {
-            let count = Arc::strong_count(&tr);
+            if commit {
+                trw.set_commit_when_ready(true)?;
+            } else {
+                trw.set_cancel_flag(true)?;
+            }
 
-            if count > 1 {
-                info!("PyWriteTransaction: blocking complete: Waiting for other operations to complete.");
-
-                loop {
-                    // I'm not confident this works.
-                    // Sleep >= 50 milliseconds, then poll again.
-                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                    let count = Arc::strong_count(&tr);
-
-                    if count == 1 {
-                        break;
-                    }
-                }
+            if cleanup_immediately {
+                // If there is only one count, this will shut down the transaction
+                // and propegate any errors
+                trw.complete().await?;
             }
         }
 
-        // If there is only one count, this will shut down the transaction
-        // and propegate any errors
         WriteTransaction::release_write_token(tr).await?;
 
         Ok(())
@@ -660,8 +668,8 @@ impl PyWriteTransaction {
         self.complete_impl(true, false).await?;
 
         // Create a new write transaction wrapper
-        let inner = WriteTransaction::new(&self.repo, &self.branch, &self.commit_message).await?;
-        self.pwt = Some(Arc::new(RwLock::new(inner)));
+        self.pwt =
+            Some(WriteTransaction::new(&self.repo, &self.branch, &self.commit_message).await?);
 
         Ok(())
     }
@@ -775,7 +783,7 @@ impl PyWriteTransactionAccessToken {
     async fn access_transaction_for_write<'a>(
         &'a self,
     ) -> Result<RwLockWriteGuard<'a, WriteTransaction>> {
-        let Some(t) = &self.tr else { 
+        let Some(t) = &self.tr else {
             // This should only happen if it's been closed explicitly, then 
             // access is attempted.
             return Err(anyhow!("Transaction accessed for write after being closed."));
@@ -787,7 +795,7 @@ impl PyWriteTransactionAccessToken {
     async fn access_transaction_for_read<'a>(
         &'a self,
     ) -> Result<RwLockReadGuard<'a, WriteTransaction>> {
-        let Some(t) = &self.tr else { 
+        let Some(t) = &self.tr else {
             // This should only happen if it's been closed explicitly, then 
             // access is attempted.
             return Err(anyhow!("Transaction accessed for read after being closed."));
@@ -882,16 +890,14 @@ impl PyWriteTransactionAccessToken {
                 .await
         )
     }
-    
+
     pub fn __copy__(&self) -> PyResult<Self> {
         Ok(self.clone())
     }
-    
+
     pub fn __deepcopy__(&self) -> PyResult<Self> {
         Ok(self.clone())
     }
-
-
 }
 
 #[pyclass(subclass)]
@@ -941,15 +947,14 @@ impl PyWFile {
     pub fn writable(&self) -> PyResult<bool> {
         Ok(true)
     }
-    
+
     pub fn __copy__(&self) -> PyResult<Self> {
         Ok(self.clone())
     }
-    
+
     pub fn __deepcopy__(&self) -> PyResult<Self> {
         Ok(self.clone())
     }
-
 }
 
 /// This module is implemented in Rust.

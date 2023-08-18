@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 use tokio::sync::{RwLock, Semaphore};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use xetblob::*;
 
 lazy_static! {
@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 pub struct WriteTransaction {
-    transaction: XetRepoWriteTransaction,
+    transaction: Option<XetRepoWriteTransaction>,
     branch: String,
 
     pub new_files: Vec<String>,
@@ -38,23 +38,24 @@ pub struct WriteTransaction {
     // For testing: go through everything, but don't actually do the last bit of the commit.
     commit_canceled: bool,
 
-    // This happens when
-    transaction_complete: bool,
-
     // The message written on success
     commit_message: String,
     _transaction_permit: tokio::sync::OwnedSemaphorePermit,
 }
 
 impl WriteTransaction {
-    pub async fn new(repo: &Arc<XetRepo>, branch: &str, commit_message: &str) -> Result<Self> {
+    pub async fn new(
+        repo: &Arc<XetRepo>,
+        branch: &str,
+        commit_message: &str,
+    ) -> Result<Arc<RwLock<Self>>> {
         let transaction = repo.begin_write_transaction(branch, None, None).await?;
 
         debug!("PyWriteTransaction::new_transaction(): Acquiring transaction permit.");
         let transaction_permit = TRANSACTION_LIMIT_LOCK.clone().acquire_owned().await?;
 
         let write_transaction = Self {
-            transaction,
+            transaction: Some(transaction),
             branch: branch.to_string(),
             commit_message: commit_message.to_string(),
             copies: Vec::new(),
@@ -66,36 +67,26 @@ impl WriteTransaction {
             commit_when_ready: false,
             _transaction_permit: transaction_permit,
             commit_canceled: false,
-            transaction_complete: false,
         };
 
-        Ok(write_transaction)
+        Ok(Arc::new(RwLock::new(write_transaction)))
     }
 
     /// Complete the transaction by either cancelling it or committing it, depending on flags.
-    pub async fn complete(mut self) -> Result<()> {
-        if self.transaction_complete {
-            // This means it was explicitly completed through deregister_write_object,
-            // and this is called from the Drop function.
-            return Ok(());
-        }
-
-        // The function contents can be executed only once, even with errors.
-        self.transaction_complete = true;
-
-        if self.error_on_commit {
-            return Err(anyhow!("Error on commit flagged; Cancelling."));
-        }
-
-        if self.commit_canceled || !self.commit_when_ready {
-            info!("PyWriteTransactionInternal::complete: Cancelling commit.");
-            self.transaction.cancel().await?;
-        } else {
-            if self.do_not_commit {
-                return Ok(());
+    pub async fn complete(&mut self) -> Result<()> {
+        if let Some(transaction) = self.transaction.take() {
+            if self.error_on_commit {
+                return Err(anyhow!("Error on commit flagged; Cancelling."));
             }
 
-            self.transaction.commit(&self.commit_message).await?;
+            if self.commit_canceled || !self.commit_when_ready {
+                info!("PyWriteTransactionInternal::complete: Cancelling commit.");
+                transaction.cancel().await?;
+            } else {
+                if !self.do_not_commit {
+                    transaction.commit(&self.commit_message).await?;
+                }
+            }
         }
 
         Ok(())
@@ -126,19 +117,34 @@ impl WriteTransaction {
     pub async fn open_for_write(&mut self, path: &str) -> Result<Arc<XetWFileObject>> {
         if self.commit_canceled {
             // No point doing anything more.
+            error!("open_for_write failed: Transaction has been canceled.");
             return Err(anyhow!(
                 "open_for_write failed: Transaction has been canceled."
             ));
         }
 
-        self.new_files
-            .push(format!("{}/{path}", self.branch).to_string());
-        let writer = self.transaction.open_for_write(path).await?;
-        Ok(writer)
+        if let Some(transaction) = &mut self.transaction {
+            self.new_files
+                .push(format!("{}/{path}", self.branch).to_string());
+            let writer = transaction.open_for_write(path).await?;
+            Ok(writer)
+        } else {
+            error!("open_for_write called after transaction completed.");
+            Err(anyhow!(
+                "open_for_write called after transaction completed."
+            ))
+        }
     }
 
     pub async fn transaction_size(&self) -> Result<usize> {
-        Ok(self.transaction.transaction_size().await)
+        if let Some(transaction) = &self.transaction {
+            Ok(transaction.transaction_size().await)
+        } else {
+            error!("transaction_size called after transaction completed.");
+            Err(anyhow!(
+                "transaction_size called after transaction completed."
+            ))
+        }
     }
 
     pub fn commit_canceled(&self) -> bool {
@@ -147,14 +153,21 @@ impl WriteTransaction {
 
     pub async fn delete(&mut self, path: &str) -> Result<()> {
         if self.commit_canceled {
+            error!("delete failed: Transaction has been canceled.");
             // No point doing anything more.
             return Err(anyhow!("delete failed: Transaction has been canceled."));
         }
 
-        self.transaction.delete(path).await?;
-        self.deletes
-            .push(format!("{}/{path}", self.branch).to_string());
-        Ok(())
+        if let Some(transaction) = &mut self.transaction {
+            debug!("Deleting {path}");
+            transaction.delete(path).await?;
+
+            self.deletes
+                .push(format!("{}/{path}", self.branch).to_string());
+            Ok(())
+        } else {
+            Err(anyhow!("delete called after transaction completed."))
+        }
     }
 
     pub async fn copy(
@@ -165,31 +178,39 @@ impl WriteTransaction {
     ) -> Result<()> {
         if self.commit_canceled {
             // No point doing anything more.
+            error!("copy failed: Transaction has been canceled.");
             return Err(anyhow!("copy failed: Transaction has been canceled."));
         }
 
-        self.transaction
-            .copy(src_branch, src_path, target_path)
-            .await?;
-        self.copies.push((
-            format!("{src_branch}/{src_path}").to_string(),
-            format!("{}/{target_path}", self.branch).to_string(),
-        ));
-        Ok(())
+        if let Some(transaction) = &mut self.transaction {
+            transaction.copy(src_branch, src_path, target_path).await?;
+            self.copies.push((
+                format!("{src_branch}/{src_path}").to_string(),
+                format!("{}/{target_path}", self.branch).to_string(),
+            ));
+            Ok(())
+        } else {
+            Err(anyhow!("copy called after transaction completed."))
+        }
     }
 
     pub async fn mv(&mut self, src_path: &str, target_path: &str) -> Result<()> {
         if self.commit_canceled {
             // No point doing anything more.
+            error!("mv failed: Transaction has been canceled.");
             return Err(anyhow!("mv failed: Transaction has been canceled."));
         }
 
-        self.transaction.mv(src_path, target_path).await?;
-        self.moves.push((
-            format!("{}/{src_path}", self.branch).to_string(),
-            format!("{}/{target_path}", self.branch).to_string(),
-        ));
-        Ok(())
+        if let Some(transaction) = &mut self.transaction {
+            transaction.mv(src_path, target_path).await?;
+            self.moves.push((
+                format!("{}/{src_path}", self.branch).to_string(),
+                format!("{}/{target_path}", self.branch).to_string(),
+            ));
+            Ok(())
+        } else {
+            Err(anyhow!("copy called after transaction completed."))
+        }
     }
 
     // Deregister a writer on a successful close by forcing that writer to give

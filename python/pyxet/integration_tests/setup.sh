@@ -110,10 +110,11 @@ check_directories_match() {
   local dir_2="$2"
 
   set -x
-  diff_report=$(rsync -r -f '- *.git' -f '- .git/' --delete --dry-run --checksum --out-format="%f" "$dir_1/" "$dir_2/")
+  diff_report=$(rsync -r -f '- *.git*' -f '- .git/' --delete --dry-run --checksum --out-format="%f" "$dir_1/" "$dir_2/")
 
   if [[ ! -z $diff_report ]] ; then 
     >&2 echo "Directories $dir_1 and $dir_2 differ:"
+    >&2 echo "OR: directories `pwd`/$dir_1 and `pwd`/$dir_2 differ:"
     >&2 echo $diff_report
 
     die "Directories $dir_1 and $dir_2 differ"
@@ -134,12 +135,10 @@ check_repository_branch_and_local_directory_match() {
   pushd $temp_dir
   
   >&2 XET_NO_SMUDGE=0 git xet clone $repo remote_$2/
-  cd remote_$2
 
+  >&2 popd # Back to original dir 
   check_directories_match "$local_dir" "$temp_dir/remote_$2/$end_directory"
   
-  >&2 popd # Back to original dir 
-
 }
 
 

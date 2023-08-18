@@ -17,9 +17,6 @@ class XetFile:
         self.write_transaction = write_transaction
         self._do_not_write = False
 
-    def __copy__(self):
-        deepcopy(self)
-
     @property
     def closed(self):
         return self.handle.is_closed()

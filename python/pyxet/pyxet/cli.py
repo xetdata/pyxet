@@ -72,9 +72,11 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
         return
     print(f"Copying {src_path} to {dest_path}...")
 
+    # 
     if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
         dest_fs.cp_file(src_path, dest_path)
         return
+
     with MAX_CONCURRENT_COPIES:
         try:
             if dest_fs.protocol == "xet":
@@ -181,7 +183,7 @@ def __build_src_dest_list__file_src(src_fs, src_file, dest_fs, dest_path):
         return [(src_file, dest_path, 0)], []
 
 
-def _build_source_destination_list_internal(src_fs, src_path, dest_fs, dest_path, recursive):
+def _build_source_destination_list(src_fs, src_path, dest_fs, dest_path, recursive):
 
     _validate_xet_copy(src_fs, src_path, dest_fs, dest_path)
 
@@ -232,12 +234,41 @@ def _build_source_destination_list_internal(src_fs, src_path, dest_fs, dest_path
         return __build_src_dest_list__file_src(src_fs, src_path, dest_fs, dest_path)
 
 
-def _build_source_destination_list(source, destination, recursive, _src_fs, _dest_fs):
-    """
-    Builds a list of all the source and destination files, returning a list of 
-    [(src_fs, source_path, dest_fs, dest_path)] tuples and a list of new 
-    destination directories to create.
-    """
+def _xet_copy(src_fs, src_path, dest_fs, dest_path, recursive):
+
+    _validate_xet_copy(src_fs, src_path, dest_fs, dest_path)
+
+    # normalize trailing '/' by just removing them unless the path
+    # is exactly just '/'
+    if src_path != '/':
+        src_path = src_path.rstrip('/')
+    if dest_path != '/':
+        dest_path = dest_path.rstrip('/')
+    src_isdir = _isdir(src_fs, src_path)
+
+    # Handling directories
+    if src_isdir:
+        if not recursive:
+            raise ValueError(
+                "Specify recursive flag '-r' to copy directories.")
+        try:
+            dest_info = dest_fs.info(dest_path)
+            if dest_info['type'] == 'directory':
+                # The destination directory is actually the source 
+                _, end_component = os.path.split(src_path)
+                processed_path = os.path.join(dest_path, end_component)
+            else:
+                raise ValueError(
+                    "Destination path not a directory.")
+        except FileNotFoundError:
+            processed_path = dest_path
+
+        src_fs.cp_file(src_path, processed_path)
+    else:
+        src_fs.cp_file(src_path, dest_path)
+
+def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
+    
     src_fs, src_path = _get_fs_and_path(source)
     dest_fs, dest_path = _get_fs_and_path(destination)
     if _src_fs is not None:
@@ -245,16 +276,12 @@ def _build_source_destination_list(source, destination, recursive, _src_fs, _des
     if _dest_fs is not None:
         dest_fs = _dest_fs
 
-    cp_paths, dest_dir_list = _build_source_destination_list_internal(
+    if src_fs.protocol == "xet" and dest_fs.protocol != "xet": 
+        _xet_copy(src_fs, src_path, dest_fs, dest_path, recursive)
+        return
+    
+    cp_list, dest_dir_list = _build_source_destination_list(
         src_fs, src_path, dest_fs, dest_path, recursive)
-
-    return (src_fs, dest_fs, cp_paths, dest_dir_list)
-
-
-def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
-
-    (src_fs, dest_fs, cp_list, dest_dir_list) = _build_source_destination_list(
-        source, destination, recursive, _src_fs, _dest_fs)
 
     # Prefetch all the hints appropriately.
     if dest_fs.protocol == "xet" and src_fs.protocol != "xet":

@@ -15,10 +15,10 @@ mkdir -p data/
 create_data_file data/data_1.bin 1024
 
 # sync it up
-xet cp data_1.bin $(xet_addr 1)/main/
+xet cp data/data_1.bin $(xet_addr 1)/main/data_1.bin
 
 # Now make sure this all matches up
-check_repository_branch_and_local_directory_match data/ 1 main ./
+check_repository_branch_and_local_directory_match data/ 1 main /
 
 # Then, make sure we can copy it all back correctly. 
 xet cp $(xet_addr 1)/main/data_1.bin data_1_dup.bin

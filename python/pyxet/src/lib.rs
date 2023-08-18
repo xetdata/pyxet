@@ -480,7 +480,7 @@ impl PyRFile {
             let mut v_buf = Vec::new();
 
             while num_lines <= 0 || (v_buf.len() as i64) < num_lines {
-                let buf = self.readline_impl(-1).await?; // TODO: This has to be wrong re num_lines, given the API??
+                let buf = self.readline_impl(-1).await?; 
                 if !buf.is_empty() {
                     v_buf.push(buf);
                 } else {
@@ -636,6 +636,7 @@ impl PyWriteTransaction {
                 info!("PyWriteTransaction: blocking complete: Waiting for other operations to complete.");
 
                 loop {
+                    // I'm not confident this works.
                     // Sleep >= 50 milliseconds, then poll again.
                     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                     let count = Arc::strong_count(&tr);

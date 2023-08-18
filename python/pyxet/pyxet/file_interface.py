@@ -25,6 +25,7 @@ class XetFile:
         return self.handle.is_closed()
 
     def close(self):
+        self.write_transaction = None
         if not self.closed:
             return self.handle.close()
 
@@ -112,8 +113,7 @@ class XetFile:
         self.handle.write(data)
 
     def __del__(self):
-        if not self.closed:
-            self.close()
+        self.close()
 
     def __enter__(self):
         return self

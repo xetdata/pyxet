@@ -692,8 +692,8 @@ impl Drop for PyWriteTransaction {
 //  The python interface for PyWriteTransaction.
 #[pymethods]
 impl PyWriteTransaction {
-    pub fn complete(&mut self, commit: bool, blocking: bool, py: Python<'_>) -> PyResult<()> {
-        rust_async!(py, self.complete_impl(commit, blocking).await)
+    pub fn complete(&mut self, commit: bool, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, self.complete_impl(commit, true).await)
     }
 
     pub fn commit_and_restart(&mut self, py: Python<'_>) -> PyResult<()> {

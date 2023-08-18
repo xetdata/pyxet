@@ -114,7 +114,12 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             ret_except = None
             for k, v in self._transaction_pool.items():
                 try:
-                    v.complete(commit, blocking = True)
+                    # TODO:  blocking here doesn't always seem to work when 
+                    # there is a file explicitly open for write.  There is a 
+                    # race condition when the user has a file that isn't explicitly closed
+                    # before the `with transaction:` block completes which causes a deadlock. 
+                    # For now, set blocking equal to False to get around this
+                    v.complete(commit, blocking = False)
                 except Exception as e:
                     sys.stderr.write(f"Failed to commit {k}: {e}\n")
                     sys.stderr.flush()

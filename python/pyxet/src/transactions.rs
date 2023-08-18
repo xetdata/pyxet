@@ -8,7 +8,8 @@ use tracing::{debug, info};
 use xetblob::*;
 
 lazy_static! {
-    static ref MAX_NUM_CONCURRENT_TRANSACTIONS: AtomicUsize = AtomicUsize::new(2);
+    // Set this to a larger number now; reduce if there are issues.
+    static ref MAX_NUM_CONCURRENT_TRANSACTIONS: AtomicUsize = AtomicUsize::new(8);
 
     /// This is an example for using doc comment attributes
     static ref TRANSACTION_LIMIT_LOCK: Arc<Semaphore> = Arc::new(Semaphore::new((*MAX_NUM_CONCURRENT_TRANSACTIONS).load(Ordering::Relaxed)));

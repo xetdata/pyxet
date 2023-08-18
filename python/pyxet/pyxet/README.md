@@ -1,4 +1,3 @@
-
 Essential implementation
 ------------------------
 
@@ -37,6 +36,8 @@ pd.read_csv("xet:://user/<repo>/file...", xet={"access_token" : "..."})
 
 High level tasks
 ----------------
+
 - Implement login / auth / connection (Ajit)
-- Fill out methodhs in file_system.py.  This implements AbstractFileSystem (https://github.com/fsspec/filesystem_spec/blob/b595ff8caa8cc7b403c9ef1b93d8aaec563187c6/fsspec/spec.py#L92)
+- Fill out methods in file_system.py. This implements
+  AbstractFileSystem (https://github.com/fsspec/filesystem_spec/blob/b595ff8caa8cc7b403c9ef1b93d8aaec563187c6/fsspec/spec.py#L92)
 - Implement CommitTransaction to allow writing. 

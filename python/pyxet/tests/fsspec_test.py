@@ -1,14 +1,14 @@
-import pyxet
 import fsspec
+
 from utils import CONSTANTS
 
 
 def test_fsspec():
     fs = fsspec.filesystem("xet")
     assert str(fs.open(CONSTANTS.TITANIC_MAIN +
-               '/readme.md').readline()).startswith("b'#")
+                       '/readme.md').readline()).startswith("b'#")
     assert str(fs.open(CONSTANTS.TITANIC_MAIN +
-               '/readme.md').readline()).startswith("b'#")
+                       '/readme.md').readline()).startswith("b'#")
 
     # https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.spec.AbstractFileSystem.glob
     listing = fs.glob(CONSTANTS.TITANIC_MAIN)
@@ -54,4 +54,5 @@ def test_fsspec():
     listing = fs.glob(CONSTANTS.TITANIC_MAIN + '/titanic*')
     print(listing)
     assert len(listing) == 3
-    assert listing == ['xdssio/titanic/main/titanic.csv', 'xdssio/titanic/main/titanic.json', 'xdssio/titanic/main/titanic.parquet']
+    assert listing == ['xdssio/titanic/main/titanic.csv', 'xdssio/titanic/main/titanic.json',
+                       'xdssio/titanic/main/titanic.parquet']

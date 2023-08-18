@@ -7,7 +7,7 @@ To see the history of your data?
 ```python
 import pyxet
 
-pyxet.create("username/repo", branch="main", login=..., **kwargs) # create a new repo
+pyxet.create("username/repo", branch="main", login=..., **kwargs)  # create a new repo
 repo = pyxet.XetFS("username/repo", branch="main", login=..., **kwargs)
 repo.clone(destensation='.', lazy=True)
 repo.commit(target='.', message="commit message")

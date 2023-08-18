@@ -1,6 +1,8 @@
 # CLI
 
-The file system APIs are the most straight forward. They are based on the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library.   
+The file system APIs are the most straight forward. They are based on
+the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library.
+
 * [Copy conventions](https://filesystem-spec.readthedocs.io/en/latest/copying.html)
 
 ```bash

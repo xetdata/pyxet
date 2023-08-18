@@ -1,6 +1,6 @@
-import fsspec
 import io
 from copy import deepcopy
+
 
 class XetFile:
     """
@@ -8,9 +8,9 @@ class XetFile:
     """
 
     def __init__(
-        self,
-        handle,
-        write_transaction = None,
+            self,
+            handle,
+            write_transaction=None,
     ):
         # Get pyxethandle  from path if None.
         self.handle = handle

@@ -44,8 +44,6 @@ def skip_if_no(package: str):
     ----------
     package: str
         The name of the required package.
-    min_version: str or None, default None
-        Optional minimum version of the package.
     Returns
     -------
     _pytest.mark.structures.MarkDecorator

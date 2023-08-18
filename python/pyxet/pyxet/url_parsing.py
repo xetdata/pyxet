@@ -1,10 +1,9 @@
 """
 Provides URL parsing for Xet Repos
 """
-from collections import namedtuple
-from urllib.parse import urlparse, quote
 import unittest
-
+from collections import namedtuple
+from urllib.parse import urlparse
 
 XetPathInfo = namedtuple('XetPathInfo', ('remote', 'branch', 'path'))
 
@@ -26,7 +25,7 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
     url = url.lstrip('/')
     parse = urlparse(url)
     if parse.scheme == '':
-        parse=parse._replace(scheme='xet')
+        parse = parse._replace(scheme='xet')
 
     # support force_domain with a scheme (http/https)
     domain_split = force_domain.split('://')
@@ -49,7 +48,7 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
             # join user back with path
             newpath = f"/{parse.netloc}{parse.path}"
             # replace the netloc
-            true_netloc = force_domain 
+            true_netloc = force_domain
             parse = parse._replace(netloc=true_netloc, path=newpath)
 
     # Split the known path and try to split out the user/repo/branch/path components
@@ -69,14 +68,13 @@ def parse_url(url, force_domain='xethub.com', partial_remote=False):
     if len(components) >= 4:
         branch = components[3]
 
-    path = "" 
+    path = ""
     if len(components) >= 5:
         path = '/'.join(components[4:])
 
     # we leave url with the first 3 components. i.e. "/user/repo"
     replacement_parse_path = '/'.join(components[:3])
     parse = parse._replace(path=replacement_parse_path, scheme=scheme)
-
 
     return XetPathInfo(parse.geturl(), branch, path)
 
@@ -150,7 +148,6 @@ class ParseUrlTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.parse = parse_url("xet://user")
 
-
     def test_parse_plain_path(self):
         parse = parse_url("/user/repo/branch/hello/world")
         self.assertEqual(parse.remote, "https://xethub.com/user/repo")
@@ -184,5 +181,3 @@ class ParseUrlTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.parse = parse_url("xet://xethub.com/user")
-
-

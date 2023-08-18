@@ -14,8 +14,6 @@ from .url_parsing import parse_url
 from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
-from fnmatch import fnmatch
-import heapq
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -48,7 +46,7 @@ def _ltrim_match(s, match):
 def _get_fs_and_path(uri):
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
-        uri = os.path.normpath(os.path.abspath(uri))
+        uri = os.path.abspath(uri)
         return fs, uri
     else:
         split = uri.split("://")
@@ -58,25 +56,23 @@ def _get_fs_and_path(uri):
             fs = pyxet.XetFS()
         else:
             fs = fsspec.filesystem(split[0])
-            # this is *really* annoying But the s3fs protocol has
+            # this is *really* annoying But the s3fs protocol has 
             # protocol as a list ['s3','s3a']
             if isinstance(fs.protocol, list):
                 fs.protocol = split[0]
-        return fs, os.path.normpath(split[1])
+        return fs, split[1]
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
-                      buffer_size=CHUNK_SIZE, size_hint = None):
+                      buffer_size=CHUNK_SIZE, size_hint=None):
     if dest_path.split('/')[-1] == '.gitattributes':
         print("Skipping .gitattributes as that is required for Xet Magic")
         return
     print(f"Copying {src_path} to {dest_path}...")
 
-    # 
     if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
         dest_fs.cp_file(src_path, dest_path)
         return
-
     with MAX_CONCURRENT_COPIES:
         try:
             if dest_fs.protocol == "xet":
@@ -97,10 +93,8 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
                             break
                         dest_file.write(chunk)
         except Exception as e:
-            raise
-        #    proto = src_fs.protocol
-        #    print(f"Failed to copy {proto}://{src_path}: {e}")
-
+            proto = src_fs.protocol
+            print(f"Failed to copy {proto}://{src_path}: {e}")
 
 
 def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
@@ -118,7 +112,7 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
         src_fs.branch_info(src_path)
 
     if destproto == 'xet':
-        # check dest branch exists
+        # check dest branch exists 
         # exists before we try to do any copying
         # An exception is that if this operation would create a branch
         if srcproto == 'xet':
@@ -138,52 +132,15 @@ def _isdir(fs, path):
         return fs.isdir(path)
 
 
-def __build_src_dest_list__dir_src(src_fs, src_dir, dest_fs, dest_dir, recursive, glob_pattern):
-
-    if glob_pattern == '*':
-        glob_pattern = None
-
-    if recursive:
-        src_listing = src_fs.find(src_dir, detail=True).items()
-    else:
-        pattern = os.path.join(src_dir, glob_pattern if glob_pattern is not None else '*')
-        src_listing = src_fs.glob(pattern, detail=True).items()
-        glob_pattern = None
-
-    dest_directories = {dest_dir}
-    cp_files = []
-
-    for src_path, info in src_listing:
-        if info['type'] == 'directory':
-            # Find is already recursive, and glob is not recursive
-            continue
-
-        rel_path = os.path.relpath(src_path, src_dir)
-
-        if glob_pattern is not None:
-            if not fnmatch(rel_path, glob_pattern):
-                continue
-
-        dest_path = os.path.join(dest_dir, rel_path)
-
-        base_dir, _ = os.path.split(dest_path)
-        if recursive:
-            dest_directories.add(base_dir)
-
-        cp_files.append((src_path, dest_path, info.get('size', 0)))
-
-    return cp_files, list(dest_directories)
-
-
-def __build_src_dest_list__file_src(src_fs, src_file, dest_fs, dest_path):
-    if _isdir(dest_fs, dest_path):
-        _, src_name = os.path.split(src_file)
-        return [(src_file, os.path.join(dest_path, src_name), 0)], []
-    else:
-        return [(src_file, dest_path, 0)], []
-
-
-def _build_source_destination_list(src_fs, src_path, dest_fs, dest_path, recursive):
+def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
+    src_fs, src_path = _get_fs_and_path(source)
+    dest_fs, dest_path = _get_fs_and_path(destination)
+    if _src_fs is not None:
+        src_fs = _src_fs
+    if _dest_fs is not None:
+        dest_fs = _dest_fs
+    srcproto = src_fs.protocol
+    destproto = dest_fs.protocol
 
     _validate_xet_copy(src_fs, src_path, dest_fs, dest_path)
 
@@ -197,147 +154,110 @@ def _build_source_destination_list(src_fs, src_path, dest_fs, dest_path, recursi
 
     # Handling wildcard cases
     if '*' in src_path:
-
         # validate
         # we only accept globs of the for blah/blah/blah/[glob]
         # i.e. the glob is only in the last component
         # src_root_dir should be blah/blah/blah here
-        src_root_dir, end_component = os.path.split(src_path)
-
+        src_root_dir = '/'.join(src_path.split('/')[:-1])
         if '*' in src_root_dir:
-            raise ValueError(
-                f"Invalid glob {src_path}. Wildcards can only appear in the last position")
+            raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
+        # The source path contains a wildcard
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for path, info in src_fs.glob(src_path, detail=True).items():
+                # Copy each matching file
+                if info['type'] == 'directory' and not recursive:
+                    continue
+                relpath = _ltrim_match(path, src_root_dir).lstrip('/')
+                if dest_path == '/':
+                    dest_for_this_path = f"/{relpath}"
+                else:
+                    dest_for_this_path = f"{dest_path}/{relpath}"
+                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                dest_fs.makedirs(dest_dir, exist_ok=True)
 
-        return __build_src_dest_list__dir_src(
-            src_fs, src_root_dir, dest_fs, dest_path, recursive, end_component)
+                if info['type'] == 'directory':
+                    futures.append(
+                        executor.submit(
+                            _copy,
+                            f"{src_fs.protocol}://{path}",
+                            f"{dest_fs.protocol}://{dest_for_this_path}",
+                            recursive=True,
+                            _src_fs=src_fs,
+                            _dest_fs=dest_fs,
+                        )
+                    )
+                else:
+                    futures.append(
+                        executor.submit(
+                            _single_file_copy,
+                            src_fs,
+                            f"{path}",
+                            dest_fs,
+                            dest_for_this_path,
+                            size_hint=info.get('size', None)
+                        ))
 
-    # Handling directories
-    if src_isdir:
-        if not recursive:
-            raise ValueError(
-                "Specify recursive flag '-r' to copy directories.")
-        try:
-            dest_info = dest_fs.info(dest_path)
-            if dest_info['type'] == 'directory':
-                # The destination directory is actually the source 
-                _, end_component = os.path.split(src_path)
-                processed_path = os.path.join(dest_path, end_component)
-            else:
-                raise ValueError(
-                    "Destination path not a directory.")
-        except FileNotFoundError:
-            processed_path = dest_path
-
-        return __build_src_dest_list__dir_src(
-            src_fs, src_path, dest_fs, processed_path, recursive, None)
-    else:
-        return __build_src_dest_list__file_src(src_fs, src_path, dest_fs, dest_path)
-
-
-def _xet_copy(src_fs, src_path, dest_fs, dest_path, recursive):
-
-    _validate_xet_copy(src_fs, src_path, dest_fs, dest_path)
-
-    # normalize trailing '/' by just removing them unless the path
-    # is exactly just '/'
-    if src_path != '/':
-        src_path = src_path.rstrip('/')
-    if dest_path != '/':
-        dest_path = dest_path.rstrip('/')
-    src_isdir = _isdir(src_fs, src_path)
-
-    # Handling directories
-    if src_isdir:
-        if not recursive:
-            raise ValueError(
-                "Specify recursive flag '-r' to copy directories.")
-        try:
-            dest_info = dest_fs.info(dest_path)
-            if dest_info['type'] == 'directory':
-                # The destination directory is actually the source 
-                _, end_component = os.path.split(src_path)
-                processed_path = os.path.join(dest_path, end_component)
-            else:
-                raise ValueError(
-                    "Destination path not a directory.")
-        except FileNotFoundError:
-            processed_path = dest_path
-
-        src_fs.cp_file(src_path, processed_path)
-    else:
-        src_fs.cp_file(src_path, dest_path)
-
-def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
-    
-    src_fs, src_path = _get_fs_and_path(source)
-    dest_fs, dest_path = _get_fs_and_path(destination)
-    if _src_fs is not None:
-        src_fs = _src_fs
-    if _dest_fs is not None:
-        dest_fs = _dest_fs
-
-    if src_fs.protocol == "xet" and dest_fs.protocol != "xet": 
-        _xet_copy(src_fs, src_path, dest_fs, dest_path, recursive)
+            for future in futures:
+                future.result()
         return
-    
-    cp_list, dest_dir_list = _build_source_destination_list(
-        src_fs, src_path, dest_fs, dest_path, recursive)
 
-    # Prefetch all the hints appropriately.
-    if dest_fs.protocol == "xet" and src_fs.protocol != "xet":
-        n_prefetch = 24
-        large_file_size = 10000000
-        # These criteriarbitrary, should be tuned
-        # start from end as the copying will outpace this
-        if len(cp_list) >= n_prefetch:
-            # Prefetch stuff for the largest n_prefetch files.
-            prefetch_paths = set(dest_path for (_, dest_path, _) in heapq.nlargest(
-                n_prefetch, cp_list, key=lambda t: t[2]))
+    # Handling directories
+    if src_isdir:
+        # Recursively copy
+        # xet cp_file can cp directories
+        if srcproto == 'xet' and destproto == 'xet':
+            print(f"Copying {src_path} to {dest_path}...")
+            dest_fs.cp_file(src_path, dest_path)
+            return
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for path, info in src_fs.find(src_path, detail=True).items():
+                if info['type'] == 'directory' and not recursive:
+                    continue
+                # Note that path is a full path
+                # we need to relativize to make the destination path
+                relpath = _ltrim_match(path, src_path).lstrip('/')
+                if dest_path == '/':
+                    dest_for_this_path = f"/{relpath}"
+                else:
+                    dest_for_this_path = f"{dest_path}/{relpath}"
+                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                dest_fs.makedirs(dest_dir, exist_ok=True)
+                # Submitting copy jobs to thread pool
+                futures.append(
+                    executor.submit(
+                        _single_file_copy,
+                        src_fs,
+                        f"{path}",
+                        dest_fs,
+                        dest_for_this_path,
+                        size_hint=info.get('size', None)
+                    ))
+            # Waiting for all copy jobs to complete
+            for future in futures:
+                future.result()
+        return
 
-            # background all the rest that are large enough.
-            background_paths = [dest_path for (
-                _, dest_path, s) in cp_list if dest_path not in prefetch_paths and s >= large_file_size]
-        else:
-            prefetch_paths = [dest_path for (_, dest_path, s) in cp_list]
-            background_paths = []
-
-        if prefetch_paths:
-            dest_fs.add_deduplication_hints(prefetch_paths)
-    else:
-        background_paths = []
-
-
-    # Now, create all the directories
-    for dest_dir in dest_dir_list:
-        dest_fs.makedirs(dest_dir, exist_ok=True)
-
-    # Now, go through and do all the actual copying.
-    futures = []
-    opt_future = None
-    with ThreadPoolExecutor() as executor:
-        if background_paths:
-            opt_future = executor.submit(
-                dest_fs.add_deduplication_hints, background_paths)
-
-        for (src_path, dest_path, _) in cp_list:
-            if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
-                futures.append(executor.submit(
-                    dest_fs.cp_file, src_path, dest_path))
-            else:
-                futures.append(executor.submit(_single_file_copy,
-                               src_fs, src_path, dest_fs, dest_path))
-
-    for future in futures:
-        future.result()
-
-    if opt_future is not None:
-        # Head scratch -- will this actually cancel it when it's running in rust?
-        opt_future.cancel()
+    _single_file_copy(src_fs, src_path, dest_fs, dest_path)
 
 
 def _root_copy(source, destination, message, recursive=False):
     dest_fs, dest_path = _get_fs_and_path(destination)
     destproto_is_xet = dest_fs.protocol == 'xet'
+    dest_isdir = _isdir(dest_fs, dest_path)
+
+    # Our target is an existing directory and src is not a wildcard copy
+    # i.e. we are getting cp src/some/path to dest/some/where
+    # but dest/some/where exists as a directory
+    # So we will need to make the dest dest/some/where/path
+    if dest_isdir and '*' not in source:
+        # split up the final component from source path and add it
+        # to the destination
+        final_source_component = source.split('/')[-1]
+        if not destination.endswith('/'):
+            destination += '/'
+        destination += final_source_component
 
     if destproto_is_xet:
         dest_fs.start_transaction(message)
@@ -364,8 +284,8 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mount(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://user/repo/branch")],
-              path: Annotated[str, typer.Argument(help="Path to mount to. (or a drive letter on windows)")],
+    def mount(source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
+              path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
               prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
         """
         Mounts a repository on a local path
@@ -373,18 +293,16 @@ class PyxetCLI:
         fs = XetFS()
         source = parse_url(source, fs.domain)
         if source.path != '':
-            raise ValueError(
-                "Cannot have a path when mounting. Expecting only xet://user/repo/branch")
+            raise ValueError("Cannot have a path when mounting. Expecting xet://[user]/[repo]/[branch]")
         if source.branch == '':
             raise ValueError("Branch or revision must be specified")
         if os.name == 'nt':
             # path must be a drive letter (X, or X: or X:\\)
             letter = path[0]
             if path != letter and path != letter + ':' and path != letter + ':\\':
-                raise ValueError("Path must be a drive letter of the form X:")
+                raise ValueError("Path must be a Windows drive letter in format X:")
             path = letter
-        rpyxet.perform_mount(sys.executable, source.remote,
-                             path, source.branch, prefetch)
+        rpyxet.perform_mount(sys.executable, source.remote, path, source.branch, prefetch)
 
     @staticmethod
     @cli.command(name="mount-curdir", hidden=True)
@@ -410,15 +328,14 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def clone(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://user/repo")],
+    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://[user]/[repo]")],
               args: Annotated[typing.List[str], typer.Argument(help="Arguments to be passed to git-xet clone")] = None):
         """
         Clones a repository on a local path
         """
         res = subprocess.run(["git-xet", "-V"], capture_output=True)
         if res.returncode != 0:
-            print(
-                "git-xet not found. Please install git-xet from https://xethub.com/explore/install")
+            print("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
             return
         fs = XetFS()
         source = parse_url(source, fs.domain)
@@ -436,7 +353,7 @@ class PyxetCLI:
         print(__version__)
 
     @cli.command()
-    def cp(source: Annotated[str, typer.Argument(help="Source file or folder which will be copied")],
+    def cp(source: Annotated[str, typer.Argument(help="Source file or folder to copy")],
            target: Annotated[str, typer.Argument(help="Target location of the file or folder")],
            recursive: Annotated[
                bool, typer.Option("--recursive", "-r", help="Recursively copy files and folders ")] = False,
@@ -452,25 +369,32 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def ls(path: Annotated[str, typer.Argument(help="Source file or folder which will be copied")] = "xet://",
+    def ls(path: Annotated[str, typer.Argument(help="Source file or folder to list")] = "xet://",
            raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """list files and folders"""
+        original_path = path
         fs, path = _get_fs_and_path(path)
         try:
             listing = fs.ls(path, detail=True)
             if raw:
                 print(listing)
             else:
+                if fs.protocol == 'xet':
+                    for entry in listing:
+                        entry['name'] = 'xet://' + entry['name']
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:
+            # this failed to list. retry as a file
+            if fs.protocol == 'xet':
+                return PyxetCLI.info(original_path, raw)
             print(f"{e}")
             return
 
     @staticmethod
     @cli.command()
-    def cat(path: Annotated[str, typer.Argument(help="Source file or folder which will be printed")],
-            limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
+    def cat(path: Annotated[str, typer.Argument(help="Source file or folder to print")],
+           limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
         """Prints a file to stdout"""
         fs, path = _get_fs_and_path(path)
         try:
@@ -490,7 +414,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder which will be deleted")],
+    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder to delete")],
            message: Annotated[
                str, typer.Option("--message", "-m", help="A commit message")] = ""):
         """delete files and folders"""
@@ -518,7 +442,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mv(source: Annotated[str, typer.Argument(help="Source Xet file or folder to move")],
+    def mv(source: Annotated[str, typer.Argument(help="Source file or folder to move")],
            target: Annotated[str, typer.Argument(help="Target location or name to move to")],
            recursive: Annotated[
                bool, typer.Option("--recursive", "-r", help="Recursively copy files and folders ")] = False,
@@ -546,16 +470,18 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def info(uri: Annotated[str, typer.Argument(help="a uri of the structure <user>/<project>/<branch>")],
+    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]/[branch]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
-        """Provide information about a project branch"""
+        """Provide information about a repository branch"""
         fs, path = _get_fs_and_path(uri)
         try:
             info = fs.info(path)
             if raw:
                 print(info)
             else:
-                print(tabulate([info]))
+                if fs.protocol == 'xet':
+                    info['name'] = 'xet://' + info['name']
+                print(tabulate([info], headers="keys"))
             return info
         except Exception as e:
             print(f"{e}")
@@ -578,37 +504,40 @@ class PyxetCLI:
         fs = XetFS()
         if dest is None:
             repo_name = source.rstrip('/').split('/')[-1]
-            dest = "xet://" + fs.get_username() + "/" + repo_name
+            username = fs.get_username().strip()
+            if not bool(username):
+                print("Failed to infer a username to duplicate the repo, please provide a full target name")
+                return
+            dest = "xet://" + username + "/" + repo_name
             print(f"Duplicating to {dest}")
         else:
             repo_name = source.rstrip('/').split('/')[-1]
         fs.duplicate_repo(source, dest)
         try:
             if private:
-                print(f"Duplicate Success. Changing permissions...")
+                print(f"Duplicate successful. Changing permissions...")
                 fs.set_repo_attr(dest, "private", True)
                 print(f"Repo permissions set successfully")
             if public:
-                print(f"Duplicate Success. Changing permissions...")
+                print(f"Duplicate successful. Changing permissions...")
                 fs.set_repo_attr(dest, "public", False)
                 print(f"Repo permissions set successfully")
         except Exception as e:
             username = fs.get_username()
             print(f"An error has occurred setting repository permissions: {e}")
-            print(
-                "Permission changes may not have been made. Please change it manually at:")
+            print("Permission changes may not have been made. Please change it manually at:")
             print(f"  {fs.domain}/{username}/{repo_name}/settings")
 
 
 class BranchCLI:
     @staticmethod
     @branch.command()
-    def make(repo: Annotated[str, typer.Argument(help="a repository name <user>/<project>")],
-             src_branch: Annotated[str, typer.Argument(help="src branch to copy")],
-             dest_branch: Annotated[str, typer.Argument(help="new branch name")]):
+    def make(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             src_branch: Annotated[str, typer.Argument(help="Source branch to copy")],
+             dest_branch: Annotated[str, typer.Argument(help="New branch name")]):
         """
         make a new branch copying another branch.
-        Branch names with "/" in them are not supported.
+        Branch names with "/" are not supported.
 
         Example: Create a new branch from the main branch
 
@@ -621,15 +550,18 @@ class BranchCLI:
 
     @staticmethod
     @branch.command()
-    def ls(repo: Annotated[str, typer.Argument(help="a repository name <user>/<project>")],
-           raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
+    def ls(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """
-        list branches of a project.
+        list branches of a repository.
         """
         fs, path = _get_fs_and_path(repo)
-        assert (fs.protocol == 'xet')
+        if fs.protocol != 'xet':
+            print("Please specify a valid repository name in format xet://[user]/[repo]")
+            return
         try:
             listing = fs.list_branches(repo, raw)
+            listing = [{'name':"xet://" + path + '/' + n['name'], 'type':'branch'} for n in listing]
             if raw:
                 print(listing)
             else:
@@ -641,9 +573,9 @@ class BranchCLI:
 
     @staticmethod
     @branch.command()
-    def delete(repo: Annotated[str, typer.Argument(help="a repository name <user>/<project>")],
-               branch: Annotated[str, typer.Argument(help="branch to delete")],
-               yes: Annotated[bool, typer.Option(help="Say yes to delete")] = False):
+    def delete(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+               branch: Annotated[str, typer.Argument(help="Branch to delete")],
+               yes: Annotated[bool, typer.Option(help="Type yes to delete")] = False):
         """
         Deletes a branch. Note that this is not an easily reversible operation.
         """
@@ -656,20 +588,24 @@ class BranchCLI:
         if yes:
             print("--yes is set. Issuing deletion", file=sys.stderr)
             fs, path = _get_fs_and_path(repo)
-            assert (fs.protocol == 'xet')
+            if fs.protocol != 'xet':
+                print("Please specify a valid repository name xet://[user]/[repo]")
+                return
             return fs.delete_branch(repo, branch)
         else:
             print("Add --yes to delete", file=sys.stderr)
 
     @staticmethod
     @branch.command()
-    def info(repo: Annotated[str, typer.Argument(help="a repository name <user>/<project>")],
-             branch: Annotated[str, typer.Argument(help="branch to query")]):
+    def info(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             branch: Annotated[str, typer.Argument(help="Branch to query")]):
         """
         Prints information about a branch
         """
         fs, path = _get_fs_and_path(repo)
-        assert (fs.protocol == 'xet')
+        if fs.protocol != 'xet':
+            print("Please specify a valid repository name in format xet://[user]/[repo]")
+            return
         ret = fs.find_ref(repo, branch)
         print(ret)
         return ret
@@ -678,31 +614,28 @@ class BranchCLI:
 class RepoCLI:
     @staticmethod
     @repo.command()
-    def make(name: Annotated[str, typer.Argument(help="repository name of the form xet://[user]/[repo]")],
-             private: Annotated[bool, typer.Option(
-                 '--private', help="make repository private")] = False,
-             public: Annotated[bool, typer.Option(
-                 '--public', help="make repository public")] = False,
+    def make(name: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
+             private: Annotated[bool, typer.Option('--private', help="Make repository private")] = False,
+             public: Annotated[bool, typer.Option('--public', help="Make repository public")] = False,
              ):
         """
         make a new empty repository. Either --private or --public must be set
         """
         if private == public:
-            print("One of --private or --public must be set")
+            print("Either --private or --public must be set")
             return
         fs = XetFS()
         ret = fs.make_repo(name)
         if private:
-            print("Creation Success. Changing permissions...")
+            print("Creation successful. Changing permissions...")
             fs.set_repo_attr(name, "private", True)
             print("Repo permissions set successfully")
         print(ret)
 
     @staticmethod
     @repo.command()
-    def fork(source: Annotated[str, typer.Argument(help="origin repo to fork from")],
-             dest: Annotated[str, typer.Argument(
-                 help="new repository name")] = None,
+    def fork(source: Annotated[str, typer.Argument(help="Origin repo to fork from")],
+             dest: Annotated[str, typer.Argument(help="New repository name")] = None,
              ):
         """
         Forks a copy of a repository from xet://[user]/[repo] to your own account.
@@ -738,8 +671,8 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def rename(source: Annotated[str, typer.Argument(help="origin repo to rename from (of the form xet://user/repo)")],
-               dest: Annotated[str, typer.Argument(help="repo to rename to (xet://user/repo)")]):
+    def rename(source: Annotated[str, typer.Argument(help="Origin repo to rename from in format xet://[user]/[repo])")],
+               dest: Annotated[str, typer.Argument(help="Repo to rename to in format xet://[user]/[repo]")]):
         """
         Forks a new repository from an existing repository.
         """
@@ -748,7 +681,7 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def clone(source: Annotated[str, typer.Argument(help="Repository and branch of the form xet://user/repo")],
+    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://[user]/[repo]")],
               args: Annotated[typing.List[str], typer.Argument(help="Arguments to be passed to git-xet clone")] = None):
         """
         Clones a repository on a local path
@@ -757,7 +690,7 @@ class RepoCLI:
 
     @staticmethod
     @repo.command()
-    def info(uri: Annotated[str, typer.Argument(help="A uri of a <user>/<project>")]):
+    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]")]):
         """
         provide information on the repo\n
 

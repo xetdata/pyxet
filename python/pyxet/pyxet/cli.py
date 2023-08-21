@@ -1,7 +1,8 @@
 import typer
 from typing_extensions import Annotated
 import pyxet
-import argparse
+import boto3
+import botocore
 import fsspec
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -43,24 +44,38 @@ def _ltrim_match(s, match):
     return s[len(match):]
 
 
+def _should_load_aws_credentials():
+    """
+    Determines if AWS credentials should be loaded for s3 API by checking if credentials are available
+    :return: boolean, True if credentials are available, False
+    """
+    client = boto3.client("sts")
+    try:
+        client.get_caller_identity()
+    except botocore.exceptions.NoCredentialsError:
+        return False
+    return True
+
+
 def _get_fs_and_path(uri):
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
         uri = os.path.abspath(uri)
         return fs, uri
+    split = uri.split("://")
+    if len(split) != 2:
+        print(f"Invalid URL: {uri}", file=sys.stderr)
+    if split[0] == 'xet':
+        fs = pyxet.XetFS()
+    elif split[0] == 's3':
+        load_aws_creds = _should_load_aws_credentials()
+        fs = fsspec.filesystem('s3', anon=not load_aws_creds)
+        # this is *really* annoying But the s3fs protocol has
+        # protocol as a list ['s3','s3a']
+        fs.protocol = 's3'
     else:
-        split = uri.split("://")
-        if len(split) != 2:
-            print(f"Invalid URL: {uri}", file=sys.stderr)
-        if split[0] == 'xet':
-            fs = pyxet.XetFS()
-        else:
-            fs = fsspec.filesystem(split[0])
-            # this is *really* annoying But the s3fs protocol has 
-            # protocol as a list ['s3','s3a']
-            if isinstance(fs.protocol, list):
-                fs.protocol = split[0]
-        return fs, split[1]
+        fs = fsspec.filesystem(split[0])
+    return fs, split[1]
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
@@ -112,8 +127,7 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
         src_fs.branch_info(src_path)
 
     if destproto == 'xet':
-        # check dest branch exists 
-        # exists before we try to do any copying
+        # check dest branch exists before we try to do any copying
         # An exception is that if this operation would create a branch
         if srcproto == 'xet':
             src_parse = parse_url(src_path, src_fs.domain)
@@ -284,9 +298,10 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mount(source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
-              path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
-              prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
+    def mount(
+            source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
+            path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
+            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
         """
         Mounts a repository on a local path
         """
@@ -394,7 +409,7 @@ class PyxetCLI:
     @staticmethod
     @cli.command()
     def cat(path: Annotated[str, typer.Argument(help="Source file or folder to print")],
-           limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
+            limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
         """Prints a file to stdout"""
         fs, path = _get_fs_and_path(path)
         try:
@@ -551,7 +566,7 @@ class BranchCLI:
     @staticmethod
     @branch.command()
     def ls(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
-             raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
+           raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """
         list branches of a repository.
         """
@@ -561,7 +576,7 @@ class BranchCLI:
             return
         try:
             listing = fs.list_branches(repo, raw)
-            listing = [{'name':"xet://" + path + '/' + n['name'], 'type':'branch'} for n in listing]
+            listing = [{'name': "xet://" + path + '/' + n['name'], 'type': 'branch'} for n in listing]
             if raw:
                 print(listing)
             else:

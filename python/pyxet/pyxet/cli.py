@@ -487,7 +487,7 @@ class PyxetCLI:
     @cli.command()
     def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]/[branch]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
-        """Provide information about a repository branch"""
+        """Provide information about any path"""
         fs, path = _get_fs_and_path(uri)
         try:
             info = fs.info(path)

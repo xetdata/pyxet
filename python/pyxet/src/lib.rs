@@ -20,6 +20,8 @@ pub struct FileAttributes {
     pub ftype: String, // "directory"/"file"/"symlink"
     #[pyo3(get)]
     pub size: usize,
+    #[pyo3(get)]
+    pub last_modified: String,
 }
 
 impl From<DirEntry> for FileAttributes {
@@ -36,6 +38,7 @@ impl From<DirEntry> for FileAttributes {
         FileAttributes {
             ftype: ftype.to_string(),
             size: ent.size as usize,
+            last_modified: ent.last_modified,
         }
     }
 }

@@ -176,7 +176,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise FileNotFoundError(f"File not found {url}")
         return {"name": prefix + '/' + url_path.path,
                 "size": attr.size,
-                "type": attr.ftype}
+                "type": attr.ftype,
+                "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
 
     def make_repo(self, dest_path, **kwargs):
         dest = parse_url(dest_path, self.domain)

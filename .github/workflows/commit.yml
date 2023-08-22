@@ -28,3 +28,8 @@ jobs:
           cd python/pyxet
           rustup target add aarch64-apple-darwin
           maturin build --target universal2-apple-darwin
+      - name: Unit and integration tests
+        run: |
+          cd python/pyxet
+          pip install -r tests/requirements.txt
+          pytest tests

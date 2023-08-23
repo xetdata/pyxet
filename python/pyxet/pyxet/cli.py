@@ -301,7 +301,7 @@ class PyxetCLI:
     def mount(
             source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
             path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
-            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
+            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=32")] = 32):
         """
         Mounts a repository on a local path
         """
@@ -326,7 +326,7 @@ class PyxetCLI:
                          bool, typer.Option('--autostop', help="Automatically terminates on unmount")] = False,
                      reference: Annotated[
                          str, typer.Option('--reference', '-r', help="branch or revision to mount")] = 'HEAD',
-                     prefetch: Annotated[int, typer.Option('--prefetch', '-p', help="prefetch aggressiveness")] = 16,
+                     prefetch: Annotated[int, typer.Option('--prefetch', '-p', help="prefetch aggressiveness")] = 32,
                      ip: Annotated[str, typer.Option('--ip', help="IP used to host the NFS server")] = "127.0.0.1",
                      writable: Annotated[bool, typer.Option('--writable', help="Experimental. Do not use")] = False,
                      signal: Annotated[int, typer.Option('--signal', help="Internal:Sends SIGUSR1 to this pid")] = -1):

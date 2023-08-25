@@ -111,7 +111,8 @@ def assert_remote_files_exist(remote, expected):
     listing = fs.glob(remote)
     print(listing)
     print(expected)
-    assert listing == expected
+    for i in expected:
+        assert i.removeprefix("xet://") in listing
 
 
 

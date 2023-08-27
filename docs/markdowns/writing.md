@@ -1,8 +1,6 @@
 Writing files with pyxet
 ========================
 
-We assume that you have gone through the Quickstart guide above.
-
 ## Create your own Titanic repository
 
 Let's walk through a more complete demo of how to use pyxet for some basic ML.

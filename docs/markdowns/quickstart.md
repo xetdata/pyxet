@@ -18,6 +18,7 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
+(accountsetup)=
 ## Authentication
 
 Signup on [XetHub](https://xethub.com/user/sign_up) and obtain

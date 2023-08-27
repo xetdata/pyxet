@@ -15,8 +15,7 @@ refers to a repository and the `xet://` prefix is optional when using pyxet.XetF
 
 ## Accessing private repositories
 
-To create your own repositories or access private repositories, first [create a XetHub account and set your personal access token](account_setup).
-Make sure that the `XET_USER_NAME` and `XET_USER_TOKEN` environment variables are set when developing.
+To create your own repositories or access private repositories, first [create a XetHub account and set your personal access token](quickstart.md).
 
 ## pyxet.XetFS
 

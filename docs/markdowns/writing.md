@@ -1,38 +1,18 @@
 Writing files with pyxet
 ========================
 
-(account_setup)=
-## Create an account, install git-xet
-
-To use pyxet on your own XetHub repository, or to write back to an existing repository, set up an account.
-Then install git-xet, a Git extension, to seamlessly manage your XetHub repositories.
-
-1. Sign up for [XetHub](https://xethub.com/user/sign_up)
-2. Install the [git-xet client](https://xethub.com/explore/install) and create a token
-3. Copy and execute the login command: 
-   ```sh
-   $ git xet login -u <username> -e <email> -p **********
-   ```
-4. To make these credentials available to pyxet, set the username and token parameters as XET_USER_NAME and XET_USER_TOKEN environment variables.
-   ```sh
-   # Save these environment variables to your shell config (ex. .zshrc)
-   export XET_USER_NAME=<YOUR XETHUB USER NAME>
-   export XET_USER_TOKEN=<YOUR PERSONAL ACCESS TOKEN>
-   ```
-   You can also manually log in to pyxet from Python with `pyxet.login('user_name', 'token')`.
-
-Now that you have an account, you can contribute to repositories that you have access to.
+We assume that you have gone through the Quickstart guide above.
 
 ## Create your own Titanic repository
 
 Let's walk through a more complete demo of how to use pyxet for some basic ML.
 
-Use the XetHub UI to [create a new repository](https://xethub.com/xet/create). Name the repository `titanic`, 
-clone the empty repository to your local machine, then create a branch named `experiment-1`.
+Use the XetHub UI to [create a new repository](https://xethub.com/xet/create). Name the repository `titanic`.
 
-```sh
-cd titanic
-git checkout -b experiment-1 && git push -u origin experiment-1
+You can then create a branch called experiment-1 with
+
+```
+xet branch make xet://<username>/titanic main experiment-1
 ```
 
 Start a new virtualenv and install some dependencies:
@@ -53,7 +33,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv")  # read data from XetHub
+df = pd.read_csv("xet://XetHub/titanic/main/titanic.csv")  # read data from XetHub
 
 # Standard ML workflow
 target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
@@ -114,7 +94,7 @@ model = pickle.load(fs.open("<user_name>/titanic/experiment-1/models/model.pickl
 Versioned experiments on branches enables easy comparison.
 To try this out, create a new `experiment-2` branch:
 ```sh
-git checkout -b experiment-2 && git push -u origin experiment-2
+xet branch make xet://<username>/titanic main experiment-2
 ```
 
 Run the same code as above, but change the `test_size` and `random_state` values. This time, persist 

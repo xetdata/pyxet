@@ -9,14 +9,14 @@
 project = 'pyxet'
 copyright = '2023, XetHub'
 author = '<a href="https://xethub.com/xdssio" target="_blank">Jonathan Alexander</a>, <a href="https://xethub.com/team" target="_blank">XetHub team</a>, and the <a href="https://github.com/xetdata/pyxet" target="_blank">pyxet</a> community'
-release = '0.0.8'
+release = '0.1.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx.ext.viewcode", "sphinx_rtd_theme",
+extensions = ["myst_parser", "sphinx.ext.autodoc", 'sphinx.ext.autosummary', "sphinx.ext.napoleon", "sphinx.ext.viewcode", "sphinx_rtd_theme",
               "sphinx_book_theme"]
-
+autosummary_generate = True
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'docs', '.venv']
 
@@ -30,4 +30,4 @@ html_static_path = ['_static']
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../pyxet'))
+sys.path.insert(0, os.path.abspath('../python/pyxet'))

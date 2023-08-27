@@ -1,61 +1,46 @@
 # Mount
 
-A key tool for simplifying working with data and CICD.   
-This let you use any tool that works with local files, but with data stored in XetHub.   
-Perfect to explore files like images and text, saving monitoring logs, and dump databases data for easy recovery.
+PyXet allows you to perform a filesystem mount of any version of any Xet repository
+allowing you to immediately access TBs of data anywhere without having to download 
+everything.
 
-```python
-import pyxet
+This let you use any tool that works with local files, but with data stored in
+XetHub.  This is perfect for exploring larger images and text files, as well as 
+Sqlite and Parquet databases.
 
-fs = pyxet.XetFS("https://xethub.com/username/repo/branch", login=...)
-fs.mount("path/to/mount", mode='r')
+To mount:
+```bash
+xet mount xet://<username>/<repo>/<branch> <local_path>
 ```
 
-## Best practices
+On windows, the `local_path` must be a drive letter. For instance `X:`
 
-### Read-only mount
+For instance, you can mount the Flickr30k dataset with:
 
-There are many cases where one would prefer to mount a repository in read-only mode.
-The main benefit is that it is super-fast, no matter the data size, or number of files.
+```bash
+xet mount xet://XetHub/Flickr30k/main Flickr30k
+```
+And you will be able to browse to it and explore its contents
 
-Use cases:
-
-* Explore files like images and text.
-* Building dashboard for real-time monitoring.
-* Explore datasets with tools which only work with local files.
-* Load a machine learning model on a server.
-
-### Read-write mount - coming soon
-
-There are some cases where one would prefer to mount a repository in read-write mode.   
-This is significally slower than the read-only mode, but it is still very fast, and maintaining all the goodies of git
-behind the scenes.
-
-Use cases:
-
-* Saving model monitoring logs to a folder.
-* Saving model checkpoints during training
-* Saving Training monitoring logs to a folder.
-* Databases which support dumps to storage:
-    * [Redis](https://redis.com/)
-    * [Postgress](https://www.postgresql.org)
-    * Etc.
-* Embedded databases:
-    * [chromadb](https://github.com/chroma-core/chroma)
-    * [sqlite](https://sqlite.org/index.html)
-    * [duckdb](https://duckdb.org)
+As a slightly larger example, you can mount the Laion400M metadata (54GB) with 
+```bash
+xet mount --prefetch 0 xet://XetHub/LAION-400M/main LAION400M 
+cd LAION400M
+```
+which provides a collection of Parquet files which you can query
+easily with duckdb. For instance:
 
 ```python
-import pyxet
-
-fs = pyxet.XetFS("username/repo/branch", login=...)
-fs.mount("path/to/mount", mode='w')
+import duckdb
+# count the number of rows
+duckdb.query("select COUNT(*) from 'data/*.parquet'")
+See the distribution of licenses
+duckdb.query("select LICENSE, count() as COUNT from 'data/*.parquet' 
+        group by LICENSE order by COUNT desc").df()
 ```
 
-### unmount
-
-```python
-import pyxet
-
-pyxet.unmount("path/to/mounted")  # or umount?
-```
+The `prefetch` argument allows you to tune between random access and continuous
+streaming of files (for instance if you are doing ML training, or need to
+quickly download large files). `prefetch=0` is good for random access
+such as for duckdb queries, or for SQLite queries. The default prefetch
+value of 32 is good for bulk file access.

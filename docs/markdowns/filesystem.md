@@ -57,16 +57,16 @@ with fs.transaction as tr:
   fs = pyxet.XetFS()  # fsspec filesystem
 
   # Read functions
-  fs.info("xdssio/titanic/main/titanic.csv")
-  # returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
+  fs.info("xethub/titanic/main/titanic.csv")
+  # returns repo level info: {'name': 'https://xethub.com/XetHub/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
 
-  fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+  fs.open("XetHub/titanic/main/titanic.csv", 'r').read(20)
   # returns first 20 characters: 'PassengerId,Survived'
 
-  fs.get("xdssio/titanic/main/data/", "data", recursive=True)
+  fs.get("XetHub/titanic/main/data/", "data", recursive=True)
   # download remote directory recursively into a local data folder
 
-  fs.ls("xdssio/titanic/main/data/", detail=False)
+  fs.ls("XetHub/titanic/main/data/", detail=False)
   # returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
 
   # Write functions, with optional commit message
@@ -83,7 +83,7 @@ with fs.transaction as tr:
   with fs.transaction as tr:
     tr.set_commit_message("Remove file")
     fs.rm("<user_name>/<repo_name>/main/titanic2.csv")
-  fs.info("xdssio/titanic/main/titanic2.csv") 
+  fs.info("XetHub/titanic/main/titanic2.csv") 
    # removes a file from the main branch of the repository with comment "Remove file"
 ```
 

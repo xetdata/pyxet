@@ -22,6 +22,11 @@ Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved.
 To stay informed about updates, star this repo and sign up for 
 [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 
+
+## License
+
+[BSD 3](LICENSE)
+
 ## Features
 
 pyxet provides 2 components:
@@ -42,9 +47,6 @@ For API documentation and full examples, please see [here](https://pyxet.readthe
 
 ## Installation
 
-The easiest to authenticate is to signup on [XetHub](xethub.com) and obtain
-a username and access token. You should write this down.
-
 Set up your virtualenv with:
 
 ```sh
@@ -60,6 +62,9 @@ $ pip install pyxet
 
 
 ## Authentication
+
+Signup on [XetHub](https://xethub.com/user/sign_up) and obtain
+a username and access token. You should write this down.
 
 There are three ways to authenticate with XetHub:
 
@@ -106,7 +111,7 @@ python file-like object which you can directly read from.
 
 ```python
 import pyxet            
-print(pyxet.open('xet://xethub/titanic/main/README.md').readlines())
+print(pyxet.open('xet://XetHub/titanic/main/README.md').readlines())
 ```
 
 
@@ -120,7 +125,7 @@ dataframe:
 import pyxet            # make xet:// protocol available
 import pandas as pd     # assumes pip install pandas has been run
 
-df = pd.read_csv('xet://xethub/titanic/main/titanic.csv')
+df = pd.read_csv('xet://XetHub/titanic/main/titanic.csv')
 df
 ```
 
@@ -193,7 +198,7 @@ To write files with pyxet, you need to first make a repository you have access t
 An easy thing you can do is to simply fork the titanic repo. You can do so with
 
 ```bash
-xet repo fork xet://xethub/titanic
+xet repo fork xet://XetHub/titanic
 ```
 (see the Xet CLI documentation below)
 
@@ -247,7 +252,7 @@ And you can also use `xet cp` to upload files:
 xet cp <file/directory> xet://<username>/titanic/main/<path>
 ```
 Of course, you cannot rewrite history, so uploading to `main@{5.minutes.ago}`
-is prohibited.
+is prohibited. 
 
 ## Branches
 You can easily create branches for collaboration:
@@ -255,6 +260,7 @@ You can easily create branches for collaboration:
 xet branch make xet://<username>/titanic main another_branch
 ```
 This is fast regardless of the size of the repo.
+
 ## Copying across repos and branches
 Copying across branches are efficient, and can be used to restore a historical
 copy of a file which you accidentally overwrote:
@@ -266,9 +272,21 @@ xet cp xet://<username>/titanic/branch/<file> xet://<username>/titanic/main/<fil
 xet cp xet://<username>/titanic/main@{5.minutes.ago}/<file> xet://<username>/titanic/main/<file>
 ```
 
+## S3, GCP, etc
+Xet CLI understand every protocol FSSpec does. So all the commands above
+work with S3, GCP and many other protocols too. You can also use Xet CLI to
+directly upload and download data from S3 to XetHub:
+```
+$ xet cp xet://... s3://...
+$ xet cp s3://... xet://...
+```
+
+# Development
+See [here](python/pyxet/README.md)
 
 # Encountering Issues?
 
-Please file a bug here, or report on our Discord channel! This is still 
-a relatively new project and we are constant making improvements, especially
-with usability and performance.
+Please file a bug [here](https://github.com/xetdata/pyxet/issues/new), or
+report on our [Discord channel](https://discord.gg/KCzmjDaDdC)! 
+We are constant making improvements, especially with
+usability and performance.

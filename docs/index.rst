@@ -6,7 +6,7 @@ Pyxet Documentation
 ===================
 
 pyxet is a Python library that provides a pythonic interface for
-`XetHub <https://xethub.com/>`.  Xethub is simple git-based system capable of
+`XetHub <https://xethub.com/>`_.  Xethub is simple git-based system capable of
 storing TBs of ML data and models in a single repository, with block-level 
 data deduplication that enables hundreds of versions of similar data to be
 stored without requiring much storage. 

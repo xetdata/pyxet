@@ -4,7 +4,7 @@ PyXet allows you to perform a filesystem mount of any version of any Xet reposit
 allowing you to immediately access TBs of data anywhere without having to download 
 everything.
 
-This let you use any tool that works with local files, but with data stored in
+This lets you use any tool that works with local files, but with data stored in
 XetHub.  This is perfect for exploring larger images and text files, as well as 
 Sqlite and Parquet databases.
 

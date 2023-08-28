@@ -1,20 +1,24 @@
-import typer
-from typing_extensions import Annotated
-import pyxet
+import os
+import subprocess
+import sys
+import threading
+import typing
+from concurrent.futures import ThreadPoolExecutor
+from dateutil import parser
+from datetime import datetime
+
 import boto3
 import botocore
 import fsspec
-import sys
-from concurrent.futures import ThreadPoolExecutor
-import threading
-import os
-import typing
+import typer
 from tabulate import tabulate
+from typing_extensions import Annotated
+
+import pyxet
 from .file_system import XetFS
-from .url_parsing import parse_url
 from .rpyxet import rpyxet
+from .url_parsing import parse_url
 from .version import __version__
-import subprocess
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -57,7 +61,7 @@ def _should_load_aws_credentials():
     return True
 
 
-def _get_fs_and_path(uri):
+def _get_fs_and_path(uri) -> tuple[fsspec.spec.AbstractFileSystem, str]:
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
         uri = os.path.abspath(uri)
@@ -137,6 +141,37 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
                 return True
 
         dest_fs.branch_info(dest_path)
+
+
+def _validate_xet_sync(source, destination):
+    """
+    Performs early validation for the source and destination paths of
+    a xet sync. Doesn't catch all failure conditions, but catches many
+    of the easy validations.
+
+    Raises exceptions on failure
+    """
+    src_fs, src_path = _get_fs_and_path(source)
+    src_protocol = src_fs.protocol
+    dest_fs, dest_path = _get_fs_and_path(destination)
+    dest_protocol = dest_fs.protocol
+
+    if dest_protocol != 'xet':
+        raise ValueError(f"Unsupported destination protocol: {dest_protocol}, only xet:// targets are supported")
+    if src_protocol == 'xet':
+        raise ValueError(f"Unsupported source protocol: {src_protocol}, only non-xet sources are supported")
+
+    # check that the destination specifies an existing branch
+    # TODO: we may want to be able to sync remote location to a new branch?
+    dest_fs.branch_info(dest_path)
+
+    # source should be a directory
+    if not _isdir(src_fs, src_path):
+        raise ValueError(f"source: {source} needs to be a directory")
+
+    # wildcards not supported
+    if '*' in src_path or '*' in dest_path:
+        raise ValueError(f"Wildcards not supported in path")
 
 
 def _isdir(fs, path):
@@ -280,6 +315,155 @@ def _root_copy(source, destination, message, recursive=False):
         dest_fs.end_transaction()
 
 
+def _get_last_modified(protocol, info):
+    if protocol == 'xet':
+        mod_time = info['last_modified']  # str
+        mod_time = datetime.strptime(mod_time, "%Y-%m-%dT%H:%M:%S%z").timestamp()
+        # mod_time = datetime.fromisoformat(mod_time).timestamp()
+    elif protocol == 's3':
+        mod_time = info['LastModified']  # datetime
+        mod_time = mod_time.timestamp()
+    elif protocol == 'file':
+        mod_time = info['mtime']  # float
+    else:
+        print(f"WARN: protocol: {protocol} doesn't have a modification time, only comparing size")
+        mod_time = None
+
+    return mod_time
+
+
+def _should_sync(src_fs, src_info, dest_fs, dest_info):
+    if src_info['size'] != dest_info['size']:
+        return True
+
+    src_mtime = _get_last_modified(src_fs.protocol, src_info)
+    dest_mtime = _get_last_modified(dest_fs.protocol, dest_info)
+    return src_mtime is not None and dest_mtime is not None \
+        and src_mtime > dest_mtime
+
+
+def _copy_dir_async(executor, futures, src_fs, src_path, dest_fs, dest_path, dryrun):
+    for path, info in src_fs.find(src_path, detail=True).items():
+        # Note that path is a full path
+        # we need to relativize to make the destination path
+        relpath = _ltrim_match(path, src_path).lstrip('/')
+        if dest_path == '/':
+            dest_for_this_path = f"/{relpath}"
+        else:
+            dest_for_this_path = f"{dest_path}/{relpath}"
+        dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+        dest_fs.makedirs(dest_dir, exist_ok=True)
+        # Submitting copy jobs to thread pool
+        print(f'copy: {src_fs.protocol}://{path} to {dest_fs.protocol}://{dest_for_this_path}')
+        if not dryrun:
+            futures.append(
+                executor.submit(
+                    _single_file_copy,
+                    src_fs,
+                    f"{path}",
+                    dest_fs,
+                    dest_for_this_path,
+                    size_hint=info.get('size', None)
+                ))
+
+
+def _sync(source, destination, message, dryrun):
+    print(f"Checking sync {source} -> {destination}")
+    _validate_xet_sync(source, destination)
+    print(f"Starting sync {source} -> {destination}")
+
+    src_fs, src_path = _get_fs_and_path(source)
+    dest_fs, dest_path = _get_fs_and_path(destination)
+
+    # normalize trailing '/' by just removing them unless the path
+    # is exactly just '/'
+    if src_path != '/':
+        src_path = src_path.rstrip('/')
+    if dest_path != '/':
+        dest_path = dest_path.rstrip('/')
+
+    failed_copies = []
+
+    if not dryrun:
+        dest_fs.start_transaction(message)
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        # print(f"listing {src_path}")
+        _sync_dir(executor, futures, failed_copies, src_fs, src_path, dest_fs, dest_path, dryrun)
+
+        # Waiting for all copy jobs to complete
+        for future in futures:
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Error: {e}")
+                failed_copies.append("")
+
+    if not dryrun:
+        dest_fs.end_transaction()
+        print(f"Completed sync with: {len(failed_copies)} failed copies")
+
+
+def _sync_dir(executor, futures, failed_copies, src_fs, src_path, dest_fs, dest_path, dryrun):
+    src_proto = src_fs.protocol
+    dest_proto = dest_fs.protocol
+    for src_info in src_fs.ls(src_path, detail=True):
+        # print(f"found: {src_info} from source")
+        abs_path = src_info['name']
+        rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
+        dest_for_this_path = f"/{rel_path}" if dest_path == '/' \
+            else f"{dest_path}/{rel_path}"
+
+        # print(f"checking destination: {dest_for_this_path}")
+        try:
+            dest_info = dest_fs.info(dest_for_this_path)
+        except FileNotFoundError as e:
+            dest_info = None
+
+        # print(f"found: {dest_info} from destination")
+        if dest_info is not None and src_info['type'] != dest_info['type']:
+            failed_copies.append(rel_path)
+            print(f"Copy failed: {src_path} is a {src_info['type']}, {dest_path} is a {dest_info['type']}")
+            continue
+
+        if dest_info is None:
+            # copy src to dest
+            # dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+            # dest_fs.makedirs(dest_dir, exist_ok=True)
+            if src_info['type'] == 'directory':
+                print(f"copy dir: {abs_path} to: {dest_for_this_path}")
+                _copy_dir_async(executor, futures, src_fs, abs_path, dest_fs, dest_for_this_path, dryrun)
+            else:
+                print(f"copy: {src_proto}://{abs_path} to: {dest_proto}://{dest_for_this_path}")
+                if not dryrun:
+                    futures.append(
+                        executor.submit(
+                            _single_file_copy,
+                            src_fs,
+                            f"{abs_path}",
+                            dest_fs,
+                            dest_for_this_path,
+                            size_hint=src_info.get('size', None)
+                        ))
+        elif src_info['type'] == 'directory':
+            # recursively sync src -> dest
+            print(f"sync dir: {abs_path} to: {dest_for_this_path}")
+            _sync_dir(executor, futures, failed_copies, src_fs, abs_path, dest_fs, dest_for_this_path, dryrun)
+        elif _should_sync(src_fs, src_info, dest_fs, dest_info):
+            # copy src to dest
+            print(f"copy: {src_proto}://{abs_path} to: {dest_proto}://{dest_for_this_path}")
+            if not dryrun:
+                futures.append(
+                    executor.submit(
+                        _single_file_copy,
+                        src_fs,
+                        f"{abs_path}",
+                        dest_fs,
+                        dest_for_this_path,
+                        size_hint=src_info.get('size', None)
+                    ))
+
+
 class PyxetCLI:
     @staticmethod
     @cli.command()
@@ -381,6 +565,21 @@ class PyxetCLI:
             message = f"copy {source} to {target}" if not recursive else f"copy {source} to {target} recursively"
         MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
         _root_copy(source, target, message, recursive=recursive)
+
+    @staticmethod
+    @cli.command()
+    def sync(source: Annotated[str, typer.Argument(help="Source folder to sync")],
+             target: Annotated[str, typer.Argument(help="Target location of the folder")],
+             message: Annotated[str, typer.Option("--message", "-m", help="A commit message")] = "",
+             parallel: Annotated[int, typer.Option("--parallel", "-p", help="Maximum amount of parallelism")] = 32,
+             dryrun: Annotated[
+                 bool, typer.Option("--dryrun",
+                                    help="Displays the operations that would be performed without actually running them")] = False):
+        """Copy changed files from source location to destination"""
+        if not message:
+            message = f"sync {source} to {target}"
+        MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
+        _sync(source, target, message, dryrun)
 
     @staticmethod
     @cli.command()

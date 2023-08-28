@@ -61,7 +61,7 @@ def test_multiple_files_upload():
             
         # test variations of path
         source_list = [
-            f"{dir}/*"
+            f"{dir}\*"
         ]
 
         dest_list = [

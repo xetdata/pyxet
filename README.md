@@ -73,7 +73,7 @@ There are three ways to authenticate with XetHub:
 ```bash
 xet login -e <email> -u <username> -p <personal_access_token>
 ```
-Xet login will write to authentication information to `~/.xetconfig`
+Xet login will write authentication information to `~/.xetconfig`
 
 ### Environment Variable
 Environment variables may be sometimes more convenient:

@@ -22,7 +22,7 @@ $ pip install pyxet
 ## Authentication
 
 Signup on [XetHub](https://xethub.com/user/sign_up) and obtain
-a username and access token. You should write this down.
+a username and personal access token. You should write this down.
 
 There are three ways to authenticate with XetHub:
 

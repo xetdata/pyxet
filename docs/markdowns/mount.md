@@ -6,7 +6,7 @@ everything.
 
 This lets you use any tool that works with local files, but with data stored in
 XetHub.  This is perfect for exploring larger images and text files, as well as 
-Sqlite and Parquet databases.
+SQLite and Parquet databases.
 
 To mount:
 ```bash

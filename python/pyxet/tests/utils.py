@@ -99,6 +99,11 @@ def random_text_file(path, size):
     with open(path, 'w') as f:
         f.write(chars)
 
+def random_binary_files(path_list, size_list):
+    for p, s in zip(path_list, size_list):
+        random_binary_file(p, s)
+
+
 # Make a random branch copying src_branch in repo in format xet://[user]/[repo],
 # returns the new branch name
 def new_random_branch_from(repo, src_branch):
@@ -108,12 +113,19 @@ def new_random_branch_from(repo, src_branch):
 
 def assert_remote_files_exist(remote, expected):
     fs = fsspec.filesystem("xet")
-    listing = fs.glob(remote)
+    listing = fs.glob(remote, detail=False)
     print(listing)
     print(expected)
     for i in expected:
         assert i.removeprefix("xet://") in listing
 
+def assert_remote_files_not_exist(remote, expected):
+    fs = fsspec.filesystem("xet")
+    listing = fs.glob(remote, detail=False)
+    print(listing)
+    print(expected)
+    for i in expected:
+        assert i.removeprefix("xet://") not in listing
 
 
 class CONSTANTS:

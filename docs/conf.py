@@ -1,9 +1,11 @@
 import os
 import sys
 
+os.environ['SPHINX_BUILD'] = "1"
 sys.path.insert(0, os.path.abspath('../python/pyxet'))
 
 import pyxet
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:

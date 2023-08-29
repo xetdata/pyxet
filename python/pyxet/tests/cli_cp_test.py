@@ -54,10 +54,8 @@ def test_multiple_files_upload():
     try:
         # generate random files in a temp dir
         dir = tempfile.mkdtemp()
-        n_files = 5
-        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
-        expected_files = list(map(lambda i: f"xet://{user}/{repo}/{b1}/data{i}", range(n_files)))
-        utils.random_binary_files(local_files, [1024] * n_files)
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
             
         # test variations of path
         source_list = [
@@ -73,6 +71,8 @@ def test_multiple_files_upload():
             False,
             True,
         ]
+
+        expected_files = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1"]
 
         try:
             for src in source_list:
@@ -96,10 +96,8 @@ def test_glob_nonrecursive_upload():
         # generate a mix of random files and directories in a temp dir
         dir = tempfile.mkdtemp()
         
-        n_files = 2
-        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
-        expected_files = list(map(lambda i: f"xet://{user}/{repo}/{b1}/data{i}", range(n_files)))
-        utils.random_binary_files(local_files, [1024] * n_files)
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
 
         sub_dir = "subdir"
         os.mkdir(f"{dir}/{sub_dir}")
@@ -118,6 +116,8 @@ def test_glob_nonrecursive_upload():
         recursive_list = [
             False,
         ]
+
+        expected_files = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1"]
 
         try:
             for src in source_list:
@@ -142,17 +142,13 @@ def test_glob_recursive_upload():
         # generate a mix of random files and directories in a temp dir
         dir = tempfile.mkdtemp()
         
-        n_files = 2
-        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
-        expected_files_level1 = list(map(lambda i: f"xet://{user}/{repo}/{b1}/data{i}", range(n_files)))
-        utils.random_binary_files(local_files, [1024] * n_files)
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
 
         sub_dir = "subdir"
         os.mkdir(f"{dir}/{sub_dir}")
         utils.random_binary_file(f"{dir}/{sub_dir}/data", 1024)
-        expected_files_level1.append(f"xet://{user}/{repo}/{b1}/{sub_dir}")
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
-
+        
         # test variations of path
         source_list = [
             f"{dir}/*",
@@ -166,6 +162,9 @@ def test_glob_recursive_upload():
         recursive_list = [
             True,
         ]
+
+        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1", f"xet://{user}/{repo}/{b1}/{sub_dir}"]
+        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
 
         try:
             for src in source_list:
@@ -231,16 +230,12 @@ def test_directory_recursive_upload():
         # generate a mix of random files and directories in a temp dir
         dir = tempfile.mkdtemp()
         
-        n_files = 2
-        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
-        expected_files_level1 = list(map(lambda i: f"xet://{user}/{repo}/{b1}/data{i}", range(n_files)))
-        utils.random_binary_files(local_files, [1024] * n_files)
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
 
         sub_dir = "subdir"
         os.mkdir(f"{dir}/{sub_dir}")
         utils.random_binary_file(f"{dir}/{sub_dir}/data", 1024)
-        expected_files_level1.append(f"xet://{user}/{repo}/{b1}/{sub_dir}")
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
 
         # test variations of path
         source_list = [
@@ -255,6 +250,9 @@ def test_directory_recursive_upload():
         recursive_list = [
             True,
         ]
+
+        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1", f"xet://{user}/{repo}/{b1}/{sub_dir}"]
+        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
 
         try:
             for src in source_list:
@@ -281,16 +279,12 @@ def test_directory_recursive_noslash_upload():
         dir = tempfile.mkdtemp()
         dir_name = os.path.basename(dir)
         
-        n_files = 2
-        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
-        expected_files_level1 = list(map(lambda i: f"xet://{user}/{repo}/{b1}/{dir_name}/data{i}", range(n_files)))
-        utils.random_binary_files(local_files, [1024] * n_files)
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
 
         sub_dir = "subdir"
         os.mkdir(f"{dir}/{sub_dir}")
         utils.random_binary_file(f"{dir}/{sub_dir}/data", 1024)
-        expected_files_level1.append(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}")
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/data"]
 
         # test variations of path
         source_list = [
@@ -306,18 +300,22 @@ def test_directory_recursive_noslash_upload():
             True,
         ]
 
+        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/{dir_name}"]
+        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{dir_name}/data0", f"xet://{user}/{repo}/{b1}/{dir_name}/data1", f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}"]
+        expected_files_level3 = [f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/data"]
+
         try:
             for src in source_list:
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         pyxet.cli._root_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/{dir_name}"])
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}", expected_files_level1)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level2)
+                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
+                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
+                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)
+                        pyxet.PyxetCLI.rm(expected_files_level3)
                         pyxet.PyxetCLI.rm(expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
-                        pyxet.PyxetCLI.rm(f"xet://{user}/{repo}/{b1}/{dir_name}")
         finally:
             shutil.rmtree(dir)
         

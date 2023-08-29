@@ -5,9 +5,7 @@ models,
 logs, and code with versioning. The pyxet library allows you to easily access XetHub files directly from Python.
 
 ## Installation
-
-Assuming you are on a supported OS (MacOS or Linux) and are using a supported version of Python (3.7+), set up your
-virtualenv with:
+Set up your virtualenv with:
 
 ```sh
 $ python -m venv .venv
@@ -20,6 +18,38 @@ Then, install pyxet with:
 $ pip install pyxet
 ```
 
+(accountsetup)=
+## Authentication
+
+Signup on [XetHub](https://xethub.com/user/sign_up) and obtain
+a username and personal access token. You should write this down.
+
+There are three ways to authenticate with XetHub:
+
+### Command Line
+
+```bash
+xet login -e <email> -u <username> -p <personal_access_token>
+```
+Xet login will write to authentication information to `~/.xetconfig`
+
+### Environment Variable
+Environment variables may be sometimes more convenient:
+```
+export XET_USER_EMAIL = <email>
+export XET_USER_NAME = <username>
+export XET_USER_TOKEN = <personal_access_token>
+```
+
+### In Python
+Finally if in a notebook environment, or a non-persistent environment, 
+we also provide a method to authenticate directly from Python. Note that
+this must be the first thing you run before any other operation:
+```python
+import pyxet
+pyxet.login(<username>, <personal_access_token>, <email>)
+```
+
 ## Demo
 
 To verify that pyxet is working, let's load a CSV file directly into a Pandas dataframe, leveraging pyxet's support for
@@ -29,7 +59,7 @@ Python fsspec.
 import pyxet            # make xet:// protocol available
 import pandas as pd     # assumes pip install pandas has been run
 
-df = pd.read_csv('xet://xdssio/titanic/main/titanic.csv')
+df = pd.read_csv('xet://XetHub/titanic/main/titanic.csv')
 df
 ```
 
@@ -74,16 +104,16 @@ import pyxet
 
 fs = pyxet.XetFS()  # fsspec filesystem
 
-fs.info("xdssio/titanic/main/titanic.csv")  
-# returns repo level info: {'name': 'https://xethub.com/xdssio/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
+fs.info("XetHub/titanic/main/titanic.csv")  
+# returns repo level info: {'name': 'XetHub/main/titanic.csv', 'size': 61194, 'type': 'file'}
 
-fs.open("xdssio/titanic/main/titanic.csv", 'r').read(20)
+fs.open("XetHub/titanic/main/titanic.csv", 'r').read(20)
 # returns first 20 characters: 'PassengerId,Survived'
 
-fs.get("xdssio/titanic/main/data/", "data", recursive=True)  
+fs.get("XetHub/titanic/main/data/", "data", recursive=True)  
 # download remote directory recursively into a local data folder
 
-fs.ls("xdssio/titanic/main/data/", detail=False)  
+fs.ls("XetHub/titanic/main/data/", detail=False)  
 # returns ['data/titanic_0.parquet', 'data/titanic_1.parquet']
 ```
 

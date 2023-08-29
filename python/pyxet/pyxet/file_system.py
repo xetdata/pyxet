@@ -3,13 +3,15 @@ import sys
 from urllib.parse import urlparse
 
 import fsspec
+import os
 
 from .commit_transaction import MultiCommitTransaction
 from .file_interface import XetFile
-from .rpyxet import rpyxet
 from .url_parsing import parse_url, XetPathInfo
 
-_manager = rpyxet.PyRepoManager()
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
+    _manager = rpyxet.PyRepoManager()
 
 
 def login(user, token, email=None, host=None):

@@ -12,9 +12,11 @@ import typing
 from tabulate import tabulate
 from .file_system import XetFS
 from .url_parsing import parse_url
-from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
+
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")

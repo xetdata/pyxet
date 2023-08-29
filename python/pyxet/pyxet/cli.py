@@ -145,6 +145,12 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+# split path into dirname and basename
+def _path_split(fs, path):
+    if fs.protocol == 'file':
+        return os.path.split(path)
+    else:
+        return path.rsplit('/', 1)
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
@@ -172,7 +178,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
         # we only accept globs of the for blah/blah/blah/[glob]
         # i.e. the glob is only in the last component
         # src_root_dir should be blah/blah/blah here
-        src_root_dir = '/'.join(src_path.split('/')[:-1])
+        src_root_dir, _ = _path_split(src_fs, src_path)
         if '*' in src_root_dir:
             raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
         # The source path contains a wildcard
@@ -268,7 +274,8 @@ def _root_copy(source, destination, message, recursive=False):
     if dest_isdir and '*' not in source:
         # split up the final component from source path and add it
         # to the destination
-        final_source_component = source.split('/')[-1]
+        src_fs, _ = _get_fs_and_path(source)
+        _, final_source_component = _path_split(src_fs, source)
         if not destination.endswith('/'):
             destination += '/'
         destination += final_source_component

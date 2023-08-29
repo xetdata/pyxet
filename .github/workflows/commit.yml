@@ -39,6 +39,7 @@ jobs:
           cd python/pyxet
           pip install -r tests/requirements.txt
           pip install target/wheels/pyxet*.whl
+          pytest tests
       - name: Unit and integration tests (Windows)
         if: runner.os == 'Windows'
         env:

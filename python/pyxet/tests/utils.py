@@ -76,6 +76,7 @@ def test_user_info():
         "token": token,
     }
 
+# Expect a test repo whose main branch is empty (only .gitattributes)
 def test_repo():
     repo = os.getenv('XET_TEST_REPO')
     assert repo is not None

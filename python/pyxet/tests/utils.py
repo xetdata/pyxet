@@ -119,12 +119,12 @@ def assert_remote_files_exist(remote, expected):
     for i in expected:
         assert i.removeprefix("xet://") in listing
 
-def assert_remote_files_not_exist(remote, expected):
+def assert_remote_files_not_exist(remote, not_expected):
     fs = fsspec.filesystem("xet")
     listing = fs.glob(remote, detail=False)
     print(listing)
-    print(expected)
-    for i in expected:
+    print(not_expected)
+    for i in not_expected:
         assert i.removeprefix("xet://") not in listing
 
 

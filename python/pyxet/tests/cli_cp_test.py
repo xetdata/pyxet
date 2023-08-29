@@ -175,7 +175,6 @@ def test_glob_recursive_upload():
                         pyxet.cli._root_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
-                        pyxet.PyxetCLI.rm(expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
         finally:
             shutil.rmtree(dir)
@@ -264,7 +263,6 @@ def test_directory_recursive_upload():
                         pyxet.cli._root_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
-                        pyxet.PyxetCLI.rm(expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
         finally:
             shutil.rmtree(dir)
@@ -275,7 +273,6 @@ def test_directory_recursive_upload():
 # According to https://filesystem-spec.readthedocs.io/en/latest/copying.html#single-source-to-single-target
 # section 1e, if the trailing slash is omitted from "source/subdir" then the subdir is also copied, 
 # not just its contents.
-@pytest.mark.skip(reason="fix in a future PR")
 def test_directory_recursive_noslash_upload():
     user = utils.test_account_login()
     repo = utils.test_repo()
@@ -319,8 +316,6 @@ def test_directory_recursive_noslash_upload():
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)
-                        pyxet.PyxetCLI.rm(expected_files_level3)
-                        pyxet.PyxetCLI.rm(expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
         finally:
             shutil.rmtree(dir)

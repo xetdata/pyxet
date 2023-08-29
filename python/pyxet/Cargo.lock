@@ -249,7 +249,7 @@ dependencies = [
 [[package]]
 name = "cache"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "cas_client"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -697,7 +697,7 @@ dependencies = [
 [[package]]
 name = "data_analysis"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "approx",
  "cxx",
@@ -1109,7 +1109,7 @@ dependencies = [
 [[package]]
 name = "gitxetcore"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1559,7 +1559,7 @@ dependencies = [
 [[package]]
 name = "libmagic"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "phf",
@@ -1668,7 +1668,7 @@ dependencies = [
 [[package]]
 name = "mdb_shard"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -1708,7 +1708,7 @@ dependencies = [
 [[package]]
 name = "merkledb"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1738,7 +1738,7 @@ dependencies = [
 [[package]]
 name = "merklehash"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "blake3",
  "generic-array",
@@ -2182,7 +2182,7 @@ dependencies = [
 [[package]]
 name = "parutils"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -2350,7 +2350,7 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 [[package]]
 name = "pointer_file"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "toml",
  "tracing",
@@ -2434,7 +2434,7 @@ dependencies = [
 [[package]]
 name = "progress_reporting"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "atty",
  "crossterm",
@@ -2462,7 +2462,7 @@ dependencies = [
 [[package]]
 name = "prometheus_dict_encoder"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "memchr",
  "prometheus",
@@ -2842,7 +2842,7 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 [[package]]
 name = "retry_strategy"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "tokio-retry",
 ]
@@ -3039,7 +3039,7 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 [[package]]
 name = "s3"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "chrono",
  "more-asserts 0.3.1",
@@ -3233,7 +3233,7 @@ dependencies = [
 [[package]]
 name = "shard_client"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4101,7 +4101,7 @@ dependencies = [
 [[package]]
 name = "utils"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4425,7 +4425,7 @@ dependencies = [
 [[package]]
 name = "xet_config"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "config",
  "dirs 4.0.0",
@@ -4438,7 +4438,7 @@ dependencies = [
 [[package]]
 name = "xetblob"
 version = "0.11.2"
-source = "git+https://github.com/xetdata/xet-core#630c4ca94941eb8cf62f3c0b89bdc3e5b62e9bd0"
+source = "git+ssh://git@github.com/xetdata/xet-core.git?branch=di/invalidate-more-bbq-cache#8c39d93e927739e19f17c0ca0b8e1d3a26782c8a"
 dependencies = [
  "anyhow",
  "async-trait",

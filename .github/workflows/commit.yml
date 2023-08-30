@@ -20,11 +20,37 @@ jobs:
         if: runner.os != 'macOS'
         run: |
           cd python/pyxet
-          maturin build
+          maturin build -r
       - name: Build with maturin (macOS)
         if: runner.os == 'macOS'
         run: |
           export CXXFLAGS="-stdlib=libc++"
           cd python/pyxet
           rustup target add aarch64-apple-darwin
-          maturin build --target universal2-apple-darwin
+          maturin build --target universal2-apple-darwin -r
+      - name: Unit and integration tests (non-Windows)
+        if: runner.os != 'Windows'
+        env:
+          XET_TEST_USER: ${{ vars.XET_TEST_USER }}
+          XET_TEST_EMAIL: ${{ vars.XET_TEST_EMAIL }}
+          XET_TEST_TOKEN: ${{ vars.XET_TEST_TOKEN }}
+          XET_TEST_REPO: ${{ vars.XET_TEST_REPO }}
+        run: |
+          cd python/pyxet
+          pip install -r tests/requirements.txt
+          pip install target/wheels/pyxet*.whl
+          pytest tests
+      - name: Unit and integration tests (Windows)
+        if: runner.os == 'Windows'
+        env:
+          XET_TEST_USER: ${{ vars.XET_TEST_USER }}
+          XET_TEST_EMAIL: ${{ vars.XET_TEST_EMAIL }}
+          XET_TEST_TOKEN: ${{ vars.XET_TEST_TOKEN }}
+          XET_TEST_REPO: ${{ vars.XET_TEST_REPO }}
+        run: |
+          cd python/pyxet
+          pip install -r tests/requirements.txt
+          Get-ChildItem "target/wheels" -Filter pyxet*.whl | Foreach-Object {
+            pip install $_.FullName
+          }
+          pytest tests

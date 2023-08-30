@@ -1,7 +1,8 @@
 import typer
 from typing_extensions import Annotated
 import pyxet
-import argparse
+import boto3
+import botocore
 import fsspec
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -14,6 +15,7 @@ from .url_parsing import parse_url
 from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
+import posixpath
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -36,11 +38,20 @@ def _ltrim_match(s, match):
     ```
     Used to compute relative paths.
     """
-    if len(s) < len(match):
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    if s[:len(match)] != match:
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    return s[len(match):]
+    return os.path.relpath(s, match)
+
+
+def _should_load_aws_credentials():
+    """
+    Determines if AWS credentials should be loaded for s3 API by checking if credentials are available
+    :return: boolean, True if credentials are available, False
+    """
+    client = boto3.client("sts")
+    try:
+        client.get_caller_identity()
+    except botocore.exceptions.NoCredentialsError:
+        return False
+    return True
 
 
 def _get_fs_and_path(uri):
@@ -48,19 +59,20 @@ def _get_fs_and_path(uri):
         fs = fsspec.filesystem("file")
         uri = os.path.abspath(uri)
         return fs, uri
+    split = uri.split("://")
+    if len(split) != 2:
+        print(f"Invalid URL: {uri}", file=sys.stderr)
+    if split[0] == 'xet':
+        fs = pyxet.XetFS()
+    elif split[0] == 's3':
+        load_aws_creds = _should_load_aws_credentials()
+        fs = fsspec.filesystem('s3', anon=not load_aws_creds)
+        # this is *really* annoying But the s3fs protocol has
+        # protocol as a list ['s3','s3a']
+        fs.protocol = 's3'
     else:
-        split = uri.split("://")
-        if len(split) != 2:
-            print(f"Invalid URL: {uri}", file=sys.stderr)
-        if split[0] == 'xet':
-            fs = pyxet.XetFS()
-        else:
-            fs = fsspec.filesystem(split[0])
-            # this is *really* annoying But the s3fs protocol has 
-            # protocol as a list ['s3','s3a']
-            if isinstance(fs.protocol, list):
-                fs.protocol = split[0]
-        return fs, split[1]
+        fs = fsspec.filesystem(split[0])
+    return fs, split[1]
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
@@ -112,8 +124,7 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
         src_fs.branch_info(src_path)
 
     if destproto == 'xet':
-        # check dest branch exists 
-        # exists before we try to do any copying
+        # check dest branch exists before we try to do any copying
         # An exception is that if this operation would create a branch
         if srcproto == 'xet':
             src_parse = parse_url(src_path, src_fs.domain)
@@ -131,6 +142,24 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+# split path into dirname and basename
+def _path_split(fs, path):
+    if fs.protocol == 'file':
+        return os.path.split(path)
+    else:
+        return path.rsplit('/', 1)
+        
+def _path_join(fs, path, *paths):
+    if fs.protocol == 'file':
+        return os.path.join(path, *paths)
+    else:
+        return '/'.join([path] + list(map(lambda p: p.strip('/'), paths)))
+
+def _path_dirname(fs, path):
+    if fs.protocol == 'file':
+        return os.path.dirname(path)
+    else:
+        return '/'.join(path.split('/')[:-1])
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
@@ -158,7 +187,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
         # we only accept globs of the for blah/blah/blah/[glob]
         # i.e. the glob is only in the last component
         # src_root_dir should be blah/blah/blah here
-        src_root_dir = '/'.join(src_path.split('/')[:-1])
+        src_root_dir, _ = _path_split(src_fs, src_path)
         if '*' in src_root_dir:
             raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
         # The source path contains a wildcard
@@ -168,12 +197,11 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
-                relpath = _ltrim_match(path, src_root_dir).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _ltrim_match(path, src_root_dir)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
 
                 if info['type'] == 'directory':
@@ -217,13 +245,13 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                     continue
                 # Note that path is a full path
                 # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _ltrim_match(path, src_path)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
+                
                 # Submitting copy jobs to thread pool
                 futures.append(
                     executor.submit(
@@ -254,7 +282,8 @@ def _root_copy(source, destination, message, recursive=False):
     if dest_isdir and '*' not in source:
         # split up the final component from source path and add it
         # to the destination
-        final_source_component = source.split('/')[-1]
+        src_fs, _ = _get_fs_and_path(source)
+        _, final_source_component = _path_split(src_fs, source)
         if not destination.endswith('/'):
             destination += '/'
         destination += final_source_component
@@ -284,9 +313,10 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mount(source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
-              path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
-              prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
+    def mount(
+            source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
+            path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
+            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
         """
         Mounts a repository on a local path
         """
@@ -394,7 +424,7 @@ class PyxetCLI:
     @staticmethod
     @cli.command()
     def cat(path: Annotated[str, typer.Argument(help="Source file or folder to print")],
-           limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
+            limit: Annotated[int, typer.Option(help="Maximum number of bytes to print")] = 0):
         """Prints a file to stdout"""
         fs, path = _get_fs_and_path(path)
         try:
@@ -551,7 +581,7 @@ class BranchCLI:
     @staticmethod
     @branch.command()
     def ls(repo: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
-             raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
+           raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """
         list branches of a repository.
         """
@@ -561,7 +591,7 @@ class BranchCLI:
             return
         try:
             listing = fs.list_branches(repo, raw)
-            listing = [{'name':"xet://" + path + '/' + n['name'], 'type':'branch'} for n in listing]
+            listing = [{'name': "xet://" + path + '/' + n['name'], 'type': 'branch'} for n in listing]
             if raw:
                 print(listing)
             else:

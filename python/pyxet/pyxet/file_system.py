@@ -389,7 +389,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if detail:
             return [{"name": prefix + '/' + fname,
                      "size": finfo.size,
-                     "type": finfo.ftype}
+                     "type": finfo.ftype,
+                     "last_modified": None if len(finfo.last_modified) == 0 else finfo.last_modified}
                     for fname, finfo in zip(files, file_info)]
         else:
             return files

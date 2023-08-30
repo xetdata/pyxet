@@ -1,5 +1,7 @@
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from functools import partial
 
 from pyxet.util import _ltrim_match, _get_fs_and_path, _single_file_copy, _isdir
 
@@ -8,12 +10,16 @@ XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 class SyncCommand:
 
-    def __init__(self, source, destination, message, dryrun):
+    def __init__(self, source, destination, use_mtime, message, dryrun):
         self._message = message
         self._dryrun = dryrun
         self._src_fs, self._src_proto, self._src_root = _get_normalized_fs_protocol_and_path(source)
         self._dest_fs, self._dest_proto, self._dest_root = _get_normalized_fs_protocol_and_path(destination)
-        self._files_synced = 0
+        self._use_mtime = use_mtime
+        if use_mtime:
+            self._cmp = MTimeSyncComparator(self._src_proto, self._dest_proto)
+        else:
+            self._cmp = SizeOnlySyncComparator()
 
     def validate(self):
         """
@@ -53,84 +59,98 @@ class SyncCommand:
             self._dest_fs.start_transaction(self._message)
         with ThreadPoolExecutor() as executor:
             futures = []
-            self._sync_dir(executor, futures, failed_copies, self._src_root, self._dest_root)
+            if self._use_mtime:
+                self._sync_with_info(executor, futures, self._src_root, self._dest_root)
+            else:
+                self._sync_with_ls(executor, futures, self._src_root, self._dest_root)
 
             # Waiting for all copy jobs to complete
+            files_synced = 0
+            files_ignored = 0
             for future in futures:
                 try:
-                    future.result()
-                    self._files_synced = self._files_synced + 1
+                    i = future.result()
+                    if i < 0:
+                        failed_copies.append("")
+                    elif i == 0:
+                        files_ignored += 1
+                    else:
+                        files_synced += 1
                 except Exception as e:
                     print(f"Error: {e}")
                     failed_copies.append("")
 
         if not self._dryrun:
             self._dest_fs.end_transaction()
-            print(f"Completed sync. Copied: {self._files_synced} files")
+            print(f"Completed sync. Copied: {files_synced} files, ignored: {files_ignored} files")
             if len(failed_copies) > 0:
                 print(f"{len(failed_copies)} entries failed to copy")
 
-    def _sync_dir(self, executor, futures, failed_copies, src_path, dest_path):
-        for src_info in self._src_fs.ls(src_path, detail=True):
-            abs_path = src_info['name']
+    def _sync_with_ls(self, executor, futures, src_path, dest_path):
+        """
+        Sync the src_path to the dest_path using ls calls on both paths and comparing the
+        two.
+
+        Note that ls on xet-fs doesn't return an mtime and thus, will not be able to compare
+        on that field.
+        """
+        dest_files = self._dest_fs.find(dest_path, detail=True)
+        print(f'dest ls: {dest_files}')
+        for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
             dest_for_this_path = _join_to_absolute(dest_path, rel_path)
+            dest_info = dest_files.get(dest_for_this_path)
 
-            try:
-                dest_info = self._dest_fs.info(dest_for_this_path)
-            except FileNotFoundError:
-                dest_info = None
+            partial_func = partial(self._sync_file_task, abs_path, src_info, dest_for_this_path, dest_info)
+            futures.append(executor.submit(partial_func))
 
-            if dest_info is not None and src_info['type'] != dest_info['type']:
-                failed_copies.append(rel_path)
-                print(f"Copy failed: {src_path} is a {src_info['type']}, {dest_path} is a {dest_info['type']}")
-                continue
-
-            size = src_info.get('size', None)
-
-            if dest_info is None:
-                # copy src to dest
-                if src_info['type'] == 'directory':
-                    self._copy_dir_async(executor, futures, abs_path, dest_for_this_path)
-                else:
-                    self._copy_file_async(executor, futures, abs_path, dest_for_this_path, size)
-            elif src_info['type'] == 'directory':
-                # recursively sync src -> dest
-                self._sync_dir(executor, futures, failed_copies, abs_path, dest_for_this_path)
-            elif _should_sync(self._src_proto, src_info, self._dest_proto, dest_info):
-                # copy src to dest
-                self._copy_file_async(executor, futures, abs_path, dest_for_this_path, size)
-
-    def _copy_dir_async(self, executor, futures, src_path, dest_path):
-        for abs_path, info in self._src_fs.find(src_path, detail=True).items():
+    def _sync_with_info(self, executor, futures, src_path, dest_path):
+        """
+        Sync the src_path to the dest_path by calling `info` on the destination for files
+        found in the source. This is much slower than
+        """
+        for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
             dest_for_this_path = _join_to_absolute(dest_path, rel_path)
+            if src_info['type'] != 'directory':
+                print(f'try: {abs_path}')
+                partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
+                futures.append(executor.submit(partial_func))
 
-            # Create parent directories in destination
+    def _sync_with_mtime_task(self, src_path, dest_path, src_info):
+        """
+        Fetch info for the dest_path from remote and use that to sync the file
+        """
+        try:
+            dest_info = self._dest_fs.info(dest_path)
+        except FileNotFoundError:
+            dest_info = None
+        return self._sync_file_task(src_path, src_info, dest_path, dest_info)
+
+    def _sync_file_task(self, src_path, src_info, dest_path, dest_info):
+        """
+        Task to sync the src to the dest using self's SyncComparator to determine if the files
+        should be copied.
+
+        Will return whether the file was copied or not.
+        """
+        if dest_info is not None and src_info['type'] != dest_info['type']:
+            print(f"Copy failed: {src_path} is a {src_info['type']}, {dest_path} is a {dest_info['type']}")
+            raise ValueError(f"{src_path} and {dest_path} are not the same type of entry")
+
+        size = src_info.get('size', None)
+        if dest_info is None or self._cmp.should_sync(src_info, dest_info):
             if not self._dryrun:
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
-                self._dest_fs.makedirs(dest_dir, exist_ok=True)
-
-            # Submitting copy job to thread pool
-            size = info.get('size', None)
-            self._copy_file_async(executor, futures, abs_path, dest_for_this_path, size)
-
-    def _copy_file_async(self, executor, futures, src_path, dest_path, size):
-        if not self._dryrun:
-            futures.append(
-                executor.submit(
-                    _single_file_copy,
-                    self._src_fs,
-                    src_path,
-                    self._dest_fs,
-                    dest_path,
-                    size_hint=size
-                ))
+                _single_file_copy(self._src_fs, src_path, self._dest_fs, dest_path, size_hint=size)
+            return True
+        # ignored
+        print(f'ignoring: {src_path}')
+        return False
 
 
-def _join_to_absolute(dest_path, rel_path):
-    return f"/{rel_path}" if dest_path == '/' \
-        else f"{dest_path}/{rel_path}"
+def _join_to_absolute(root, rel_path):
+    return f"/{rel_path}" if root == '/' \
+        else f"{root}/{rel_path}"
 
 
 def _get_normalized_fs_protocol_and_path(uri):
@@ -163,12 +183,39 @@ def _get_last_modified(protocol: str, info: dict) -> float:
     return mod_time
 
 
-def _should_sync(src_proto, src_info, dest_proto, dest_info):
-    if src_info['size'] != dest_info['size']:
-        return True
+class SyncComparator(ABC):
+    @abstractmethod
+    def should_sync(self, src_info, dest_info):
+        pass
 
-    src_mtime = _get_last_modified(src_proto, src_info)
-    dest_mtime = _get_last_modified(dest_proto, dest_info)
-    return src_mtime is not None and dest_mtime is not None \
-        and src_mtime > dest_mtime
+
+class SizeOnlySyncComparator(SyncComparator):
+    """
+    Compare info only by size. If the sizes are different,
+    then we should sync.
+    """
+
+    def should_sync(self, src_info, dest_info):
+        return src_info['size'] != dest_info['size']
+
+
+class MTimeSyncComparator(SyncComparator):
+    """
+    Compare info by size and mtime.
+    We should sync only if the size's match and
+    the mtime for the source is larger than the
+    mtime of the destination.
+    """
+    def __init__(self, src_proto, dest_proto):
+        self._src_proto = src_proto
+        self._dest_proto = dest_proto
+
+    def should_sync(self, src_info, dest_info):
+        if src_info['size'] != dest_info['size']:
+            return True
+
+        src_mtime = _get_last_modified(self._src_proto, src_info)
+        dest_mtime = _get_last_modified(self._dest_proto, dest_info)
+        return src_mtime is not None and dest_mtime is not None \
+            and src_mtime > dest_mtime
 

@@ -130,6 +130,7 @@ class PyxetCLI:
     @cli.command()
     def sync(source: Annotated[str, typer.Argument(help="Source folder to sync")],
              target: Annotated[str, typer.Argument(help="Target location of the folder")],
+             use_mtime: Annotated[bool, typer.Option("--use-mtime", help="Use mtime as criteria for sync")] = False,
              message: Annotated[str, typer.Option("--message", "-m", help="A commit message")] = "",
              parallel: Annotated[int, typer.Option("--parallel", "-p", help="Maximum amount of parallelism")] = 32,
              dryrun: Annotated[
@@ -139,7 +140,7 @@ class PyxetCLI:
         if not message:
             message = f"sync {source} to {target}"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
-        cmd = SyncCommand(source, target, message, dryrun)
+        cmd = SyncCommand(source, target, use_mtime, message, dryrun)
         cmd.validate()
         cmd.run()
 

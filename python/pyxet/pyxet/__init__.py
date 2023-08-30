@@ -1,6 +1,7 @@
 from .file_system import open, login, XetFS
 from .version import __version__
 from .cli import PyxetCLI, BranchCLI, RepoCLI
+from .commit_transaction import MultiCommitTransaction
 
 """
 PyXet

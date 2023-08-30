@@ -1,6 +1,6 @@
 # CLI
 
-The pyxet CLI is a command line interface for interacting with XetHub repositories as blob stores, while leveraging the
+The pyxet CLI is a command line interface for interacting with XetHub repositories like a blob stores, while leveraging the
 power of Git branches and versioning.   
 The CLI follows [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) standards.
 
@@ -67,6 +67,12 @@ xdssio/FastChat               repo
 ...
 ```
 
+Note that this works with S3 buckets, or anything fsspec understands as well!
+
+```
+$ xet ls s3://<bucket>
+```
+
 ## cp (copy)
 
 *cp* copy local and remote files and even copy between branches or repositories (if they exists).
@@ -97,7 +103,14 @@ $ xet cp xet://user/repo/branch/path/to/source xet://user/repo/branch/path/to/ta
 # examples
 $ xet cp xet://xdssio/titanic/experiment-1/titanic.csv xet://xdssio/titanic/experiment-2/titanic.csv
 Copying xdssio/titanic/experiment-1/titanic.csv to xdssio/titanic/experiment-2/titanic.csv...
-Synchronizing with remote
+```
+
+Since fsspec understand S3, `cp` can be used to upload and download files from S3 buckets too:
+```
+# upload to S3
+$ xet cp xet://... s3://...
+# download from S3
+$ xet cp s3://... xet://...
 ```
 
 ## mv (move)

@@ -1,8 +1,6 @@
 import typer
 from typing_extensions import Annotated
 import pyxet
-import boto3
-import botocore
 import fsspec
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -12,10 +10,12 @@ import typing
 from tabulate import tabulate
 from .file_system import XetFS
 from .url_parsing import parse_url
-from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
 import posixpath
+
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -28,24 +28,18 @@ MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
 
 
-def _ltrim_match(s, match):
-    """
-    Trims the string 'match' from the left of the string 's'
-    raising an error if the match does not exist.
-    Ex:
-    ```
-       ltrim_match("a/b/c.txt", "a/b") => "/c.txt"
-    ```
-    Used to compute relative paths.
-    """
-    return os.path.relpath(s, match)
-
-
 def _should_load_aws_credentials():
     """
     Determines if AWS credentials should be loaded for s3 API by checking if credentials are available
     :return: boolean, True if credentials are available, False
     """
+    try:
+        import boto3
+        import botocore
+    except:
+        print("boto3 and botocore required for AWS S3 support")
+        print("Please install them with 'pip install boto3 botocore'")
+        sys.exit(1)
     client = boto3.client("sts")
     try:
         client.get_caller_identity()
@@ -142,6 +136,16 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+def _rel_path(s, start):
+    """
+    Get the relative path of 's' from 'start'
+    Ex:
+    ```
+       _rel_path("a/b/c.txt", "a/b") => "c.txt"
+    ```
+    """
+    return os.path.relpath(s, start)
+
 # split path into dirname and basename
 def _path_split(fs, path):
     if fs.protocol == 'file':
@@ -197,7 +201,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
-                relpath = _ltrim_match(path, src_root_dir)
+                relpath = _rel_path(path, src_root_dir)
                 if src_fs.protocol == 'file' and os.sep != posixpath.sep:
                     relpath = relpath.replace(os.sep, posixpath.sep)
                 dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
@@ -245,7 +249,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                     continue
                 # Note that path is a full path
                 # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path)
+                relpath = _rel_path(path, src_path)
                 if src_fs.protocol == 'file' and os.sep != posixpath.sep:
                     relpath = relpath.replace(os.sep, posixpath.sep)
                 dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
@@ -316,7 +320,7 @@ class PyxetCLI:
     def mount(
             source: Annotated[str, typer.Argument(help="Repository and branch in format xet://[user]/[repo]/[branch]")],
             path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
-            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=2")] = None):
+            prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=32")] = 32):
         """
         Mounts a repository on a local path
         """
@@ -341,7 +345,7 @@ class PyxetCLI:
                          bool, typer.Option('--autostop', help="Automatically terminates on unmount")] = False,
                      reference: Annotated[
                          str, typer.Option('--reference', '-r', help="branch or revision to mount")] = 'HEAD',
-                     prefetch: Annotated[int, typer.Option('--prefetch', '-p', help="prefetch aggressiveness")] = 16,
+                     prefetch: Annotated[int, typer.Option('--prefetch', '-p', help="prefetch aggressiveness")] = 32,
                      ip: Annotated[str, typer.Option('--ip', help="IP used to host the NFS server")] = "127.0.0.1",
                      writable: Annotated[bool, typer.Option('--writable', help="Experimental. Do not use")] = False,
                      signal: Annotated[int, typer.Option('--signal', help="Internal:Sends SIGUSR1 to this pid")] = -1):
@@ -502,7 +506,7 @@ class PyxetCLI:
     @cli.command()
     def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://[user]/[repo]/[branch]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
-        """Provide information about a repository branch"""
+        """Provide information about any path"""
         fs, path = _get_fs_and_path(uri)
         try:
             info = fs.info(path)
@@ -647,6 +651,7 @@ class RepoCLI:
     def make(name: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
              private: Annotated[bool, typer.Option('--private', help="Make repository private")] = False,
              public: Annotated[bool, typer.Option('--public', help="Make repository public")] = False,
+             raw: Annotated[bool, typer.Option('--raw', help="Raw output")] = False,
              ):
         """
         make a new empty repository. Either --private or --public must be set
@@ -655,12 +660,20 @@ class RepoCLI:
             print("Either --private or --public must be set")
             return
         fs = XetFS()
-        ret = fs.make_repo(name)
-        if private:
-            print("Creation successful. Changing permissions...")
-            fs.set_repo_attr(name, "private", True)
-            print("Repo permissions set successfully")
-        print(ret)
+        ret = fs.make_repo(name, private=private)
+        if raw:
+            print(ret)
+        else:
+            htmlurl = ret['html_url']
+            domain_split = htmlurl.split('://')[1]
+            path_split = domain_split.split('/')[1:]
+            path_split = '/'.join(path_split)
+            xet_path = f'xet://{path_split}'
+            if public:
+                print(f"Public repository created at {xet_path}")
+            elif private:
+                print(f"Private repository created at {xet_path}")
+        return ret
 
     @staticmethod
     @repo.command()

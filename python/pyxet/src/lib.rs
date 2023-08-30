@@ -5,7 +5,6 @@ use gitxetcore::command::*;
 use gitxetcore::config::ConfigGitPathOption;
 use gitxetcore::config::ConfigGitPathOption::NoPath;
 use gitxetcore::config::XetConfig;
-use gitxetcore::git_integration::git_repo::is_user_identity_set;
 use gitxetcore::log::initialize_tracing_subscriber;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
@@ -24,6 +23,8 @@ pub struct FileAttributes {
     pub ftype: String, // "directory"/"file"/"symlink"
     #[pyo3(get)]
     pub size: usize,
+    #[pyo3(get)]
+    pub last_modified: String,
 }
 
 impl From<DirEntry> for FileAttributes {
@@ -40,6 +41,7 @@ impl From<DirEntry> for FileAttributes {
         FileAttributes {
             ftype: ftype.to_string(),
             size: ent.size as usize,
+            last_modified: ent.last_modified,
         }
     }
 }
@@ -192,12 +194,6 @@ impl PyRepoManager {
     #[new]
     pub fn new() -> PyResult<Self> {
         let manager = XetRepoManager::new(None, None).map_err(anyhow_to_runtime_error)?;
-        if !is_user_identity_set(None).unwrap_or(false) {
-            eprintln!(
-                "Please configure your Git user name and email. \
-\n\n  git config --global user.name \"<Name>\"\n  git config --global user.email \"<Email>\""
-            );
-        }
         Ok(PyRepoManager {
             manager: RwLock::new(manager),
         })

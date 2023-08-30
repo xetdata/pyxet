@@ -28,19 +28,6 @@ MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
 
 
-def _ltrim_match(s, match):
-    """
-    Trims the string 'match' from the left of the string 's'
-    raising an error if the match does not exist.
-    Ex:
-    ```
-       ltrim_match("a/b/c.txt", "a/b") => "/c.txt"
-    ```
-    Used to compute relative paths.
-    """
-    return os.path.relpath(s, match)
-
-
 def _should_load_aws_credentials():
     """
     Determines if AWS credentials should be loaded for s3 API by checking if credentials are available
@@ -142,13 +129,23 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+def _rel_path(s, start):
+    """
+    Get the relative path of 's' from 'start'
+    Ex:
+    ```
+       _rel_path("a/b/c.txt", "a/b") => "c.txt"
+    ```
+    """
+    return os.path.relpath(s, start)
+
 # split path into dirname and basename
 def _path_split(fs, path):
     if fs.protocol == 'file':
         return os.path.split(path)
     else:
         return path.rsplit('/', 1)
-        
+
 def _path_join(fs, path, *paths):
     if fs.protocol == 'file':
         return os.path.join(path, *paths)
@@ -197,7 +194,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
-                relpath = _ltrim_match(path, src_root_dir)
+                relpath = _rel_path(path, src_root_dir)
                 if src_fs.protocol == 'file' and os.sep != posixpath.sep:
                     relpath = relpath.replace(os.sep, posixpath.sep)
                 dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
@@ -245,7 +242,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                     continue
                 # Note that path is a full path
                 # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path)
+                relpath = _rel_path(path, src_path)
                 if src_fs.protocol == 'file' and os.sep != posixpath.sep:
                     relpath = relpath.replace(os.sep, posixpath.sep)
                 dest_for_this_path = _path_join(dest_fs, dest_path, relpath)

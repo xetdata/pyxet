@@ -138,12 +138,12 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
 
     def mv(self, src_repo_info, dest_repo_info):
         """
-        Copies a file from src to dest.
+        Moves a file from src to dest.
         src_repo_info and dest_repo_info are the returned values from
         `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(dest_repo_info)
-        handler.mv(src_repo_info, dest_repo_info)
+        handler.mv(src_repo_info.path, dest_repo_info.path)
 
     def rm(self, repo_info):
         """
@@ -151,7 +151,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         repo_info is the return value of `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
-        handler.rm(repo_info)
+        handler.delete(repo_info.path)
 
     def _set_do_not_commit(self, flag):
         """
@@ -161,7 +161,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         """
         with self.lock:
             for v in self._transaction_pool.values():
-                v._transaction_handler.set_do_not_commit(flag)
+                v.set_do_not_commit(flag)
 
     def _set_error_on_commit(self, flag):
         """
@@ -171,7 +171,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         """
         with self.lock:
             for v in self._transaction_pool.values():
-                v._transaction_handler.set_error_on_commit(flag)
+                v.set_error_on_commit(flag)
 
     def get_change_list(self):
         deletes = []
@@ -179,9 +179,9 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         copies = []
         moves = []
         for v in self._transaction_pool.values():
-            deletes.extend(v._transaction_handler.deletes)
-            new_files.extend(v._transaction_handler.new_files)
-            copies.extend(v._transaction_handler.copies)
-            moves.extend(v._transaction_handler.moves)
+            deletes.extend(v.deletes)
+            new_files.extend(v.new_files)
+            copies.extend(v.copies)
+            moves.extend(v.moves)
 
         return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves':moves}

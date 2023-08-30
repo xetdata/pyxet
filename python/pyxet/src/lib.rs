@@ -884,7 +884,6 @@ impl PyWriteTransactionAccessToken {
     pub fn mv(&self, src_path: &str, target_path: &str, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
-            // HMM.  Why does mv take two arguments and copy three?  Where do branches come in here?
             self.access_transaction_for_write()
                 .await?
                 .mv(src_path, target_path)

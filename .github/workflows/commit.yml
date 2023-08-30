@@ -30,6 +30,9 @@ jobs:
           maturin build --target universal2-apple-darwin -r
       - name: Unit and integration tests (non-Windows)
         if: runner.os != 'Windows'
+        env:
+          AWS_ACCESS_KEY_ID: {{ secrets.DEV_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: {{ secrets.DEV_AWS_SECRET_KEY }}
         run: |
           cd python/pyxet
           pip install -r tests/requirements.txt
@@ -37,6 +40,9 @@ jobs:
           pytest tests
       - name: Unit and integration tests (Windows)
         if: runner.os == 'Windows'
+        env:
+          AWS_ACCESS_KEY_ID: {{ secrets.DEV_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: {{ secrets.DEV_AWS_SECRET_KEY }}
         run: |
           cd python/pyxet
           pip install -r tests/requirements.txt

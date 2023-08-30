@@ -53,7 +53,7 @@ class SyncCommand:
         Runs this Sync command.
         """
         print(f"Starting sync")
-        failed_copies = []
+        failed_copies = 0
 
         if not self._dryrun:
             self._dest_fs.start_transaction(self._message)
@@ -69,22 +69,21 @@ class SyncCommand:
             files_ignored = 0
             for future in futures:
                 try:
-                    i = future.result()
-                    if i < 0:
-                        failed_copies.append("")
-                    elif i == 0:
-                        files_ignored += 1
-                    else:
+                    was_copied = future.result()
+                    if was_copied:
                         files_synced += 1
+                    else:
+                        files_ignored += 1
                 except Exception as e:
                     print(f"Error: {e}")
-                    failed_copies.append("")
+                    failed_copies += 1
 
         if not self._dryrun:
+            print("Committing changes")
             self._dest_fs.end_transaction()
             print(f"Completed sync. Copied: {files_synced} files, ignored: {files_ignored} files")
-            if len(failed_copies) > 0:
-                print(f"{len(failed_copies)} entries failed to copy")
+            if failed_copies > 0:
+                print(f"{failed_copies} entries failed to copy")
 
     def _sync_with_ls(self, executor, futures, src_path, dest_path):
         """

@@ -56,6 +56,31 @@ def skip_if_no(package: str):
     )
 
 
+def require_s3_creds():
+    """
+    Function to help mark any tests that need credentials to S3 to work.
+    For example, many of the sync tests may want this.
+
+    Returns a pytest mark with a skipif condition to be evaluated during
+    test collection. Will check if AWS credentials have been defined as
+    environment variables (i.e. AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).
+    """
+
+    def try_load_s3():
+        import boto3
+        from botocore.exceptions import NoCredentialsError, ClientError
+        try:
+            s3 = boto3.client('s3')
+            _ = s3.list_buckets()
+            return True
+        except (NoCredentialsError, ClientError):
+            print(f'No Credentials')
+            return False
+
+    msg = "AWS credentials not defined"
+    return pytest.mark.skipif(not try_load_s3(), reason=msg)
+
+
 class CONSTANTS:
     TITANIC_CSV = "xet://xdssio/titanic/main/titanic.csv"
     TITANIC_XET_CSV = "xet://xdssio/titanic/main/titanic.csv"
@@ -67,4 +92,6 @@ class CONSTANTS:
     TESTING_TOKEN = "q8HnHwaw6hw3zhJNuUjAnw"
     TESTING_TEMPREPO_ROOT = "_xethub_testing_account/read_write_testing"
     TESTING_TEMPREPO = "_xethub_testing_account/read_write_testing/main"
+    TESTING_SYNCREPO = f"{TESTING_USERNAME}/sync_test"
     FLICKR_CSV = "xet://XetHub/Flickr30k/main/results.csv"
+    S3_BUCKET = "pyxet-test"

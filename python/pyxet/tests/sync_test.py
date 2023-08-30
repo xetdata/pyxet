@@ -1,6 +1,9 @@
 import os
 
+import pyxet
 from pyxet.sync import _join_to_absolute, _get_normalized_fs_protocol_and_path, SyncCommand
+
+from utils import CONSTANTS, require_s3_creds
 
 
 def test_join_to_absolute():
@@ -38,24 +41,37 @@ def test_get_normalized_fs_protocol_and_path(monkeypatch):
     validate('xet://user/repo/', 'xet', 'user/repo')
 
 
-def test_sync_command_validate(monkeypatch):
-    def validate(src, dst, is_valid):
-        cmd = SyncCommand(src, dst, False, '', False)
-        try:
-            cmd.validate()
-            assert is_valid
-        except ValueError:
-            assert not is_valid
+def check_sync_validate(src, dst, is_valid):
+    cmd = SyncCommand(src, dst, False, '', False)
+    try:
+        cmd.validate()
+        assert is_valid
+    except (ValueError, FileNotFoundError):
+        assert not is_valid
 
-    os.environ['XET_ENDPOINT'] = 'hub.xetsvc.com'
 
-    validate('.', 'xet://XetHub/ReleaseTesting/main', True)
-    validate('./sync_test.py', 'xet://XetHub/ReleaseTesting/main', False)
-    validate('xet://XetHub/grapp2/main', 'xet://XetHub/ReleaseTesting/sync-branch/sync', False)
-    validate('.', './other', False)
-    validate('.', 'xet://XetHub/ReleaseTesting', False)
-    validate('.', 'xet://', False)
-    validate('./*', 'xet://XetHub/ReleaseTesting/main', False)
-    validate('./*.py', 'xet://XetHub/ReleaseTesting/main', False)
-    validate('.', 'xet://XetHub/ReleaseTesting/main/foo*', False)
-    # TODO: may want to validate s3 paths when we have credentials
+def test_sync_command_validate_local():
+    pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
+
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
+    check_sync_validate('/nonexistent', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate('./sync_test.py', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate('xet://XetHub/grapp2/main', f'xet://{CONSTANTS.TESTING_SYNCREPO}/sync-branch/sync', False)
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/nonexistent-branch', False)
+    check_sync_validate('.', './other', False)
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}', False)
+    check_sync_validate('.', 'xet://', False)
+    check_sync_validate('./*', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate('./*.py', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main/foo*', False)
+
+
+@require_s3_creds()
+def test_sync_command_validate_s3():
+    pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
+
+    check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
+    check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}/nonexistent-path', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate(f's3://', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}', f's3://{CONSTANTS.S3_BUCKET}/other', False)
+

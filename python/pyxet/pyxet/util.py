@@ -7,8 +7,8 @@ import boto3
 import botocore
 import fsspec
 
-import pyxet
-from pyxet.url_parsing import parse_url
+from .file_system import XetFS
+from .url_parsing import parse_url
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
@@ -53,7 +53,7 @@ def _get_fs_and_path(uri):
     if len(split) != 2:
         print(f"Invalid URL: {uri}", file=sys.stderr)
     if split[0] == 'xet':
-        fs = pyxet.XetFS()
+        fs = XetFS()
     elif split[0] == 's3':
         load_aws_creds = _should_load_aws_credentials()
         fs = fsspec.filesystem('s3', anon=not load_aws_creds)

@@ -181,7 +181,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                 "type": attr.ftype,
                 "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
 
-    def make_repo(self, dest_path, **kwargs):
+    def make_repo(self, dest_path, private=False, **kwargs):
         dest = parse_url(dest_path, self.domain)
         if dest.path != '':
             raise ValueError("Expecting xet://user/repo for destination")
@@ -200,7 +200,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         assert (len(split) == 2)
         owner, repo = split[0], split[1]
 
-        query = json.dumps({'name': repo, 'owner': owner})
+        query = json.dumps({'name': repo, 'owner': owner, 'private': private})
         ret = json.loads(bytes(_manager.api_query(f"{scheme}://{domain}", "", "post", query)))
         return ret
 

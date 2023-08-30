@@ -12,6 +12,7 @@ from .file_system import XetFS
 from .url_parsing import parse_url
 from .version import __version__
 import subprocess
+import posixpath
 
 if 'SPHINX_BUILD' not in os.environ:
     from .rpyxet import rpyxet
@@ -25,23 +26,6 @@ cli.add_typer(branch, name="branch")
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
-
-
-def _ltrim_match(s, match):
-    """
-    Trims the string 'match' from the left of the string 's'
-    raising an error if the match does not exist.
-    Ex:
-    ```
-       ltrim_match("a/b/c.txt", "a/b") => "/c.txt"
-    ```
-    Used to compute relative paths.
-    """
-    if len(s) < len(match):
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    if s[:len(match)] != match:
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    return s[len(match):]
 
 
 def _should_load_aws_credentials():
@@ -152,6 +136,34 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+def _rel_path(s, start):
+    """
+    Get the relative path of 's' from 'start'
+    Ex:
+    ```
+       _rel_path("a/b/c.txt", "a/b") => "c.txt"
+    ```
+    """
+    return os.path.relpath(s, start)
+
+# split path into dirname and basename
+def _path_split(fs, path):
+    if fs.protocol == 'file':
+        return os.path.split(path)
+    else:
+        return path.rsplit('/', 1)
+
+def _path_join(fs, path, *paths):
+    if fs.protocol == 'file':
+        return os.path.join(path, *paths)
+    else:
+        return '/'.join([path] + list(map(lambda p: p.strip('/'), paths)))
+
+def _path_dirname(fs, path):
+    if fs.protocol == 'file':
+        return os.path.dirname(path)
+    else:
+        return '/'.join(path.split('/')[:-1])
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
@@ -179,7 +191,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
         # we only accept globs of the for blah/blah/blah/[glob]
         # i.e. the glob is only in the last component
         # src_root_dir should be blah/blah/blah here
-        src_root_dir = '/'.join(src_path.split('/')[:-1])
+        src_root_dir, _ = _path_split(src_fs, src_path)
         if '*' in src_root_dir:
             raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
         # The source path contains a wildcard
@@ -189,12 +201,11 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
-                relpath = _ltrim_match(path, src_root_dir).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _rel_path(path, src_root_dir)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
 
                 if info['type'] == 'directory':
@@ -238,13 +249,13 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                     continue
                 # Note that path is a full path
                 # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _rel_path(path, src_path)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
+                
                 # Submitting copy jobs to thread pool
                 futures.append(
                     executor.submit(
@@ -275,7 +286,8 @@ def _root_copy(source, destination, message, recursive=False):
     if dest_isdir and '*' not in source:
         # split up the final component from source path and add it
         # to the destination
-        final_source_component = source.split('/')[-1]
+        src_fs, _ = _get_fs_and_path(source)
+        _, final_source_component = _path_split(src_fs, source)
         if not destination.endswith('/'):
             destination += '/'
         destination += final_source_component

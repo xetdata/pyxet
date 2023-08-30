@@ -5,7 +5,6 @@ use gitxetcore::command::*;
 use gitxetcore::config::ConfigGitPathOption;
 use gitxetcore::config::ConfigGitPathOption::NoPath;
 use gitxetcore::config::XetConfig;
-use gitxetcore::git_integration::git_repo::is_user_identity_set;
 use gitxetcore::log::initialize_tracing_subscriber;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;

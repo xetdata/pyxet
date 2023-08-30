@@ -15,6 +15,7 @@ from .url_parsing import parse_url
 from .rpyxet import rpyxet
 from .version import __version__
 import subprocess
+import posixpath
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -37,11 +38,7 @@ def _ltrim_match(s, match):
     ```
     Used to compute relative paths.
     """
-    if len(s) < len(match):
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    if s[:len(match)] != match:
-        raise (ValueError(f"Path {s} not in directory {match}"))
-    return s[len(match):]
+    return os.path.relpath(s, match)
 
 
 def _should_load_aws_credentials():
@@ -151,6 +148,18 @@ def _path_split(fs, path):
         return os.path.split(path)
     else:
         return path.rsplit('/', 1)
+        
+def _path_join(fs, path, *paths):
+    if fs.protocol == 'file':
+        return os.path.join(path, *paths)
+    else:
+        return '/'.join([path] + list(map(lambda p: p.strip('/'), paths)))
+
+def _path_dirname(fs, path):
+    if fs.protocol == 'file':
+        return os.path.dirname(path)
+    else:
+        return '/'.join(path.split('/')[:-1])
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
@@ -188,12 +197,11 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                 # Copy each matching file
                 if info['type'] == 'directory' and not recursive:
                     continue
-                relpath = _ltrim_match(path, src_root_dir).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _ltrim_match(path, src_root_dir)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
 
                 if info['type'] == 'directory':
@@ -237,13 +245,13 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
                     continue
                 # Note that path is a full path
                 # we need to relativize to make the destination path
-                relpath = _ltrim_match(path, src_path).lstrip('/')
-                if dest_path == '/':
-                    dest_for_this_path = f"/{relpath}"
-                else:
-                    dest_for_this_path = f"{dest_path}/{relpath}"
-                dest_dir = '/'.join(dest_for_this_path.split('/')[:-1])
+                relpath = _ltrim_match(path, src_path)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
                 dest_fs.makedirs(dest_dir, exist_ok=True)
+                
                 # Submitting copy jobs to thread pool
                 futures.append(
                     executor.submit(

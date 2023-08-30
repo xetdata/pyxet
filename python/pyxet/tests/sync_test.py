@@ -25,9 +25,9 @@ def test_get_normalized_fs_protocol_and_path(monkeypatch):
         assert fs.protocol == proto
         assert path == exp_path
 
-    validate('/foo/bar/', 'file', '/foo/bar')
-    validate('/', 'file', '/')
-    validate('some/path', 'file', os.getcwd() + '/some/path')
+    validate('/foo/bar/', 'file', os.path.normpath('/foo/bar'))
+    validate('/', 'file', os.path.normpath('/'))
+    validate('some/path', 'file', os.path.normpath(os.getcwd() + '/some/path'))
     validate('.', 'file', os.getcwd())
 
     # Don't connect to S3.

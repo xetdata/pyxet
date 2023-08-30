@@ -30,7 +30,6 @@ class SyncCommand:
         Raises exceptions on failure
         """
 
-        print(f"Checking sync")
         if self._dest_proto != 'xet':
             raise ValueError(f"Unsupported destination protocol: {self._dest_proto}, only xet:// targets are supported")
         if self._src_proto == 'xet':
@@ -43,6 +42,9 @@ class SyncCommand:
         # source should be a directory
         if not _isdir(self._src_fs, self._src_root):
             raise ValueError(f"source: {self._src_root} needs to be a directory")
+        # s3 needs a bucket
+        if self._src_proto == 's3' and (self._src_root == '/' or self._src_root == ''):
+            raise ValueError(f"S3 source needs a specified bucket")
 
         # wildcards not supported
         if '*' in self._src_root or '*' in self._dest_root:
@@ -50,10 +52,10 @@ class SyncCommand:
 
     def run(self):
         """
-        Runs this Sync command.
+        Runs this Sync command, returning SyncStats containing the number of files copied
+        during the sync.
         """
-        print(f"Starting sync")
-        failed_copies = 0
+        sync_stats = SyncStats()
 
         if not self._dryrun:
             self._dest_fs.start_transaction(self._message)
@@ -65,25 +67,21 @@ class SyncCommand:
                 self._sync_with_ls(executor, futures, self._src_root, self._dest_root)
 
             # Waiting for all copy jobs to complete
-            files_synced = 0
-            files_ignored = 0
             for future in futures:
                 try:
                     was_copied = future.result()
                     if was_copied:
-                        files_synced += 1
+                        sync_stats.copied += 1
                     else:
-                        files_ignored += 1
+                        sync_stats.ignored += 1
                 except Exception as e:
                     print(f"Error: {e}")
-                    failed_copies += 1
+                    sync_stats.failed += 1
 
         if not self._dryrun:
-            print("Committing changes")
             self._dest_fs.end_transaction()
-            print(f"Completed sync. Copied: {files_synced} files, ignored: {files_ignored} files")
-            if failed_copies > 0:
-                print(f"{failed_copies} entries failed to copy")
+
+        return sync_stats
 
     def _sync_with_ls(self, executor, futures, src_path, dest_path):
         """
@@ -94,7 +92,6 @@ class SyncCommand:
         on that field.
         """
         dest_files = self._dest_fs.find(dest_path, detail=True)
-        print(f'dest ls: {dest_files}')
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
             dest_for_this_path = _join_to_absolute(dest_path, rel_path)
@@ -112,7 +109,6 @@ class SyncCommand:
             rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
             dest_for_this_path = _join_to_absolute(dest_path, rel_path)
             if src_info['type'] != 'directory':
-                print(f'try: {abs_path}')
                 partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
                 futures.append(executor.submit(partial_func))
 
@@ -143,7 +139,6 @@ class SyncCommand:
                 _single_file_copy(self._src_fs, src_path, self._dest_fs, dest_path, size_hint=size)
             return True
         # ignored
-        print(f'ignoring: {src_path}')
         return False
 
 
@@ -218,3 +213,8 @@ class MTimeSyncComparator(SyncComparator):
         return src_mtime is not None and dest_mtime is not None \
             and src_mtime > dest_mtime
 
+
+class SyncStats:
+    copied = 0
+    ignored = 0
+    failed = 0

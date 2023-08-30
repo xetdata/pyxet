@@ -75,3 +75,37 @@ def test_sync_command_validate_s3():
     check_sync_validate(f's3://', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
     check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}', f's3://{CONSTANTS.S3_BUCKET}/other', False)
 
+
+def get_rand_name(prefix):
+    import time
+    ts = int(time.time())
+    return f'{prefix}_{ts}'
+
+
+@require_s3_creds()
+def test_sync_command_s3():
+    pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
+    fs = pyxet.XetFS()
+    branch = get_rand_name('sync_test_s3')
+    fs.make_branch(CONSTANTS.TESTING_SYNCREPO, 'main', branch)
+    src_path = f'{CONSTANTS.TESTING_SYNCREPO}/{branch}'
+
+    cmd = SyncCommand(f's3://{CONSTANTS.S3_BUCKET}/sync1', f'xet://{src_path}', False, 'test sync from s3', False)
+    cmd.validate()
+    stats = cmd.run()
+    assert stats.ignored == 0
+    assert stats.copied == 2
+    assert stats.failed == 0
+
+    files = fs.find(src_path, detail=True)
+    assert len(files) == 3  # .gitattributes is also in repo
+    assert files.get(f'{src_path}/js/main.d8604548.js')
+    assert files.get(f'{src_path}/tmp-1')
+
+    # no files should be copied
+    stats = cmd.run()
+    assert stats.ignored == 2
+    assert stats.copied == 0
+    assert stats.failed == 0
+
+    fs.delete_branch(CONSTANTS.TESTING_SYNCREPO, branch)

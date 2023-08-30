@@ -141,8 +141,14 @@ class PyxetCLI:
             message = f"sync {source} to {target}"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
         cmd = SyncCommand(source, target, use_mtime, message, dryrun)
+        print(f"Checking sync")
         cmd.validate()
-        cmd.run()
+        print(f"Starting sync")
+        stats = cmd.run()
+        if not dryrun:
+            print(f"Completed sync. Copied: {stats.copied} files, ignored: {stats.ignored} files")
+            if stats.failed > 0:
+                print(f"{stats.failed} entries failed to copy")
 
     @staticmethod
     @cli.command()

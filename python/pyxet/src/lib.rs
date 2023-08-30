@@ -186,12 +186,6 @@ impl PyRepoManager {
     #[new]
     pub fn new() -> PyResult<Self> {
         let manager = XetRepoManager::new(None, None).map_err(anyhow_to_runtime_error)?;
-        if !is_user_identity_set(None).unwrap_or(false) {
-            eprintln!(
-                "Please configure your Git user name and email. \
-\n\n  git config --global user.name \"<Name>\"\n  git config --global user.email \"<Email>\""
-            );
-        }
         Ok(PyRepoManager { manager })
     }
 

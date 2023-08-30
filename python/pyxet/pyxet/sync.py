@@ -91,7 +91,10 @@ class SyncCommand:
         Note that ls on xet-fs doesn't return an mtime and thus, will not be able to compare
         on that field.
         """
-        dest_files = self._dest_fs.find(dest_path, detail=True)
+        try:
+            dest_files = self._dest_fs.find(dest_path, detail=True)
+        except RuntimeError:
+            dest_files = {}
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
             dest_for_this_path = _join_to_absolute(dest_path, rel_path)

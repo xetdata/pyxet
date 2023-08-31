@@ -138,7 +138,7 @@ class PyxetCLI:
              dryrun: Annotated[
                  bool, typer.Option("--dryrun",
                                     help="Displays the operations that would be performed without actually running them")] = False):
-        """Copy changed files from source location to destination"""
+        """Copy changed files from source to target"""
         if not message:
             message = f"sync {source} to {target}"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)

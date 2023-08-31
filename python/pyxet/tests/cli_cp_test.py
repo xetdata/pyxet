@@ -322,3 +322,25 @@ def test_directory_recursive_noslash_upload():
         
     finally:
         pyxet.BranchCLI.delete(f"xet://{user}/{repo}", b1, True)
+
+def test_large_batch_upload():
+    user = utils.test_account_login()
+    repo = utils.test_repo()
+    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+
+    try:
+        # generate a large batch of random files in a temp dir
+        dir = tempfile.mkdtemp()
+        
+        n_files = 1000
+        local_files = list(map(lambda i: f"{dir}/data{i}", range(n_files)))
+        utils.random_binary_files(local_files, [1024] * n_files)
+
+        try:
+            pyxet.commit_transaction.TRANSACTION_FILE_LIMIT = 100
+            pyxet.cli._root_copy(f"{dir}/", f"xet://{user}/{repo}/{b1}", "add data", True, True)
+        finally:
+            shutil.rmtree(dir)
+
+    finally:
+        pyxet.BranchCLI.delete(f"xet://{user}/{repo}", b1, True)

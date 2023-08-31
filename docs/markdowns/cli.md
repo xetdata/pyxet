@@ -321,8 +321,8 @@ xet repo fork xet://xdssio/titanic xet://xdssio/titanic-fork -p
 
 *sync* will copy changed files from source to target. 
 * By default, a changed file is one that has a different size between the source and target. If `--use-mtime`
-  is provided, then a file whose size is the same is only copied if the source modification time is *later* than
-  the target's modification time. Note that this flag will make the sync significantly slower.
+  is provided, then a file whose size is the same will be copied if the modification time for the source is 
+  *later* than the target. Note that this flag makes the sync significantly slower.
 * Only non-xet sources (e.g. S3 or local filesystem) are allowed.
 * Only XetHub targets are allowed (i.e. `xet://<user>/<repo>/<branch>`).
 * All files copied will be copied under a single commit to the repo.

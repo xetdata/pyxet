@@ -135,19 +135,19 @@ def require_s3_creds():
     For example, many of the sync tests may want this.
 
     Returns a pytest mark with a skipif condition to be evaluated during
-    test collection. Will check if AWS credentials have been defined as
-    environment variables (i.e. AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).
+    test collection. Will check if boto3 is installed and whether it is
+    able to access S3.
     """
 
     def try_load_s3():
-        import boto3
-        from botocore.exceptions import NoCredentialsError, ClientError
         try:
+            import boto3
+            from botocore.exceptions import NoCredentialsError, ClientError
             s3 = boto3.client('s3')
             _ = s3.list_buckets()
             return True
-        except (NoCredentialsError, ClientError):
-            print(f'No Credentials')
+        except:
+            print(f'No Credentials or boto3')
             return False
 
     msg = "AWS credentials not defined"

@@ -4,3 +4,4 @@ joblib
 pandas
 pyarrow
 pytest
+boto3

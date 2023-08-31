@@ -316,3 +316,53 @@ $ xet repo rename xet://user/repo-name new-repo-name
 examples
 xet repo fork xet://xdssio/titanic xet://xdssio/titanic-fork -p
 ```
+
+## sync
+
+*sync* will copy changed files from source to target. 
+* By default, a changed file is one that has a different size between the source and target. If `--use-mtime`
+  is provided, then a file whose size is the same is only copied if the source modification time is *later* than
+  the target's modification time. Note that this flag will make the sync significantly slower.
+* Only non-xet sources (e.g. S3 or local filesystem) are allowed.
+* Only XetHub targets are allowed (i.e. `xet://<user>/<repo>/<branch>`).
+* All files copied will be copied under a single commit to the repo.
+* Modifying source files while a sync is happening has undefined behavior for whether those files copy. 
+
+```bash
+╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    source      TEXT  Source folder to sync [default: None] [required]                                                       │
+│ *    target      TEXT  Target location of the folder [default: None] [required]                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --use-mtime                   Use mtime as criteria for sync                                                                  │
+│ --message    -m      TEXT     A commit message                                                                                │
+│ --parallel   -p      INTEGER  Maximum amount of parallelism [default: 32]                                                     │
+│ --dryrun                      Displays the operations that would be performed without actually running them.                  │
+│ --help                        Show this message and exit.                                                                     │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### Usage
+
+```bash
+# Sync remote S3 bucket to repo
+$ xet sync s3://bucket/path/to/source xet://user/repo/branch/path/to/target
+
+# Example sync from S3
+$ xet sync s3://my-files xet://XetHub/import-test/my-files
+Checking sync
+Starting sync
+Copying my-files/data.csv to XetHub/import-test/my-files/data.csv...
+Copying my-files/data2.csv to XetHub/import-test/my-files/data2.csv...
+...
+Completed sync. Copied: 20 files, ignored: 277 files
+
+# Example sync from local
+$ xet sync . xet://XetHub/import-test/my-local-files
+Checking sync
+Starting sync
+Copying ./dir/data.csv to XetHub/import-test/my-local-files/data.csv...
+Copying ./dir/data2.csv to XetHub/import-test/my-local-files/data2.csv...
+...
+Completed sync. Copied: 53 files, ignored: 130 files
+```

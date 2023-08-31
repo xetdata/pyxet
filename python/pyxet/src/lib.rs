@@ -11,7 +11,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::Arc;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tracing::error;
+use tracing::{error, info};
 use xetblob::*;
 
 mod transactions;
@@ -634,9 +634,11 @@ impl PyWriteTransaction {
 
     async fn complete_impl(&mut self, commit: bool, cleanup_immediately: bool) -> Result<()> {
         let Some(tr) = self.pwt.take() else {
-            // This means we've called close() on the transaction, then tried to use it.
-            error!("Complete called after PyTransaction object committed");
-            return Err(anyhow!("Complete called after transaction closed."));
+            // This means either we've called close() on the transaction, then tried to use it;
+            // or all associated write files complete and close before calling close(). 
+            // Either case this should be a NOP.
+            info!("Complete called after PyTransaction object committed");
+            return Ok(())
         };
 
         {

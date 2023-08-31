@@ -1,11 +1,12 @@
-import fsspec
-from .url_parsing import parse_url
-from .file_interface import XetFile
 import sys
 import threading
-from .rpyxet import rpyxet
+
+import fsspec
+
+from .file_interface import XetFile
 
 TRANSACTION_FILE_LIMIT = 2048
+
 
 def _validate_repo_info_for_transaction(repo_info):
     if repo_info.remote == '':
@@ -16,6 +17,7 @@ def _validate_repo_info_for_transaction(repo_info):
 def repo_info_key(repo_info):
     return f"{repo_info.remote}/{repo_info.branch}"
 
+
 class MultiCommitTransaction(fsspec.transaction.Transaction):
     """
     Handles a commit using the transaction interface.
@@ -23,30 +25,29 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
     by tracking them separately. Simultaneous changes across branches
     will require multiple actual transactions to complete.
     """
+
     def __init__(self, fs, commit_message=None):
         """
         This class should not be used directly.
-        it is preferred to use fs.transaction.
+        It is preferred to use fs.transaction.
         """
-
-        self.lock = threading.Lock()
         self.commit_message = None
         self._transaction_pool = {}
         self.fs = fs
         self._set_commit_message(commit_message)
+        self.lock = threading.Lock()
 
         super().__init__(fs)
-    
+
     def set_commit_message(self, commit_message):
         """
         Sets the commit message to be used. This applies to every
-        current un-committed transaction and future transactions.
+        current uncommitted transaction and future transactions.
         If commit_message is None, a default message "Commit [current datetime]"
         is used.
         """
         with self.lock:
             self._set_commit_message(commit_message)
-
 
     def _set_commit_message(self, commit_message):
         if commit_message is None:
@@ -71,7 +72,6 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         # only commit if there was no exception
         self.complete(commit=exc_type is None)
 
-
     def get_handler_for_repo_info(self, repo_info):
         with self.lock:
             key = repo_info_key(repo_info)
@@ -88,11 +88,10 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
 
             return tr.create_access_token()
 
-
     def open_for_write(self, repo_info):
         """
-        Opens a file for write. `repo_info` is the result of 
-        `pyxet.parse_url(url)`
+        Opens a file for writing.
+        `repo_info` is the result of `pyxet.parse_url(url)`
         """
         handler = self.get_handler_for_repo_info(repo_info)
         return XetFile(handler.open_for_write(repo_info.path), handler)
@@ -184,4 +183,4 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
             copies.extend(v.copies)
             moves.extend(v.moves)
 
-        return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves':moves}
+        return {'deletes': deletes, 'new_files': new_files, 'copies': copies, 'moves': moves}

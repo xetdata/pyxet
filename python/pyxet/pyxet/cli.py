@@ -152,7 +152,7 @@ def _path_split(fs, path):
         return os.path.split(path)
     else:
         return path.rsplit('/', 1)
-        
+
 def _path_join(fs, path, *paths):
     if fs.protocol == 'file':
         return os.path.join(path, *paths)

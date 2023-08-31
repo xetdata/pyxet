@@ -1,5 +1,4 @@
 import io
-from copy import deepcopy
 
 
 class XetFile:

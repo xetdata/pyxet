@@ -1,20 +1,9 @@
 import os
 
 import pyxet
-from pyxet.sync import _join_to_absolute, _get_normalized_fs_protocol_and_path, SyncCommand
+from pyxet.sync import _get_normalized_fs_protocol_and_path, SyncCommand
 
 from utils import CONSTANTS, require_s3_creds
-
-
-def test_join_to_absolute():
-    def validate(root, rel, expected):
-        full_path = _join_to_absolute(root, rel)
-        assert full_path == expected
-
-    validate('/', 'foo/bar.txt', '/foo/bar.txt')
-    validate('/', '', '/')
-    validate('/some/root', 'foo/bar.txt', '/some/root/foo/bar.txt')
-    validate('/some/root', '', '/some/root/')
 
 
 def test_get_normalized_fs_protocol_and_path(monkeypatch):

@@ -8,13 +8,15 @@ import typer
 from tabulate import tabulate
 from typing_extensions import Annotated
 
+from . import util
 from .file_system import XetFS
-from .rpyxet import rpyxet
 from .sync import SyncCommand
 from .url_parsing import parse_url
-from .util import CHUNK_SIZE, _get_fs_and_path, _root_copy
+from .util import _root_copy, _get_fs_and_path, CHUNK_SIZE
 from .version import __version__
-import pyxet.util as util
+
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
 
 cli = typer.Typer(add_completion=True, short_help="a pyxet command line interface", no_args_is_help=True)
 repo = typer.Typer(add_completion=False, short_help="sub-commands to manage repositories")
@@ -400,6 +402,7 @@ class RepoCLI:
     def make(name: Annotated[str, typer.Argument(help="Repository name in format xet://[user]/[repo]")],
              private: Annotated[bool, typer.Option('--private', help="Make repository private")] = False,
              public: Annotated[bool, typer.Option('--public', help="Make repository public")] = False,
+             raw: Annotated[bool, typer.Option('--raw', help="Raw output")] = False,
              ):
         """
         make a new empty repository. Either --private or --public must be set
@@ -408,12 +411,20 @@ class RepoCLI:
             print("Either --private or --public must be set")
             return
         fs = XetFS()
-        ret = fs.make_repo(name)
-        if private:
-            print("Creation successful. Changing permissions...")
-            fs.set_repo_attr(name, "private", True)
-            print("Repo permissions set successfully")
-        print(ret)
+        ret = fs.make_repo(name, private=private)
+        if raw:
+            print(ret)
+        else:
+            htmlurl = ret['html_url']
+            domain_split = htmlurl.split('://')[1]
+            path_split = domain_split.split('/')[1:]
+            path_split = '/'.join(path_split)
+            xet_path = f'xet://{path_split}'
+            if public:
+                print(f"Public repository created at {xet_path}")
+            elif private:
+                print(f"Private repository created at {xet_path}")
+        return ret
 
     @staticmethod
     @repo.command()

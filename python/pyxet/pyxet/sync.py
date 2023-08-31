@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 
-from pyxet.util import _ltrim_match, _get_fs_and_path, _single_file_copy, _isdir
+from pyxet.util import _get_fs_and_path, _single_file_copy, _isdir, _rel_path, _path_join
 
 XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -96,8 +96,8 @@ class SyncCommand:
         except RuntimeError:
             dest_files = {}
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
-            rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
-            dest_for_this_path = _join_to_absolute(dest_path, rel_path)
+            relpath = _rel_path(abs_path, src_path)
+            dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             dest_info = dest_files.get(dest_for_this_path)
 
             partial_func = partial(self._sync_file_task, abs_path, src_info, dest_for_this_path, dest_info)
@@ -109,8 +109,8 @@ class SyncCommand:
         found in the source. This is much slower than
         """
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
-            rel_path = _ltrim_match(abs_path, src_path).lstrip('/')
-            dest_for_this_path = _join_to_absolute(dest_path, rel_path)
+            relpath = _rel_path(abs_path, src_path)
+            dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             if src_info['type'] != 'directory':
                 partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
                 futures.append(executor.submit(partial_func))
@@ -143,11 +143,6 @@ class SyncCommand:
             return True
         # ignored
         return False
-
-
-def _join_to_absolute(root, rel_path):
-    return f"/{rel_path}" if root == '/' \
-        else f"{root}/{rel_path}"
 
 
 def _get_normalized_fs_protocol_and_path(uri):

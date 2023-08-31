@@ -3,13 +3,15 @@ import sys
 from urllib.parse import urlparse
 
 import fsspec
+import os
 
 from .commit_transaction import MultiCommitTransaction
 from .file_interface import XetFile
-from .rpyxet import rpyxet
 from .url_parsing import parse_url, XetPathInfo
 
-_manager = rpyxet.PyRepoManager()
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
+    _manager = rpyxet.PyRepoManager()
 
 
 def login(user, token, email=None, host=None):
@@ -22,11 +24,9 @@ def login(user, token, email=None, host=None):
 def open(file_url, mode="rb", **kwargs):
     """
     Open the file at the specific Xet file URL
-    of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`.
+    of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`::
 
-    ```
-    f = pyxet.open('xet://XetHub/Flickr30k/main/results.csv')
-    ```
+        f = pyxet.open('xet://XetHub/Flickr30k/main/results.csv')
     """
 
     fs = XetFS()
@@ -49,22 +49,20 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         User and token are needed for private repositories and they
         can be set with `pyxet.login`.
 
-        Examples:
-        ```
-        import pyxet
-        fs = pyxet.XetFS()
+        Examples::
+        
+            import pyxet
+            fs = pyxet.XetFS()
 
-        # List files.
-        fs.ls('XetHub/Flickr30k/main')
+            # List files.
+            fs.ls('XetHub/Flickr30k/main')
 
-        # Read the first 5 lines of a file
-        b = fs.open('XetHub/Flickr30k/main/results.csv').read()
-        ```
+            # Read the first 5 lines of a file
+            b = fs.open('XetHub/Flickr30k/main/results.csv').read()
 
         the Xet repository endpoint can be set with the 'domain' argument
         or the XET_ENDPOINT environment variable. The default domain is
         xethub.com if unspecified
-
         """
         import os
         if 'XET_ENDPOINT' in os.environ:
@@ -128,6 +126,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             return False
 
     def branch_info(self, url):
+        """
+        Returns information about a branch `user/repo/branch` 
+        or `xet://user/repo/branch`
+        """
         # try to parse this as a URL
         # and if not try to parse it as a path
         if isinstance(url, XetPathInfo):
@@ -159,8 +161,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             return False
 
     def info(self, url):
-        # try to parse this as a URL
-        # and if not try to parse it as a path
+        """
+        Returns information about a path `user/repo/branch/[path]` 
+        or `xet://user/repo/branch/[path]`
+        """
         url_path = parse_url(url, self.domain)
         if url_path.branch == '':
             raise ValueError("Incomplete path: Expecting xet://user/repo/branch/[path]")
@@ -179,7 +183,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                 "type": attr.ftype,
                 "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
 
-    def make_repo(self, dest_path, **kwargs):
+    def make_repo(self, dest_path, private=False, **kwargs):
         dest = parse_url(dest_path, self.domain)
         if dest.path != '':
             raise ValueError("Expecting xet://user/repo for destination")
@@ -198,7 +202,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         assert (len(split) == 2)
         owner, repo = split[0], split[1]
 
-        query = json.dumps({'name': repo, 'owner': owner})
+        query = json.dumps({'name': repo, 'owner': owner, 'private': private})
         ret = json.loads(bytes(_manager.api_query(f"{scheme}://{domain}", "", "post", query)))
         return ret
 
@@ -295,6 +299,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         return ret
 
     def list_repos(self, raw=False, **kwargs):
+        """
+        Lists the repos available for a path of the form `user` or `xet://user`
+        """
         domain = self.domain
         domain_split = domain.split('://')
         scheme = 'https'
@@ -310,6 +317,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                      'permissions': f['permissions']} for f in res]
 
     def list_branches(self, path, raw=False, **kwargs):
+        """
+        Lists the branches for a path of the form `user/repo` or `xet://user/repo`
+        """
         url_path = parse_url(path, self.domain)
         if url_path.remote == '':
             raise ValueError("Incomplete path: Expecting xet://user/repo")
@@ -330,29 +340,32 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         The specific keys, or perhaps a FileInfo class, or similar, is TBD,
         but must be consistent across implementations.
         Must include:
+
         - full path to the entry (without protocol)
         - size of the entry, in bytes. If the value cannot be determined, will
           be ``None``.
         - type of entry, "file", "directory" or other
+
         Additional information
         may be present, appropriate to the file-system, e.g., generation,
         checksum, etc.
         May use refresh=True|False to allow use of self._ls_from_cache to
         common where listing may be expensive.
-        Parameters
-        ----------
-        path: str
-        detail: bool
-            if True, gives a list of dictionaries, where each is the same as
-            the result of ``info(path)``. If False, gives a list of paths
-            (str).
-        kwargs: may have additional backend-specific options, such as version
-            information
-        Returns
-        -------
-        List of strings if detail is False, or list of directory information
-        dicts if detail is True.  These dicts would have: name (full path in the FS), 
-        size (in bytes), type (file, directory, or something else) and other FS-specific keys.
+
+        Parameters:
+
+            path: str
+            detail: bool
+                if True, gives a list of dictionaries, where each is the same as
+                the result of ``info(path)``. If False, gives a list of paths
+                (str).
+            kwargs: may have additional backend-specific options, such as version
+                information
+
+        Returns:
+            List of strings if detail is False, or list of directory information
+            dicts if detail is True.  These dicts would have: name (full path in the FS), 
+            size (in bytes), type (file, directory, or something else) and other FS-specific keys.
         """
         # list user names
         if path == '':
@@ -509,7 +522,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
     def delete_branch(self, repo, branch_name):
         """
-        Creates a branch in a repo
+        deletes a branch in a repo
         """
         if not self.is_repo(repo):
             raise ValueError(f"{repo} is not a repository")
@@ -617,14 +630,15 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         Begin a transaction context for a given repository and branch.
         The entire transaction is committed atomically at the end of the 
-        transaction. All writes must be performed into this branch.
+        transaction. All writes must be performed into this branch::
 
-        ```
-        with fs.transaction as tr:
-            tr.set_commit_message("message")
-            file = fs.open('user/repo/main/hello.txt','w')
-            file.write('hello world')
-            file.close()
+            with fs.transaction as tr:
+                tr.set_commit_message("message")
+                file = fs.open('user/repo/main/hello.txt','w')
+                file.write('hello world')
+                file.close()
+
+        The transaction object is an instance of the :class:`MultiCommitTransaction`
         """
         if self._transaction is None:
             self._transaction = MultiCommitTransaction(self)
@@ -645,14 +659,15 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         transaction. All writes must be performed into this branch
 
         repo_and_branch is of the form
-        'user/repo/branch' or 'xet://user/repo/branch'
-        ```
-        fs.start_transaction('my commit message')
-        file = fs.open('user/repo/main/hello.txt','w')
-        file.write('hello world')
-        file.close()
-        fs.end_transaction()
-        ```
+        `user/repo/branch` or `xet://user/repo/branch`::
+
+            fs.start_transaction('my commit message')
+            file = fs.open('user/repo/main/hello.txt','w')
+            file.write('hello world')
+            file.close()
+            fs.end_transaction()
+
+        The transaction object is an instance of the :class:`MultiCommitTransaction`
         """
         tr = self.transaction
         tr.start()
@@ -664,19 +679,23 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         self._transaction.complete(False)
 
     def end_transaction(self):
-        """Finish write transaction, non-context version"""
+        """Finish write transaction, non-context version. See :func:`start_transaction`"""
         self._transaction.complete()
 
     def mkdir(path, *args, **kwargs):
+        """Noop. Empty directories cannot be created"""
         pass
 
     def mkdirs(path, *args, **kwargs):
+        """Noop. Empty directories cannot be created"""
         pass
 
     def makedir(path, *args, **kwargs):
+        """Noop. Empty directories cannot be created"""
         pass
 
     def makedirs(path, *args, **kwargs):
+        """Noop. Empty directories cannot be created"""
         pass
 
 

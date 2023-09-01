@@ -264,7 +264,7 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     _single_file_copy(src_fs, src_path, dest_fs, dest_path)
 
 
-def _root_copy(source, destination, message, recursive=False):
+def _root_copy(source, destination, message, recursive=False, do_not_commit=False):
     dest_fs, dest_path = _get_fs_and_path(destination)
     destproto_is_xet = dest_fs.protocol == 'xet'
     dest_isdir = _isdir(dest_fs, dest_path)
@@ -283,7 +283,9 @@ def _root_copy(source, destination, message, recursive=False):
         destination += final_source_component
 
     if destproto_is_xet:
-        dest_fs.start_transaction(message)
+        tr = dest_fs.start_transaction(message)
+        if do_not_commit:
+            tr._set_do_not_commit()
     _copy(source, destination, recursive)
     if destproto_is_xet:
         dest_fs.end_transaction()

@@ -94,7 +94,7 @@ def test_fake_write_model_pickle():
     with fs.transaction:
         fs.set_commit_message("upload pickle model")
         pickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
-        fs.transaction._set_do_not_commit(True)
+        fs.transaction._set_do_not_commit()
         clist = fs.transaction.get_change_list()
         assert (len(clist['new_files']) == 1)
         assert (len(clist['deletes']) == 0)
@@ -111,7 +111,7 @@ def test_fake_write_model_cloudpickle():
     with fs.transaction:
         fs.set_commit_message("upload cloudpickle model")
         cloudpickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
-        fs.transaction._set_do_not_commit(True)
+        fs.transaction._set_do_not_commit()
         clist = fs.transaction.get_change_list()
         assert (len(clist['new_files']) == 1)
         assert (len(clist['deletes']) == 0)
@@ -126,7 +126,7 @@ def test_fake_write_model_cloudpickle_with_explicit_transaction():
     file_path = CONSTANTS.TESTING_TEMPREPO + '/a/b/model_cloud2.pickle'
     fs.start_transaction("upload pickle model")
     cloudpickle.dump(model, fs.open(file_path, 'wb')._fake_writes())
-    fs.transaction._set_do_not_commit(True)
+    fs.transaction._set_do_not_commit()
     clist = fs.transaction.get_change_list()
     assert (len(clist['new_files']) == 1)
     assert (len(clist['deletes']) == 0)
@@ -142,7 +142,7 @@ def test_fake_write_with_errors():
     f = fs.open(CONSTANTS.TESTING_TEMPREPO + "/test_data.dat", "w")
     f.write("hello")
     f.close()
-    fs._transaction._set_error_on_commit(True)
+    fs._transaction._set_error_on_commit()
     with pytest.raises(RuntimeError):
         fs.end_transaction()
     assert (fs.intrans is False)
@@ -156,7 +156,7 @@ def test_failed_transaction_in_scope():
             f = fs.open(CONSTANTS.TESTING_TEMPREPO + "/test_data.dat", "w")
             f.write("hello")
             f.close()
-            fs._transaction._set_error_on_commit(True)
+            fs._transaction._set_error_on_commit()
     assert (fs.intrans is False)
 
 
@@ -164,7 +164,7 @@ def test_recursive_transaction():
     fs = pyxet.XetFS()
     pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
     with fs.transaction:
-        fs._transaction._set_do_not_commit(True)
+        fs._transaction._set_do_not_commit()
         with pytest.raises(RuntimeError):
             with fs.transaction:
                 # this is not ok
@@ -178,7 +178,7 @@ def test_copy():
     with fs.transaction:
         fs.copy(f"{prefix}/main/test_data.dat", f"{prefix}/main/blah3")
         fs.copy(f"{prefix}/main/test_data.dat", f"{prefix}/branch/blah3")
-        fs._transaction._set_do_not_commit(True)
+        fs._transaction._set_do_not_commit()
         clist = fs.transaction.get_change_list()
         assert (len(clist['new_files']) == 0)
         assert (len(clist['deletes']) == 0)
@@ -193,7 +193,7 @@ def test_delete():
     with fs.transaction:
         fs.rm(f"{prefix}/main/blah")
         fs.rm(f"{prefix}/branch/blah")
-        fs._transaction._set_do_not_commit(True)
+        fs._transaction._set_do_not_commit()
         clist = fs.transaction.get_change_list()
         assert (len(clist['new_files']) == 0)
         assert (len(clist['deletes']) == 2)

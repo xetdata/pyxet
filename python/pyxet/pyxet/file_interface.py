@@ -21,11 +21,11 @@ class XetFile:
         return self.handle.is_closed()
 
     def close(self):
+        if self.write_transaction:
+            self.write_transaction.close()
+            self.write_transaction = None
         if not self.closed:
-            ret = self.handle.close()
-            if self.write_transaction is not None:
-                self.write_transaction.finish_write_one()
-            return ret
+            return self.handle.close()
 
     def isatty(self):
         return False
@@ -111,8 +111,7 @@ class XetFile:
         self.handle.write(data)
 
     def __del__(self):
-        if not self.closed:
-            self.close()
+        self.close()
 
     def __enter__(self):
         return self

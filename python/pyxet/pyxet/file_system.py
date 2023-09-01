@@ -1,6 +1,7 @@
 import json
 import sys
 from urllib.parse import urlparse
+from enum import Enum
 
 import fsspec
 import os
@@ -13,6 +14,8 @@ if 'SPHINX_BUILD' not in os.environ:
     from .rpyxet import rpyxet
     _manager = rpyxet.PyRepoManager()
 
+class XetFSOpenFlags(Enum):
+    SEQUENTIAL_SCAN = 1
 
 def login(user, token, email=None, host=None):
     """
@@ -439,7 +442,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if mode.startswith('r'):
             repo_handle = _manager.get_repo(url_path.remote)
             branch = url_path.branch
-            handle = repo_handle.open_for_read(branch, url_path.path)
+            if kwargs["flags"]:
+                handle = repo_handle.open_for_read_with_flags(branch, url_path.path, kwargs["flags"])
+            else:
+                handle = repo_handle.open_for_read(branch, url_path.path)
             return XetFile(handle)
         elif mode.startswith('w'):
             return self._transaction.open_for_write(url_path)

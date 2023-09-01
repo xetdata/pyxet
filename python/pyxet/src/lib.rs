@@ -333,6 +333,10 @@ impl PyRepo {
         )
     }
 
+    pub fn open_for_read_with_flags(&self, branch: &str, path: &str, flags: u32, py: Python<'_>) -> PyResult<PyRFile> {
+
+    }
+
     pub fn begin_write_transaction(
         &self,
         branch: &str,
@@ -575,7 +579,12 @@ impl PyRFile {
             anyhow::Ok(curoff as u64)
         })
     }
-
+    pub fn get(&mut self, path: &str, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, {
+            self.reader.get(path).await?;
+            anyhow::Ok(())
+        })
+    }
     pub fn write(&mut self, _b: &PyAny, _py: Python<'_>) -> PyResult<()> {
         Err(PyRuntimeError::new_err("Readonly file"))
     }

@@ -294,7 +294,8 @@ def _root_copy(source, destination, message, recursive=False, do_not_commit=Fals
 
     if destproto_is_xet:
         tr = dest_fs.start_transaction(message)
-        tr._set_do_not_commit(do_not_commit)
+        if do_not_commit:
+            tr._set_do_not_commit()
     _copy(source, destination, recursive)
     if destproto_is_xet:
         dest_fs.end_transaction()

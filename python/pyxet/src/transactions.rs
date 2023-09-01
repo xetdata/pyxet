@@ -11,7 +11,6 @@ lazy_static! {
     // Set this to a larger number now; reduce if there are issues.
     static ref MAX_NUM_CONCURRENT_TRANSACTIONS: AtomicUsize = AtomicUsize::new(8);
 
-    /// This is an example for using doc comment attributes
     static ref TRANSACTION_LIMIT_LOCK: Arc<Semaphore> = Arc::new(Semaphore::new((*MAX_NUM_CONCURRENT_TRANSACTIONS).load(Ordering::Relaxed)));
 }
 
@@ -32,11 +31,11 @@ pub struct WriteTransaction {
     // above this.
     error_on_commit: bool,
 
-    // For tensting, things succeed but don't actually push.
+    // For testing, things succeed but don't actually push.
     do_not_commit: bool,
 
     // For testing: go through everything, but don't actually do the last bit of the commit.
-    commit_canceled: bool,
+    pub commit_canceled: bool,
 
     // The message written on success
     commit_message: String,
@@ -92,26 +91,22 @@ impl WriteTransaction {
         Ok(())
     }
 
-    pub fn set_commit_when_ready(&mut self, commit_when_ready: bool) -> Result<()> {
-        self.commit_when_ready = commit_when_ready;
-        Ok(())
+    pub fn set_commit_when_ready(&mut self) {
+        self.commit_when_ready = true;
     }
 
-    pub fn set_cancel_flag(&mut self, cancel_commit: bool) -> Result<()> {
-        self.commit_canceled = cancel_commit;
-        Ok(())
-    }
-
-    /// This is for testing
-    pub fn set_do_not_commit(&mut self, do_not_commit: bool) -> Result<()> {
-        self.do_not_commit = do_not_commit;
-        Ok(())
+    pub fn set_cancel_flag(&mut self) {
+        self.commit_canceled = true;
     }
 
     /// This is for testing
-    pub fn set_error_on_commit(&mut self, error_on_commit: bool) -> Result<()> {
-        self.error_on_commit = error_on_commit;
-        Ok(())
+    pub fn set_do_not_commit(&mut self) {
+        self.do_not_commit = true;
+    }
+
+    /// This is for testing
+    pub fn set_error_on_commit(&mut self) {
+        self.error_on_commit = true;
     }
 
     pub async fn open_for_write(&mut self, path: &str) -> Result<Arc<XetWFileObject>> {
@@ -145,10 +140,6 @@ impl WriteTransaction {
                 "transaction_size called after transaction completed."
             ))
         }
-    }
-
-    pub fn commit_canceled(&self) -> bool {
-        self.commit_canceled
     }
 
     pub async fn delete(&mut self, path: &str) -> Result<()> {

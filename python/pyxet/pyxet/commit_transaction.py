@@ -152,7 +152,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         handler = self.get_handler_for_repo_info(repo_info)
         handler.delete(repo_info.path)
 
-    def _set_do_not_commit(self, flag):
+    def _set_do_not_commit(self):
         """
         Internal method for testing purposes.
         Flags all active transactions to not attempt to push
@@ -160,9 +160,9 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         """
         with self.lock:
             for v in self._transaction_pool.values():
-                v.set_do_not_commit(flag)
+                v.set_do_not_commit()
 
-    def _set_error_on_commit(self, flag):
+    def _set_error_on_commit(self):
         """
         Internal method for testing purposes.
         Flags all active transactions to not attempt to push
@@ -170,7 +170,7 @@ class MultiCommitTransaction(fsspec.transaction.Transaction):
         """
         with self.lock:
             for v in self._transaction_pool.values():
-                v.set_error_on_commit(flag)
+                v.set_error_on_commit()
 
     def get_change_list(self):
         deletes = []

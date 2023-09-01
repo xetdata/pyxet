@@ -50,6 +50,7 @@ fn anyhow_to_runtime_error(e: anyhow::Error) -> PyErr {
     PyRuntimeError::new_err(format!("{e:?}"))
 }
 
+// This macro will release the GIL when called.
 macro_rules! rust_async {
     ($py:ident, $xp:expr) => {{
         let mut res = Option::<Result<_, _>>::None;
@@ -645,9 +646,9 @@ impl PyWriteTransaction {
             let mut trw = tr.write().await;
 
             if commit {
-                trw.set_commit_when_ready(true)?;
+                trw.set_commit_when_ready();
             } else {
-                trw.set_cancel_flag(true)?;
+                trw.set_cancel_flag();
             }
 
             if cleanup_immediately {
@@ -716,26 +717,26 @@ impl PyWriteTransaction {
         )
     }
 
-    pub fn set_cancel_flag(&self, do_not_commit: bool, py: Python<'_>) -> PyResult<()> {
+    pub fn set_cancel_flag(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
-            (self.access_inner()?.write().await).set_cancel_flag(do_not_commit)
+            anyhow::Ok(self.access_inner()?.write().await.set_cancel_flag())
         )
     }
 
     /// This is for testing
-    pub fn set_do_not_commit(&self, do_not_commit: bool, py: Python<'_>) -> PyResult<()> {
+    pub fn set_do_not_commit(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
-            (self.access_inner()?.write().await).set_do_not_commit(do_not_commit)
+            anyhow::Ok(self.access_inner()?.write().await.set_do_not_commit())
         )
     }
 
     /// This is for testing
-    pub fn set_error_on_commit(&self, error_on_commit: bool, py: Python<'_>) -> PyResult<()> {
+    pub fn set_error_on_commit(&self, py: Python<'_>) -> PyResult<()> {
         rust_async!(
             py,
-            (self.access_inner()?.write().await).set_error_on_commit(error_on_commit)
+            anyhow::Ok(self.access_inner()?.write().await.set_error_on_commit())
         )
     }
 
@@ -928,7 +929,7 @@ impl PyWFile {
                 .transaction_write_handle
                 .access_transaction_for_read()
                 .await?
-                .commit_canceled()
+                .commit_canceled
             {
                 return Err(anyhow!("Write terminated as transaction was canceled."));
             }

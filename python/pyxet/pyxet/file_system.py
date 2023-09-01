@@ -1,7 +1,7 @@
 import json
 import sys
 from urllib.parse import urlparse
-from enum import Enum
+from enum import IntEnum
 
 import fsspec
 import os
@@ -32,7 +32,7 @@ def open(file_url, mode="rb", **kwargs):
     fs = XetFS()
     return fs._open(file_url, mode=mode, **kwargs)
 
-class XetFSOpenFlags(Enum):
+class XetFSOpenFlags(IntEnum):
     FILE_FLAG_NO_BUFFERING = 0x20000000
 
 class XetFS(fsspec.spec.AbstractFileSystem):

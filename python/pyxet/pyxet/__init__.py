@@ -1,4 +1,4 @@
-from .file_system import open, login, XetFS
+from .file_system import open, login, XetFS, XetFSOpenFlags
 from .version import __version__
 from .cli import PyxetCLI, BranchCLI, RepoCLI
 from .commit_transaction import MultiCommitTransaction

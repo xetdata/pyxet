@@ -329,12 +329,15 @@ impl PyRepo {
     pub fn open_for_read(&self, branch: &str, path: &str, py: Python<'_>) -> PyResult<PyRFile> {
         rust_async!(
             py,
-            PyRFile::new(self.repo.open_for_read(branch, path).await?)
+            PyRFile::new(self.repo.open_for_read(branch, path, None).await?)
         )
     }
 
     pub fn open_for_read_with_flags(&self, branch: &str, path: &str, flags: u32, py: Python<'_>) -> PyResult<PyRFile> {
-
+        rust_async!(
+            py,
+            PyRFile::new(self.repo.open_for_read(branch, path, Some(flags)).await?)
+        )
     }
 
     pub fn begin_write_transaction(

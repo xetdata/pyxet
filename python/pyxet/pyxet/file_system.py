@@ -1,6 +1,7 @@
 import json
 import sys
 from urllib.parse import urlparse
+from enum import Enum
 
 import fsspec
 import os
@@ -12,7 +13,6 @@ from .url_parsing import parse_url, XetPathInfo
 if 'SPHINX_BUILD' not in os.environ:
     from .rpyxet import rpyxet
     _manager = rpyxet.PyRepoManager()
-
 
 def login(user, token, email=None, host=None):
     """
@@ -32,6 +32,8 @@ def open(file_url, mode="rb", **kwargs):
     fs = XetFS()
     return fs._open(file_url, mode=mode, **kwargs)
 
+class XetFSOpenFlags(Enum):
+    FILE_FLAG_NO_BUFFERING = 0x20000000
 
 class XetFS(fsspec.spec.AbstractFileSystem):
     protocol = "xet"  # This allows pandas, etc. to implement "xet://"
@@ -439,7 +441,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if mode.startswith('r'):
             repo_handle = _manager.get_repo(url_path.remote)
             branch = url_path.branch
-            handle = repo_handle.open_for_read(branch, url_path.path)
+            if "flags" in kwargs:
+                handle = repo_handle.open_for_read_with_flags(branch, url_path.path, kwargs["flags"])
+            else:
+                handle = repo_handle.open_for_read(branch, url_path.path)
             return XetFile(handle)
         elif mode.startswith('w'):
             return self._transaction.open_for_write(url_path)

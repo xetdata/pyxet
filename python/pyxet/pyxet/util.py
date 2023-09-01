@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import fsspec
 
-from . import XetFS
+from . import XetFS, XetFSOpenFlags
 from .url_parsing import parse_url
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
@@ -75,14 +75,19 @@ def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
                 if size_hint is not None and size_hint >= 50000000:
                     dest_fs.add_deduplication_hints(dest_path)
 
-            with src_fs.open(src_path, "rb") as source_file:
-                with dest_fs.open(dest_path, "wb", auto_mkdir=True) as dest_file:
-                    # Buffered copy in chunks
-                    while True:
-                        chunk = source_file.read(buffer_size)
-                        if not chunk:
-                            break
-                        dest_file.write(chunk)
+            # Fasttrack for downloading a file to local
+            if src_fs.protocol == "xet" and dest_fs.protocol == "file":
+                with src_fs.open(src_path, "rb", {"flags": XetFSOpenFlags.FILE_FLAG_NO_BUFFERING}) as source_file:
+                    source_file.get(dest_path)
+            else:
+                with src_fs.open(src_path, "rb") as source_file:
+                    with dest_fs.open(dest_path, "wb", auto_mkdir=True) as dest_file:
+                        # Buffered copy in chunks
+                        while True:
+                            chunk = source_file.read(buffer_size)
+                            if not chunk:
+                                break
+                            dest_file.write(chunk)
         except Exception as e:
             proto = src_fs.protocol
             print(f"Failed to copy {proto}://{src_path}: {e}")

@@ -329,7 +329,14 @@ impl PyRepo {
     pub fn open_for_read(&self, branch: &str, path: &str, py: Python<'_>) -> PyResult<PyRFile> {
         rust_async!(
             py,
-            PyRFile::new(self.repo.open_for_read(branch, path).await?)
+            PyRFile::new(self.repo.open_for_read(branch, path, None).await?)
+        )
+    }
+
+    pub fn open_for_read_with_flags(&self, branch: &str, path: &str, flags: u32, py: Python<'_>) -> PyResult<PyRFile> {
+        rust_async!(
+            py,
+            PyRFile::new(self.repo.open_for_read(branch, path, Some(flags)).await?)
         )
     }
 
@@ -575,7 +582,12 @@ impl PyRFile {
             anyhow::Ok(curoff as u64)
         })
     }
-
+    pub fn get(&mut self, path: &str, py: Python<'_>) -> PyResult<()> {
+        rust_async!(py, {
+            self.reader.get(path).await?;
+            anyhow::Ok(())
+        })
+    }
     pub fn write(&mut self, _b: &PyAny, _py: Python<'_>) -> PyResult<()> {
         Err(PyRuntimeError::new_err("Readonly file"))
     }

@@ -2,6 +2,9 @@ name: commit
 on: push
 jobs:
   build_and_test:
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_SECRET_KEY }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]

@@ -5,6 +5,8 @@ import utils
 import shutil
 import tempfile
 
+from pyxet.util import _root_copy
+
 
 def test_single_file_upload():
     user = utils.test_account_login()
@@ -312,7 +314,7 @@ def test_directory_recursive_noslash_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        pyxet.cli._root_copy(src, dest, "add data", r)
+                        _root_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)

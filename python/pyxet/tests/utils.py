@@ -129,6 +129,31 @@ def assert_remote_files_not_exist(remote, not_expected):
         assert i.removeprefix("xet://") not in listing
 
 
+def require_s3_creds():
+    """
+    Function to help mark any tests that need credentials to S3 to work.
+    For example, many of the sync tests may want this.
+
+    Returns a pytest mark with a skipif condition to be evaluated during
+    test collection. Will check if boto3 is installed and whether it is
+    able to access S3.
+    """
+
+    def try_load_s3():
+        try:
+            import boto3
+            from botocore.exceptions import NoCredentialsError, ClientError
+            s3 = boto3.client('s3')
+            _ = s3.list_buckets()
+            return True
+        except:
+            print(f'No Credentials or boto3')
+            return False
+
+    msg = "AWS credentials not defined"
+    return pytest.mark.skipif(not try_load_s3(), reason=msg)
+
+
 class CONSTANTS:
     TITANIC_CSV = "xet://xdssio/titanic/main/titanic.csv"
     TITANIC_XET_CSV = "xet://xdssio/titanic/main/titanic.csv"
@@ -140,4 +165,6 @@ class CONSTANTS:
     TESTING_TOKEN = "q8HnHwaw6hw3zhJNuUjAnw"
     TESTING_TEMPREPO_ROOT = "_xethub_testing_account/read_write_testing"
     TESTING_TEMPREPO = "_xethub_testing_account/read_write_testing/main"
+    TESTING_SYNCREPO = f"{TESTING_USERNAME}/sync_test"
     FLICKR_CSV = "xet://XetHub/Flickr30k/main/results.csv"
+    S3_BUCKET = "pyxet-test"

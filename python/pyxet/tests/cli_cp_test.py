@@ -183,7 +183,6 @@ def test_glob_recursive_upload():
     finally:
         pyxet.BranchCLI.delete(f"xet://{user}/{repo}", b1, True)
     
-@pytest.mark.skip(reason="fix in a future PR")
 def test_directory_nonrecursive_upload():
     user = utils.test_account_login()
     repo = utils.test_repo()

@@ -12,6 +12,16 @@ from .url_parsing import parse_url
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
 
+class CopyUnit:
+    """
+    A structure representing one copy operation
+    """
+
+    def __init__(self, src_path, dest_path, dest_dir_to_make, byte_size):
+        self.src_path = src_path
+        self.dest_path = dest_path
+        self.dest_dir = dest_dir_to_make
+        self.size = byte_size
 
 def _should_load_aws_credentials():
     """
@@ -36,8 +46,7 @@ def _should_load_aws_credentials():
 def _get_fs_and_path(uri):
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
-        uri = os.path.abspath(uri)
-        return fs, uri
+        return fs, _path_normalize(fs, uri)
     split = uri.split("://")
     if len(split) != 2:
         print(f"Invalid URL: {uri}", file=sys.stderr)
@@ -51,7 +60,7 @@ def _get_fs_and_path(uri):
         fs.protocol = 's3'
     else:
         fs = fsspec.filesystem(split[0])
-    return fs, split[1]
+    return fs, _path_normalize(fs, split[1])
 
 
 def _single_file_copy(src_fs, src_path, dest_fs, dest_path,
@@ -150,7 +159,8 @@ def _path_join(fs, path, *paths):
     if fs.protocol == 'file':
         return os.path.join(path, *paths)
     else:
-        return '/'.join([path] + list(map(lambda p: p.strip('/'), paths)))
+        #return '/'.join([path] + list(map(lambda p: p.strip('/'), paths)))
+        return '/'.join([path] + [p.strip('/') for p in paths if len(p) != 0])
 
 
 def _path_dirname(fs, path):
@@ -158,7 +168,132 @@ def _path_dirname(fs, path):
         return os.path.dirname(path)
     else:
         return '/'.join(path.split('/')[:-1])
+    
+def _path_normalize(fs, path):
+    if fs.protocol == 'file':
+        return os.path.abspath(path)
+    elif path != '/':
+        return path.rstrip('/')
+    else:
+        return path
 
+def _parse_and_sanitize_src_and_dest_path(source, destination):
+    src_fs, src_path = _get_fs_and_path(source)
+    dest_fs, dest_path = _get_fs_and_path(destination)
+
+    dest_isdir = _isdir(dest_fs, dest_path)
+    # Our target is an existing directory and src is not a wildcard copy
+    # i.e. we are getting cp src/some/path to dest/some/where
+    # but dest/some/where exists as a directory
+    # So we will need to make the dest dest/some/where/path
+    if dest_isdir and '*' not in src_path:
+        # Split up the final component from source path and add it
+        # to the destination.
+        # We get final component from 'source' instead of the 
+        # normalized 'src_path' because if 'source' ends with 
+        # '/' or '\', the desired behavior is to copy what's 
+        # under that directory, and to skip 'source' itself.
+        _, final_source_component = _path_split(src_fs, source)
+        print(f"++ {final_source_component}, {dest_path}")
+        dest_path = _path_join(dest_fs, dest_path, final_source_component)
+        print(f"+++ {dest_path}")
+    return src_fs, src_path, dest_fs, dest_path
+
+def _build_src_and_dest_list(source, destination, recursive=False, _src_fs=None, _dest_fs=None):
+    src_fs, src_path, dest_fs, dest_path = _parse_and_sanitize_src_and_dest_path(source, destination)
+    
+    if _src_fs is not None:
+        src_fs = _src_fs
+    if _dest_fs is not None:
+        dest_fs = _dest_fs
+    srcproto = src_fs.protocol
+    destproto = dest_fs.protocol
+
+    _validate_xet_copy(src_fs, src_path, dest_fs, dest_path)
+    
+    cplist = []
+
+    # Handling wildcard cases
+    if '*' in src_path:
+        # validate
+        # we only accept globs of the for blah/blah/blah/[glob]
+        # i.e. the glob is only in the last component
+        # src_root_dir should be blah/blah/blah here
+        src_root_dir, _ = _path_split(src_fs, src_path)
+        if '*' in src_root_dir:
+            raise ValueError(f"Invalid glob {source}. Wildcards can only appear in the last position")
+        # The source path contains a wildcard
+        for path, info in src_fs.glob(src_path, detail=True).items():
+                # Note that path is a full path
+                # we need to relativize to make the destination path
+                relpath = _rel_path(path, src_root_dir)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
+                
+                if info['type'] == 'directory':
+                    _, _, subdir_cplist = _build_src_and_dest_list(
+                        f"{src_fs.protocol}://{path}",
+                        f"{dest_fs.protocol}://{dest_for_this_path}",
+                        recursive,
+                        _src_fs=src_fs,
+                        _dest_fs=dest_fs)
+                    cplist.extend(subdir_cplist)
+                else:
+                    cplist.append(CopyUnit(path, dest_for_this_path, dest_dir, info.get('size', 0)))
+                
+        return src_fs, dest_fs, cplist
+    
+    src_isdir = _isdir(src_fs, src_path)
+    if src_isdir:
+        if not recursive:
+            print(f"{src_path} is a directory (not copied).")
+            return src_fs, dest_fs, []
+        # xet cp_file can cp directories
+        if srcproto == 'xet' and destproto == 'xet':
+            print(f"Copying {src_path} to {dest_path}...")
+            dest_fs.cp_file(src_path, dest_path)
+            return src_fs, dest_fs, []
+        # Recursively find all files under src_path
+        for path, info in src_fs.find(src_path, detail=True).items():
+                # Note that path is a full path
+                # we need to relativize to make the destination path
+                relpath = _rel_path(path, src_path)
+                if src_fs.protocol == 'file' and os.sep != posixpath.sep:
+                    relpath = relpath.replace(os.sep, posixpath.sep)
+                dest_for_this_path = _path_join(dest_fs, dest_path, relpath)
+                dest_dir = _path_dirname(dest_fs, dest_for_this_path)
+                print(f"+ {dest_path}, {relpath}, {dest_for_this_path}, {dest_dir}, {info.get('size', None)}")
+                cplist.append(CopyUnit(path, dest_for_this_path, dest_dir, info.get('size', None)))
+        return src_fs, dest_fs, cplist
+    
+    # single file copy doesn't need hint size
+    cplist.append(CopyUnit(src_path, dest_path, "", 0))
+    return src_fs, dest_fs, cplist
+
+def _copy2(source, destination, recursive=False):
+    src_fs, dest_fs, cplist = _build_src_and_dest_list(source, destination, recursive)
+    # xet -> xet copy already handled
+    # directory copy with recursive=False filtered out
+    if len(cplist) == 0:
+        return
+    
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for cp in cplist:
+            dest_fs.makedirs(cp.dest_dir, exist_ok=True)
+            futures.append(
+                executor.submit(
+                    _single_file_copy, 
+                    src_fs, 
+                    cp.src_path, 
+                    dest_fs, 
+                    cp.dest_path, 
+                    size_hint=cp.size
+                ))
+        for future in futures:
+            future.result()
 
 def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
     src_fs, src_path = _get_fs_and_path(source)
@@ -272,25 +407,11 @@ def _copy(source, destination, recursive=True, _src_fs=None, _dest_fs=None):
 def _root_copy(source, destination, message, recursive=False, do_not_commit=False):
     dest_fs, dest_path = _get_fs_and_path(destination)
     destproto_is_xet = dest_fs.protocol == 'xet'
-    dest_isdir = _isdir(dest_fs, dest_path)
-
-    # Our target is an existing directory and src is not a wildcard copy
-    # i.e. we are getting cp src/some/path to dest/some/where
-    # but dest/some/where exists as a directory
-    # So we will need to make the dest dest/some/where/path
-    if dest_isdir and '*' not in source:
-        # split up the final component from source path and add it
-        # to the destination
-        src_fs, _ = _get_fs_and_path(source)
-        _, final_source_component = _path_split(src_fs, source)
-        if not destination.endswith('/'):
-            destination += '/'
-        destination += final_source_component
-
+    
     if destproto_is_xet:
         tr = dest_fs.start_transaction(message)
         if do_not_commit:
             tr._set_do_not_commit()
-    _copy(source, destination, recursive)
+    _copy2(source, destination, recursive)
     if destproto_is_xet:
         dest_fs.end_transaction()

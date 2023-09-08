@@ -5,7 +5,7 @@ import utils
 import shutil
 import tempfile
 
-from pyxet.util import _root_copy
+from pyxet.util import _root_copy, _build_src_and_dest_list
 
 
 def test_single_file_upload():
@@ -345,3 +345,21 @@ def test_large_batch_upload():
 
     finally:
         pyxet.BranchCLI.delete(f"xet://{user}/{repo}", b1, True)
+
+def test_size_hint():
+    user = utils.test_account_login()
+    repo = utils.test_repo()
+
+    try:
+        # generate a large batch of random files in a temp dir
+        dir = tempfile.mkdtemp()
+        local_files = [f"{dir}/data0", f"{dir}/data1"]
+        utils.random_binary_files(local_files, [1024, 1024])
+
+        _, _, cplist = _build_src_and_dest_list(f"{dir}/*", f"xet://{user}/{repo}/main")
+        assert len(cplist) > 0
+        for cp in cplist:
+            assert cp.size == 1024
+
+    finally:
+        shutil.rmtree(dir)

@@ -23,8 +23,8 @@ def test_fsspec():
 
     listing = fs.glob(CONSTANTS.TITANIC_MAIN + '/data/')
     print(listing)
-    assert len(listing) == 2
-    assert listing == ['xdssio/titanic/main/data/titanic_0.parquet', 'xdssio/titanic/main/data/titanic_1.parquet']
+    assert len(listing) == 1
+    assert listing == ['xdssio/titanic/main/data/']
 
     listing = fs.glob(CONSTANTS.TITANIC_MAIN + '/data/*')
     print(listing)
@@ -48,8 +48,8 @@ def test_fsspec():
 
     listing = fs.glob(CONSTANTS.TITANIC_MAIN + '/**/*parquet')
     print(listing)
-    assert len(listing) == 2
-    assert listing == ['xdssio/titanic/main/data/titanic_0.parquet', 'xdssio/titanic/main/data/titanic_1.parquet']
+    assert len(listing) == 3
+    assert listing == ['xdssio/titanic/main/data/titanic_0.parquet', 'xdssio/titanic/main/data/titanic_1.parquet', 'xdssio/titanic/main/titanic.parquet']
 
     listing = fs.glob(CONSTANTS.TITANIC_MAIN + '/titanic*')
     print(listing)

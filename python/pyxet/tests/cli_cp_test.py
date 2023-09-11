@@ -354,12 +354,12 @@ def test_size_hint():
         # generate a large batch of random files in a temp dir
         dir = tempfile.mkdtemp()
         local_files = [f"{dir}/data0", f"{dir}/data1"]
-        utils.random_binary_files(local_files, [1024, 1024])
+        utils.random_binary_files(local_files, [262, 471])
 
         _, _, cplist = _build_src_and_dest_list(f"{dir}/*", f"xet://{user}/{repo}/main")
-        assert len(cplist) > 0
-        for cp in cplist:
-            assert cp.size == 1024
+        assert len(cplist) == 2
+        assert cplist[0].size == 262
+        assert cplist[1].size == 471
 
     finally:
         shutil.rmtree(dir)

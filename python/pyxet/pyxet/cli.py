@@ -12,7 +12,8 @@ from . import util
 from .file_system import XetFS
 from .sync import SyncCommand
 from .url_parsing import parse_url
-from .util import _root_copy, _get_fs_and_path, CHUNK_SIZE
+from .util import _get_fs_and_path, CHUNK_SIZE
+from .file_operations import perform_copy
 from .version import __version__
 
 if 'SPHINX_BUILD' not in os.environ:
@@ -126,7 +127,7 @@ class PyxetCLI:
         if not message:
             message = f"copy {source} to {target}" if not recursive else f"copy {source} to {target} recursively"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
-        _root_copy(source, target, message, recursive=recursive)
+        perform_copy(source, target, message, recursive=recursive)
 
     @staticmethod
     @cli.command()

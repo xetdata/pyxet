@@ -5,7 +5,7 @@ import utils
 import shutil
 import tempfile
 
-from pyxet.util import _root_copy, _build_src_and_dest_list
+from pyxet.file_operations import perform_copy, build_cp_action_list
 
 
 def test_single_file_upload():
@@ -41,7 +41,7 @@ def test_single_file_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest[0]} {r}")
-                        _root_copy(src, dest[0], "add data", r)
+                        perform_copy(src, dest[0], "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", dest[1])
                         pyxet.PyxetCLI.rm(dest[1])
         finally:
@@ -82,7 +82,7 @@ def test_multiple_files_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
+                        perform_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files)
                         pyxet.PyxetCLI.rm(expected_files)
         finally:
@@ -127,7 +127,7 @@ def test_glob_nonrecursive_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
+                        perform_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files)
                         utils.assert_remote_files_not_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/{sub_dir}"])
                         pyxet.PyxetCLI.rm(expected_files)
@@ -174,7 +174,7 @@ def test_glob_recursive_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
+                        perform_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
@@ -198,8 +198,9 @@ def test_directory_nonrecursive_upload():
 
         # test variations of path
         source_list = [
-            f"{dir}/{sub_dir}",
-            f"{dir}/{sub_dir}/",
+            (f"{dir}/{sub_dir}/data", True),
+            (f"{dir}/{sub_dir}", False),
+            (f"{dir}/{sub_dir}/", False)
         ]
 
         dest_list = [
@@ -212,13 +213,26 @@ def test_directory_nonrecursive_upload():
         ]
 
         try:
-            for src in source_list:
+            for src, should_succeed in source_list:
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_not_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/{sub_dir}"])
-                        utils.assert_remote_files_not_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/data"])
+                        
+                        if should_succeed:
+                            perform_copy(src, dest, "add data", r)
+                                
+                            utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/data"])
+
+                        else:
+
+                            raises_error = False
+                            try:
+                                perform_copy(src, dest, "add data", r)
+                            except ValueError:
+                                raises_error = True
+                            
+                            assert raises_error
+
         finally:
             shutil.rmtree(dir)
     finally:
@@ -241,7 +255,7 @@ def test_directory_recursive_upload():
 
         # test variations of path
         source_list = [
-            f"{dir}/",
+            f"{dir}/*",
         ]
 
         dest_list = [
@@ -261,10 +275,11 @@ def test_directory_recursive_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
+                        perform_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
+                        pyxet.PyxetCLI.rm(expected_files_level2)
         finally:
             shutil.rmtree(dir)
         
@@ -274,7 +289,9 @@ def test_directory_recursive_upload():
 # According to https://filesystem-spec.readthedocs.io/en/latest/copying.html#single-source-to-single-target
 # section 1e, if the trailing slash is omitted from "source/subdir" then the subdir is also copied, 
 # not just its contents.
-def test_directory_recursive_noslash_upload():
+#
+# NOTE: only use this behavior for the fsspec copy method in python, not the xet cp command line.
+def _test_directory_recursive_noslash_upload():
     user = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
@@ -313,7 +330,7 @@ def test_directory_recursive_noslash_upload():
                 for dest in dest_list:
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
-                        _root_copy(src, dest, "add data", r)
+                        perform_copy(src, dest, "add data", r)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
                         utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)
@@ -339,7 +356,7 @@ def test_large_batch_upload():
 
         try:
             pyxet.commit_transaction.TRANSACTION_FILE_LIMIT = 100
-            _root_copy(f"{dir}/", f"xet://{user}/{repo}/{b1}", "add data", True, True)
+            perform_copy(f"{dir}/", f"xet://{user}/{repo}/{b1}", "add data", True)
         finally:
             shutil.rmtree(dir)
 
@@ -356,7 +373,7 @@ def test_size_hint():
         local_files = [f"{dir}/data0", f"{dir}/data1"]
         utils.random_binary_files(local_files, [262, 471])
 
-        _, _, cplist = _build_src_and_dest_list(f"{dir}/*", f"xet://{user}/{repo}/main")
+        cplist = build_cp_action_list(f"{dir}/*", f"xet://{user}/{repo}/main")
         assert len(cplist) == 2
         assert cplist[0].size == 262
         assert cplist[1].size == 471

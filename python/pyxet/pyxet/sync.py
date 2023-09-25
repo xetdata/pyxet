@@ -3,7 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 
-from pyxet.util import _get_fs_and_path, _single_file_copy, _isdir, _rel_path, _path_join
+from pyxet.util import _get_fs_and_path, _isdir, _rel_path, _path_join
+from pyxet.file_operations import single_file_copy
 
 XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -139,7 +140,7 @@ class SyncCommand:
         size = src_info.get('size', None)
         if dest_info is None or self._cmp.should_sync(src_info, dest_info):
             if not self._dryrun:
-                _single_file_copy(self._src_fs, src_path, self._dest_fs, dest_path, size_hint=size)
+                single_file_copy(self._src_fs, src_path, self._dest_fs, dest_path, size_hint=size)
             return True
         # ignored
         return False

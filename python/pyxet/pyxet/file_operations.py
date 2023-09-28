@@ -5,6 +5,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from fnmatch import fnmatch
 from collections import namedtuple
+from .rpyxet import rpyxet
 
 import fsspec
 
@@ -57,16 +58,20 @@ class CopyUnit:
     def __repr__(self):
         return f"[CopyUnit: {self.src_path} to {self.dest_path} (dir = {self.dest_dir}), size = {self.size}]"
 
-def _single_file_copy_impl(cp_action, src_fs, dest_fs, buffer_size=CHUNK_SIZE):
+def _single_file_copy_impl(cp_action, src_fs, dest_fs, progress_reporter = None, buffer_size=CHUNK_SIZE):
 
     src_path = cp_action.src_path
     dest_path = cp_action.dest_path
 
-    print(f"Copying {src_path} to {dest_path}")
+    if progress_reporter is None:
+        print(f"Copying {src_path} to {dest_path}")
 
     if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':
+        ignore_size = True
         dest_fs.cp_file(src_path, dest_path)
         return
+    else:
+        ignore_size = False
     
     dest_is_xet = dest_fs.protocol == "xet"
 
@@ -100,10 +105,17 @@ def _single_file_copy_impl(cp_action, src_fs, dest_fs, buffer_size=CHUNK_SIZE):
                                 break
                             dest_file.write(chunk)
 
+                            if progress_reporter:
+                                progress_reporter.register_progress(None, len(chunk))
+
         except Exception as e:
             proto = src_fs.protocol
             print(f"Failed to copy {proto}://{src_path}: {e}")
             raise
+
+        if progress_reporter:
+            progress_reporter.register_progress(1, None)
+
         
 
         
@@ -133,13 +145,12 @@ def single_file_copy(src_fs, src_path, dest_fs, dest_path, size_hint = None):
           dest_dir = None # No need to create this
 
         cp_unit = CopyUnit(src_path=src_path, dest_path=dest_path, dest_dir = dest_dir, size = size_hint)
-                           
-    _single_file_copy_impl(cp_unit, src_fs, dest_fs)
+
+    progress_reporter = rpyxet.PyProgressReporter(f"Copying {src_fs.protocol}://{src_path} to {dest_fs.protocol}://{dest_path}", 1, size_hint)
+    _single_file_copy_impl(cp_unit, src_fs, dest_fs, progress_reporter)
 
 
-def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
-    
-    
+def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter):
     
     # This function has two parts.  First, we we set a number of variables that then determine how 
     # the second section will behave.  
@@ -147,14 +158,13 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
     dest_is_xet = dest_fs.protocol == "xet"
 
     # If both the source and the end is a xet, then we can copy directories as entire units. 
-    dirs_directly_copyable = dest_is_xet and src_fs.protocol == "xet"
+    cp_xet_to_xet = dest_is_xet and src_fs.protocol == "xet"
 
     # If the destination is specified as a directory, then we want to respect that, putting
     # things as needed within that directory or erring out if it exists but is not itself a 
     # directory.
     dest_specified_as_directory = dest_path.endswith("/") 
     dest_path = dest_path.rstrip("/")
-
 
     # Now set the following variables depending on src_path and dest_path, and what dest_path is
     # on the remote.
@@ -267,8 +277,10 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
         # With the source a directory, we need to list out all the files to copy.  
         if recursive:
             # Handle the xet -> xet case
-            if file_filter_pattern is None and dirs_directly_copyable:
-                return [CopyUnit(src_path=src_path, dest_path=dest_dir, dest_dir=None, size=None)]
+            if file_filter_pattern is None and cp_xet_to_xet:
+                if progress_reporter:
+                    progress_reporter.update_target(1, None)
+                yield CopyUnit(src_path=src_path, dest_path=dest_dir, dest_dir=None, size=None)
                                  
             # If recursive, use find; this returns recursively.
             src_listing = src_fs.find(src_path, detail=True).items()
@@ -279,8 +291,6 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
             pattern = _path_join(src_fs, src_path, file_filter_pattern if file_filter_pattern is not None else '*')
             src_listing = src_fs.glob(pattern, detail=True).items()
 
-
-        cp_files = []
 
         for src_p, info in src_listing:
             if info['type'] == 'directory':
@@ -298,21 +308,32 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
             dest_path = _path_join(dest_fs, dest_dir, rel_path)
             base_dir = _path_dirname(dest_fs, dest_path)
             
-            cp_files.append(CopyUnit(src_path=src_p, dest_path = dest_path, dest_dir = base_dir, size = info.get('size', 0)))
+            size = None if cp_xet_to_xet else info.get('size', 0)
+            if progress_reporter:
+                progress_reporter.update_target(1, size)
+            yield CopyUnit(src_path=src_p, dest_path = dest_path, dest_dir = base_dir, size = size)
 
-        return cp_files
     else: # src_is_directory = False
 
         # In this case, we have just a single source file. 
-        src_size = (src_info if src_info is not None else src_fs.info(src_path)).get('size', 0)
+        if cp_xet_to_xet:
+            src_size = None
+        elif src_info is not None:
+            src_size = src_info.get('size', 0)
+        else:
+            src_size = src_fs.info(src_path).get('size', 0)
 
         # Do we copy this single file into the dest, or to the dest?
         if _isdir(dest_fs, dest_path):
             _, file_name = _path_split(src_fs, src_path)
-            return [CopyUnit(src_path=src_path, dest_path=os.path.join(dest_path, file_name), dest_dir=dest_path, size=src_size)]
+            if progress_reporter:
+                progress_reporter.update_target(1, src_size)
+            yield CopyUnit(src_path=src_path, dest_path=os.path.join(dest_path, file_name), dest_dir=dest_path, size=src_size)
         else:
             dest_dir=_path_dirname(dest_fs, dest_path)
-            return [CopyUnit(src_path=src_path, dest_path=dest_path, dest_dir=dest_dir, size=src_size)]
+            if progress_reporter:
+                progress_reporter.update_target(1, src_size)
+            yield CopyUnit(src_path=src_path, dest_path=dest_path, dest_dir=dest_dir, size=src_size)
 
 
 
@@ -325,14 +346,19 @@ def build_cp_action_list(source, destination, recursive=False):
     src_fs, src_path = _get_fs_and_path(source, strip_trailing_slash=False)
     dest_fs, dest_path = _get_fs_and_path(destination, strip_trailing_slash=False)
 
-    return _build_cp_action_list_impl(
-        src_fs, src_path, dest_fs, dest_path, recursive)
+    return list(_build_cp_action_list_impl(
+        src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter=None))
     
 
-def perform_copy(source, destination, message, recursive=False):
+def perform_copy(source, destination, message = None, recursive=False):
     """
     Performs a copy operation. 
     """
+
+    if message is None:
+        message = f"Copying {source} to {destination}"
+
+    progress_reporter = rpyxet.PyProgressReporter(message, 0, 0)
 
     src_fs, src_path = _get_fs_and_path(source, strip_trailing_slash=False)
     dest_fs, dest_path = _get_fs_and_path(destination, strip_trailing_slash=False)
@@ -347,16 +373,16 @@ def perform_copy(source, destination, message, recursive=False):
     try:
 
         # Get the list of everything to copy.
-        cp_list = _build_cp_action_list_impl(
-            src_fs, src_path, dest_fs, dest_path, recursive)
 
         # Now, go through and do all the actual copying.
         futures = []
         opt_future = None
         with ThreadPoolExecutor() as executor:
-            for cp_action in cp_list:
+            for cp_action in _build_cp_action_list_impl(
+                src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter):
+
                 futures.append(executor.submit(_single_file_copy_impl, cp_action,
-                            src_fs, dest_fs))
+                            src_fs, dest_fs, progress_reporter))
 
         for future in futures:
             future.result()
@@ -368,3 +394,5 @@ def perform_copy(source, destination, message, recursive=False):
     finally:
         if destproto_is_xet:
             dest_fs.end_transaction()
+
+        progress_reporter.finalize()

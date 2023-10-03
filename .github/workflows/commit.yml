@@ -56,4 +56,6 @@ jobs:
           Get-ChildItem "target/wheels" -Filter pyxet*.whl | Foreach-Object {
             pip install $_.FullName
           }
-          python -m pytest tests
+          cd ..
+          python -m pytest pyxet/tests
+

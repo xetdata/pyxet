@@ -124,14 +124,11 @@ def single_file_copy(src_fs, src_path, dest_fs, dest_path, size_hint = None):
         # normalized 'src_path' because if 'source' ends with 
         # '/' or '\', the desired behavior is to copy what's 
         # under that directory, and to skip 'source' itself.
-        final_source_component = _path_split(src_fs, src_path)
+        _, final_source_component = _path_split(src_fs, src_path)
         file_dest_path = _path_join(dest_fs, dest_path, final_source_component)
-        cp_unit = CopyUnit(src_path=src_path, dest_path=file_dest_path, dest_dir = None, size = size_hint)
+        cp_unit = CopyUnit(src_path=src_path, dest_path=file_dest_path, dest_dir = dest_path, size = size_hint)
     else:
-        dest_dir = _path_split(dest_fs, dest_path)
-        if _isdir(dest_fs, dest_dir):
-          dest_dir = None # No need to create this
-
+        dest_dir, _ = _path_split(dest_fs, dest_path)
         cp_unit = CopyUnit(src_path=src_path, dest_path=dest_path, dest_dir = dest_dir, size = size_hint)
                            
     _single_file_copy_impl(cp_unit, src_fs, dest_fs)

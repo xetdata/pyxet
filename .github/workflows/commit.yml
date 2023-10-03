@@ -53,9 +53,9 @@ jobs:
         run: |
           cd python/pyxet
           pip install -r tests/requirements.txt
-          pip install target/wheels/pyxet*.whl
           Get-ChildItem "target/wheels" -Filter pyxet*.whl | Foreach-Object {
             pip install $_.FullName
           }
           cd ..
           python -m pytest pyxet/tests
+

@@ -5,7 +5,7 @@ import fsspec
 
 from .file_interface import XetFile
 
-TRANSACTION_FILE_LIMIT = 2048
+TRANSACTION_FILE_LIMIT = 512
 
 
 def _validate_repo_info_for_transaction(repo_info):

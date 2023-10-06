@@ -59,8 +59,8 @@ class CopyUnit:
 
 def _single_file_copy_impl(cp_action, src_fs, dest_fs, buffer_size=CHUNK_SIZE):
 
-    src_path = cp_action.src_path
-    dest_path = cp_action.dest_path
+    src_path = _path_normalize(src_fs, cp_action.src_path, strip_trailing_slash=True, keep_relative=False)
+    dest_path = _path_normalize(dest_fs, cp_action.dest_path, strip_trailing_slash=True, keep_relative=False) 
 
     print(f"Copying {src_path} to {dest_path}")
 
@@ -280,6 +280,7 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
         cp_files = []
 
         for src_p, info in src_listing:
+            
             if info['type'] == 'directory':
                 # Find is already recursive, and glob is not used in the recursive case, so 
                 # when this happens we can skip it. 
@@ -287,6 +288,7 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive):
 
             # Get the relative path, so we can construct the full destination path
             rel_path = _rel_path(src_p, src_path)
+            rel_path = _path_normalize(src_fs, rel_path, strip_trailing_slash=False, keep_relative=True)
 
             if file_filter_pattern is not None:
                 if not fnmatch(rel_path, file_filter_pattern):

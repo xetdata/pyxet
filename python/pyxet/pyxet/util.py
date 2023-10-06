@@ -2,10 +2,12 @@ import os
 import posixpath
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import fsspec
 
-from . import XetFS
+from . import XetFS, XetFSOpenFlags
+from .url_parsing import parse_url
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
@@ -33,7 +35,7 @@ def _should_load_aws_credentials():
 def _get_fs_and_path(uri, strip_trailing_slash = True):
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
-        return fs, _path_normalize(fs, uri)
+        return fs, _path_normalize(fs, uri, strip_trailing_slash=strip_trailing_slash)
     split = uri.split("://")
     if len(split) != 2:
         print(f"Invalid URL: {uri}", file=sys.stderr)

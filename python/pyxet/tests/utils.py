@@ -69,11 +69,13 @@ def test_user_info():
     assert email is not None
     token = os.getenv('XET_TEST_TOKEN')
     assert token is not None
+    host = os.getenv('XET_ENDPOINT')
 
     return {
         "user": user,
         "email": email,
         "token": token,
+        "host" : host
     }
 
 # Expect a test repo whose main branch is empty (only .gitattributes)
@@ -84,7 +86,7 @@ def test_repo():
 
 def test_account_login():
     user_info = test_user_info()
-    pyxet.login(user_info['user'], user_info['token'], user_info['email'])
+    pyxet.login(user_info['user'], user_info['token'], user_info['email'], user_info['host'])
     return user_info['user']
 
 def random_string(N):
@@ -115,18 +117,14 @@ def new_random_branch_from(repo, src_branch):
 def assert_remote_files_exist(remote, expected):
     fs = fsspec.filesystem("xet")
     listing = fs.glob(remote, detail=False)
-    print(listing)
-    print(expected)
     for i in expected:
-        assert i.removeprefix("xet://") in listing
+        assert i.removeprefix("xet://") in listing, f"{i} not in {remote} ({listing})"
 
 def assert_remote_files_not_exist(remote, not_expected):
     fs = fsspec.filesystem("xet")
     listing = fs.glob(remote, detail=False)
-    print(listing)
-    print(not_expected)
     for i in not_expected:
-        assert i.removeprefix("xet://") not in listing
+        assert i.removeprefix("xet://") not in listing, f"{i} in {remote} ({listing})"
 
 
 def require_s3_creds():

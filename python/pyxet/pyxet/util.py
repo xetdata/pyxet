@@ -103,7 +103,10 @@ def _path_dirname(fs, path):
     
 def _path_normalize(fs, path, strip_trailing_slash = True):
     if fs.protocol == 'file':
-        return os.path.abspath(path)
+        path = os.path.abspath(path)
+        if os.sep != posixpath.sep:
+            path = path.replace(os.sep, posixpath.sep)        
+        return path
     elif path != '/' and strip_trailing_slash:
         return path.rstrip('/')
     else:

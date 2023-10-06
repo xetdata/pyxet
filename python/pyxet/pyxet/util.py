@@ -2,26 +2,13 @@ import os
 import posixpath
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
 
 import fsspec
 
-from . import XetFS, XetFSOpenFlags
-from .url_parsing import parse_url
+from . import XetFS
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
-
-class CopyUnit:
-    """
-    A structure representing one copy operation
-    """
-
-    def __init__(self, src_path, dest_path, dest_dir_to_make, byte_size):
-        self.src_path = src_path
-        self.dest_path = dest_path
-        self.dest_dir = dest_dir_to_make
-        self.size = byte_size
 
 def _should_load_aws_credentials():
     """

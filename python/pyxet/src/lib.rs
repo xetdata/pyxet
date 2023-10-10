@@ -6,6 +6,7 @@ use gitxetcore::config::ConfigGitPathOption;
 use gitxetcore::config::ConfigGitPathOption::NoPath;
 use gitxetcore::config::XetConfig;
 use gitxetcore::log::initialize_tracing_subscriber;
+use progress_reporting::DataProgressReporter;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
@@ -333,7 +334,13 @@ impl PyRepo {
         )
     }
 
-    pub fn open_for_read_with_flags(&self, branch: &str, path: &str, flags: u32, py: Python<'_>) -> PyResult<PyRFile> {
+    pub fn open_for_read_with_flags(
+        &self,
+        branch: &str,
+        path: &str,
+        flags: u32,
+        py: Python<'_>,
+    ) -> PyResult<PyRFile> {
         rust_async!(
             py,
             PyRFile::new(self.repo.open_for_read(branch, path, Some(flags)).await?)
@@ -968,6 +975,42 @@ impl PyWFile {
     }
 }
 
+#[pyclass(subclass)]
+#[derive(Clone)]
+pub struct PyProgressReporter {
+    dpr: Arc<DataProgressReporter>,
+}
+
+#[pymethods]
+impl PyProgressReporter {
+    #[new]
+    pub fn new(
+        message: &str,
+        total_unit_count: Option<usize>,
+        total_byte_count: Option<usize>,
+    ) -> Self {
+        Self {
+            dpr: DataProgressReporter::new(message, total_unit_count, total_byte_count),
+        }
+    }
+
+    pub fn register_progress(&self, unit_amount: Option<usize>, bytes: Option<usize>) {
+        self.dpr.register_progress(unit_amount, bytes)
+    }
+
+    pub fn update_target(&self, unit_delta_amount: Option<usize>, byte_delta: Option<usize>) {
+        self.dpr.update_target(unit_delta_amount, byte_delta)
+    }
+
+    pub fn set_progress(&self, unit_amount: Option<usize>, bytes: Option<usize>) {
+        self.dpr.set_progress(unit_amount, bytes)
+    }
+
+    pub fn finalize(&self) {
+        self.dpr.finalize()
+    }
+}
+
 /// This module is implemented in Rust.
 #[pymodule]
 pub fn rpyxet(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
@@ -979,6 +1022,7 @@ pub fn rpyxet(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyWriteTransactionAccessToken>()?;
     m.add_class::<PyWFile>()?;
     m.add_class::<PyRFile>()?;
+    m.add_class::<PyProgressReporter>()?;
     m.add_function(wrap_pyfunction!(configure_login, m)?)?;
     m.add_function(wrap_pyfunction!(perform_mount, m)?)?;
     m.add_function(wrap_pyfunction!(perform_mount_curdir, m)?)?;

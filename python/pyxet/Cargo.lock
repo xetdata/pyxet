@@ -248,8 +248,8 @@ dependencies = [
 
 [[package]]
 name = "cache"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -273,8 +273,8 @@ dependencies = [
 
 [[package]]
 name = "cas_client"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -696,8 +696,8 @@ dependencies = [
 
 [[package]]
 name = "data_analysis"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "approx",
  "cxx",
@@ -1108,8 +1108,8 @@ dependencies = [
 
 [[package]]
 name = "gitxetcore"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1533,8 +1533,8 @@ dependencies = [
 
 [[package]]
 name = "lazy"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "thiserror",
  "tokio",
@@ -1569,8 +1569,8 @@ dependencies = [
 
 [[package]]
 name = "libmagic"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "phf",
@@ -1678,8 +1678,8 @@ dependencies = [
 
 [[package]]
 name = "mdb_shard"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -1718,8 +1718,8 @@ dependencies = [
 
 [[package]]
 name = "merkledb"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1748,8 +1748,8 @@ dependencies = [
 
 [[package]]
 name = "merklehash"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#e2f0c39cb2b329f95daf8a32d4fa3bef6686e6ff"
 dependencies = [
  "blake3",
  "generic-array",
@@ -2192,8 +2192,8 @@ dependencies = [
 
 [[package]]
 name = "parutils"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -2360,8 +2360,8 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "pointer_file"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "merklehash",
  "toml",
@@ -2445,8 +2445,8 @@ dependencies = [
 
 [[package]]
 name = "progress_reporting"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#e2f0c39cb2b329f95daf8a32d4fa3bef6686e6ff"
 dependencies = [
  "atty",
  "crossterm",
@@ -2473,8 +2473,8 @@ dependencies = [
 
 [[package]]
 name = "prometheus_dict_encoder"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "memchr",
  "prometheus",
@@ -2855,8 +2855,8 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 
 [[package]]
 name = "retry_strategy"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "tokio-retry",
 ]
@@ -3052,8 +3052,8 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "s3"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "chrono",
  "more-asserts 0.3.1",
@@ -3246,8 +3246,8 @@ dependencies = [
 
 [[package]]
 name = "shard_client"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4114,8 +4114,8 @@ dependencies = [
 
 [[package]]
 name = "utils"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#e2f0c39cb2b329f95daf8a32d4fa3bef6686e6ff"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4438,8 +4438,8 @@ dependencies = [
 
 [[package]]
 name = "xet_config"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "config",
  "dirs 4.0.0",
@@ -4451,8 +4451,8 @@ dependencies = [
 
 [[package]]
 name = "xetblob"
-version = "0.11.5"
-source = "git+https://github.com/xetdata/xet-core#5315a642af5afd62733e74ba22ea04b0d4f490e4"
+version = "0.11.6"
+source = "git+https://github.com/xetdata/xet-core#3ba983e2e5ad7c4b0d135f1cf01eb906c1b5f365"
 dependencies = [
  "anyhow",
  "async-trait",

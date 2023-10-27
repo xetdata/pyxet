@@ -11,12 +11,13 @@ XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 class SyncCommand:
 
-    def __init__(self, source, destination, use_mtime, message, dryrun):
+    def __init__(self, source, destination, use_mtime, message, dryrun, update_size):
         self._message = message
         self._dryrun = dryrun
         self._src_fs, self._src_proto, self._src_root = _get_normalized_fs_protocol_and_path(source)
         self._dest_fs, self._dest_proto, self._dest_root = _get_normalized_fs_protocol_and_path(destination)
         self._use_mtime = use_mtime
+        self._update_size = update_size
         if use_mtime:
             self._cmp = MTimeSyncComparator(self._src_proto, self._dest_proto)
         else:
@@ -96,6 +97,7 @@ class SyncCommand:
             dest_files = self._dest_fs.find(dest_path, detail=True)
         except RuntimeError:
             dest_files = {}
+        total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
@@ -103,18 +105,27 @@ class SyncCommand:
 
             partial_func = partial(self._sync_file_task, abs_path, src_info, dest_for_this_path, dest_info)
             futures.append(executor.submit(partial_func))
+            total_size += src_info.get('size', 0)
+
+        if self._update_size:
+            self._update_remote_size(total_size)
 
     def _sync_with_info(self, executor, futures, src_path, dest_path):
         """
         Sync the src_path to the dest_path by calling `info` on the destination for files
         found in the source. This is much slower than
         """
+        total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             if src_info['type'] != 'directory':
                 partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
                 futures.append(executor.submit(partial_func))
+                total_size += src_info.get('size', 0)
+
+        if self._update_size:
+            self._update_remote_size(total_size)
 
     def _sync_with_mtime_task(self, src_path, dest_path, src_info):
         """
@@ -146,6 +157,16 @@ class SyncCommand:
             return True
         # ignored
         return False
+
+    def _update_remote_size(self, size):
+        """
+        Update Xetea with the new bucket size.
+        """
+        if self._dest_proto == 'xet':
+            print(f"Updating {self._dest_root} with the discovered bucket size: {size}")
+            self._dest_fs.update_size(self._dest_root, size)
+        else:
+            print(f"Can't update bucket size since destination is protocol: {self._dest_proto}, not xet")
 
 
 def _get_normalized_fs_protocol_and_path(uri):

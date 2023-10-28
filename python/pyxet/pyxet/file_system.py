@@ -340,9 +340,14 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         url_path = parse_url(path, self.domain)
         if url_path.remote == '':
-            raise ValueError("Incomplete path: Expecting xet://user/repo")
-        body = json.dumps({"size": bucket_size})
-        _manager.api_query(url_path.remote, "bucket_size", "post", body)
+            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
+        if url_path.branch == '':
+            raise ValueError("No branch in path")
+        body = json.dumps({
+            'size': bucket_size,
+            'branch': url_path.branch
+        })
+        _manager.api_query(url_path.remote, "remote_size", "post", body)
 
     def ls(self, path, detail=True, **kwargs):
         """List objects at path.

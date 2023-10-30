@@ -32,7 +32,7 @@ def test_get_normalized_fs_protocol_and_path(monkeypatch):
 
 
 def check_sync_validate(src, dst, is_valid):
-    cmd = SyncCommand(src, dst, False, '', False)
+    cmd = SyncCommand(src, dst, False, '', False, False)
     try:
         cmd.validate()
         assert is_valid
@@ -85,7 +85,7 @@ def test_sync_command_s3():
     fs.make_branch(CONSTANTS.TESTING_SYNCREPO, 'main', branch)
     src_path = f'{CONSTANTS.TESTING_SYNCREPO}/{branch}'
 
-    cmd = SyncCommand(f's3://{CONSTANTS.S3_BUCKET}/sync1', f'xet://{src_path}', False, 'test sync from s3', False)
+    cmd = SyncCommand(f's3://{CONSTANTS.S3_BUCKET}/sync1', f'xet://{src_path}', False, 'test sync from s3', False, False)
     cmd.validate()
     stats = cmd.run()
     assert stats.ignored == 0

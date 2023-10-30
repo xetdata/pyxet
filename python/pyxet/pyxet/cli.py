@@ -135,6 +135,7 @@ class PyxetCLI:
              target: Annotated[str, typer.Argument(help="Target location of the folder")],
              use_mtime: Annotated[bool, typer.Option("--use-mtime", help="Use mtime as criteria for sync")] = False,
              message: Annotated[str, typer.Option("--message", "-m", help="A commit message")] = "",
+             update_size: Annotated[bool, typer.Option("--update-size", hidden=True, help="Update Xetea with the size of the remote bucket")] = False,
              parallel: Annotated[int, typer.Option("--parallel", "-p", help="Maximum amount of parallelism")] = 32,
              dryrun: Annotated[
                  bool, typer.Option("--dryrun",
@@ -143,7 +144,7 @@ class PyxetCLI:
         if not message:
             message = f"sync {source} to {target}"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
-        cmd = SyncCommand(source, target, use_mtime, message, dryrun)
+        cmd = SyncCommand(source, target, use_mtime, message, dryrun, update_size)
         print(f"Checking sync")
         cmd.validate()
         print(f"Starting sync")

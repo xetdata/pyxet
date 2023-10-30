@@ -334,6 +334,21 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         else:
             return [{'name': r['name'], 'type': 'branch'} for r in res]
 
+    def update_size(self, path, bucket_size):
+        """
+        Calls Xetea to update the size of a synchronized S3 bucket for the repo.
+        """
+        url_path = parse_url(path, self.domain)
+        if url_path.remote == '':
+            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
+        if url_path.branch == '':
+            raise ValueError("No branch in path")
+        body = json.dumps({
+            'size': bucket_size,
+            'branch': url_path.branch
+        })
+        _manager.api_query(url_path.remote, "remote_size", "post", body)
+
     def ls(self, path, detail=True, **kwargs):
         """List objects at path.
         This should include subdirectories and files at that location. The

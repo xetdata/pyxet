@@ -417,7 +417,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                                             url_path.path)
 
         if detail:
-            return [{"name": prefix + '/' + fname,
+            return [{"name": 'xet://' + prefix + '/' + fname,
                      "size": finfo.size,
                      "type": finfo.ftype}
                     for fname, finfo in zip(files, file_info)]

@@ -166,9 +166,6 @@ class PyxetCLI:
             if raw:
                 print(listing)
             else:
-                if fs.protocol == 'xet':
-                    for entry in listing:
-                        entry['name'] = 'xet://' + entry['name']
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:

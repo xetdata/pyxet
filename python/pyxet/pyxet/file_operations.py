@@ -355,6 +355,9 @@ def perform_copy(source_list, destination, message = None, recursive=False):
     Performs a copy operation. 
     """
 
+    if not isinstance(source_list, list):
+        source_list = [source_list]
+
     if message is None:
         message = f"copy {source[0]}... to {destination}" if not recursive else f"copy {source[0]}... to {destination} recursively"
 

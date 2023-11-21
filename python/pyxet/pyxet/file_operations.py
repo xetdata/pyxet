@@ -12,7 +12,8 @@ import fsspec
 from . import XetFS, XetFSOpenFlags
 from .url_parsing import parse_url
 from .util import _path_split, _path_normalize, _path_join, \
-  _path_dirname, _isdir, _get_fs_and_path, _rel_path
+  _path_dirname, _isdir, _get_fs_and_path, _rel_path, _are_same_fs, \
+  _get_normalized_path
 
 MAX_CONCURRENT_COPIES = threading.Semaphore(32)
 CHUNK_SIZE = 16 * 1024 * 1024
@@ -211,8 +212,8 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive, 
         # Handling directories.  Make sure that the recursive flag is set. 
         if src_is_directory:
             if not recursive:
-                raise ValueError(
-                    "Specify recursive flag '-r' to copy directories.")
+                print(f"{src_path} is a directory (not copied).")
+                return
 
 
         # Now, determine the type of the destination: 
@@ -349,17 +350,20 @@ def build_cp_action_list(source, destination, recursive=False):
         src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter=None))
     
 
-def perform_copy(source, destination, message = None, recursive=False):
+def perform_copy(source_list, destination, message = None, recursive=False):
     """
     Performs a copy operation. 
     """
 
     if message is None:
-        message = f"Copying {source} to {destination}"
+        message = f"copy {source[0]}... to {destination}" if not recursive else f"copy {source[0]}... to {destination} recursively"
 
     progress_reporter = rpyxet.PyProgressReporter(message, 0, 0)
+    
+    if not _are_same_fs(source_list):
+        raise ValueError("Source URIs are not in the same filesystem")
 
-    src_fs, src_path = _get_fs_and_path(source, strip_trailing_slash=False)
+    src_fs, src_path = _get_fs_and_path(source_list[0], strip_trailing_slash=False)
     dest_fs, dest_path = _get_fs_and_path(destination, strip_trailing_slash=False)
     
     destproto_is_xet = dest_fs.protocol == "xet"
@@ -377,11 +381,13 @@ def perform_copy(source, destination, message = None, recursive=False):
         futures = []
         opt_future = None
         with ThreadPoolExecutor() as executor:
-            for cp_action in _build_cp_action_list_impl(
-                src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter):
+            for source in source_list:
+                src_path = _get_normalized_path(source, src_fs)
+                for cp_action in _build_cp_action_list_impl(
+                    src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter):
 
-                futures.append(executor.submit(_single_file_copy_impl, cp_action,
-                            src_fs, dest_fs, progress_reporter))
+                    futures.append(executor.submit(_single_file_copy_impl, cp_action,
+                                src_fs, dest_fs, progress_reporter))
 
         for future in futures:
             future.result()

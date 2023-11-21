@@ -49,7 +49,15 @@ def _get_fs_and_path(uri, strip_trailing_slash = True):
         fs.protocol = 's3'
     else:
         fs = fsspec.filesystem(split[0])
-    return fs, _path_normalize(fs, split[1])
+    return fs, _path_normalize(fs, split[1], strip_trailing_slash=strip_trailing_slash)
+
+def _get_normalized_path(uri, fs, strip_trailing_slash = True):
+    if uri.find('://') == -1:
+        return _path_normalize(fs, uri, strip_trailing_slash=strip_trailing_slash)
+    split = uri.split("://")
+    if len(split) != 2:
+        raise ValueError(f"Invalid URL: {uri}")
+    return _path_normalize(fs, split[1], strip_trailing_slash=strip_trailing_slash)
 
 def _isdir(fs, path):
     if fs.protocol == 'xet':
@@ -57,6 +65,16 @@ def _isdir(fs, path):
     else:
         return fs.isdir(path)
 
+def _get_fs_string(uri):
+    if uri.find('://') == -1:
+        return "local"
+    split = uri.split("://")
+    if len(split) != 2:
+        raise ValueError(f"Invalid URL: {uri}")
+    return split[0]
+
+def _are_same_fs(uris):
+    return len(set(map(lambda u: _get_fs_string(u), uris))) == 1
 
 def _rel_path(s, start):
     """

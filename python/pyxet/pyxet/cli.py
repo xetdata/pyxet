@@ -124,8 +124,10 @@ class PyxetCLI:
            parallel: Annotated[
                int, typer.Option("--parallel", "-p", help="Maximum amount of parallelism")] = 32):
         """copy files and folders"""
+        if len(source) == 0:
+            raise ValueError("Empty source list")
         if not message:
-            message = f"copy {source[0]}... to {target}" if not recursive else f"copy {source[0]}... to {target} recursively"
+            message = f"copy {', '.join(source[:3])}... to {target}" if not recursive else f"copy {', '.join(source[:3])}... to {target} recursively"
         util.MAX_CONCURRENT_COPIES = threading.Semaphore(parallel)
         perform_copy(source, target, message, recursive=recursive)
 

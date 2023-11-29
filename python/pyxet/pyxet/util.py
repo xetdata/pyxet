@@ -66,12 +66,11 @@ def _isdir(fs, path):
         return fs.isdir(path)
 
 def _get_fs_string(uri):
-    if uri.find('://') == -1:
+    n = uri.find('://')
+    if n == -1:
         return "local"
-    split = uri.split("://")
-    if len(split) != 2:
-        raise ValueError(f"Invalid URL: {uri}")
-    return split[0]
+    else:
+        return uri[:n]
 
 def _are_same_fs(uris):
     return len(set(map(lambda u: _get_fs_string(u), uris))) == 1

@@ -358,8 +358,11 @@ def perform_copy(source_list, destination, message = None, recursive=False):
     if not isinstance(source_list, list):
         source_list = [source_list]
 
+    if len(source_list) == 0:
+        raise ValueError("Empty source list")
+
     if message is None:
-        message = f"copy {source[0]}... to {destination}" if not recursive else f"copy {source[0]}... to {destination} recursively"
+        message = f"copy {', '.join(source[:3])}... to {destination}" if not recursive else f"copy {', '.join(source[:3])}... to {destination} recursively"
 
     progress_reporter = rpyxet.PyProgressReporter(message, 0, 0)
     

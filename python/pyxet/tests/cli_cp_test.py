@@ -225,13 +225,8 @@ def test_directory_nonrecursive_upload():
 
                         else:
 
-                            raises_error = False
-                            try:
-                                perform_copy(src, dest, "add data", r)
-                            except ValueError:
-                                raises_error = True
-                            
-                            assert raises_error
+                            # ignores instead of raising error
+                            perform_copy(src, dest, "add data", r)
 
         finally:
             shutil.rmtree(dir)

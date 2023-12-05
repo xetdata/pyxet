@@ -34,3 +34,8 @@ lazy_static = "1.4.0"
 [build-dependencies]
 pyo3-build-config = "0.18.0"
 cc = "1.0"
+
+[release]
+debug=true
+lto=true
+

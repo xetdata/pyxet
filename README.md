@@ -18,7 +18,7 @@ storing TBs of ML data and models in a single repository, with block-level
 data deduplication that enables hundreds of versions of similar data to be
 stored without requiring much storage. 
 
-Join our [Discord](https://discord.gg/KCzmjDaDdC) to get involved. 
+Join our [Slack](https://communityinviter.com/apps/xetdata/xet) to get involved. 
 To stay informed about updates, star this repo and sign up for 
 [XetHub](https://xethub.com/user/sign_up) to get the newsletter.
 

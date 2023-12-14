@@ -18,7 +18,7 @@ To stay informed about updates, star this repo and sign up for
 Features
 --------
 
-pyxet provides 2 components:
+pyxet provides 3 components:
 
 1. A `fsspec <https://filesystem-spec.readthedocs.io>`_
 interface that allows compatible libraries such as Pandas, Polars and Duckdb

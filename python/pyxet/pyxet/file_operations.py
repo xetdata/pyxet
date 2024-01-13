@@ -5,7 +5,9 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from fnmatch import fnmatch
 from collections import namedtuple
-from .rpyxet import rpyxet
+
+if 'SPHINX_BUILD' not in os.environ:
+    from .rpyxet import rpyxet
 
 import fsspec
 

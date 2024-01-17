@@ -100,6 +100,11 @@ class SyncCommand:
         total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
+
+            if relpath == '.':
+                print(f"{abs_path} is an invalid file (not copied).")
+                continue
+
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             dest_info = dest_files.get(dest_for_this_path)
 
@@ -118,6 +123,11 @@ class SyncCommand:
         total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
+
+            if relpath == '.':
+                print(f"{abs_path} is an invalid file (not copied).")
+                continue
+
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             if src_info['type'] != 'directory':
                 partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)

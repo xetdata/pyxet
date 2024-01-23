@@ -119,3 +119,5 @@ def _path_normalize(fs, path, strip_trailing_slash = True, keep_relative = False
     else:
         return path
 
+def _is_illegal_subdirectory_file_name(path):
+    return path == '.' or path == '' or path == '..'

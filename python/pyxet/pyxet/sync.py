@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 
-from pyxet.util import _get_fs_and_path, _isdir, _rel_path, _path_join, _path_dirname
+from pyxet.util import _get_fs_and_path, _isdir, _rel_path, _path_join, _path_dirname, _is_illegal_subdirectory_file_name
 from pyxet.file_operations import _single_file_copy_impl, CopyUnit
 
 XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
@@ -100,6 +100,11 @@ class SyncCommand:
         total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
+
+            if _is_illegal_subdirectory_file_name(relpath):
+                print(f"{abs_path} is an invalid file (not copied).")
+                continue
+
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             dest_info = dest_files.get(dest_for_this_path)
 
@@ -118,6 +123,11 @@ class SyncCommand:
         total_size = 0
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
+
+            if _is_illegal_subdirectory_file_name(relpath):
+                print(f"{abs_path} is an invalid file (not copied).")
+                continue
+
             dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             if src_info['type'] != 'directory':
                 partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)

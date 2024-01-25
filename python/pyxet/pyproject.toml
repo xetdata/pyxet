@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pyxet"
-version = "0.1.7-rc1"
+version = "0.1.8-rc1"
 description = "pyxet is a Python library that provides a lightweight interface for the XetHub platform."
 keywords = [
     "ai",

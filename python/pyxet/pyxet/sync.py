@@ -92,15 +92,12 @@ class SyncCommand:
         Note that ls on xet-fs doesn't return an mtime and thus, will not be able to compare
         on that field.
         """
-
+        # This only syncs folders. single files should always go to sync_with_info
         try:
             dest_files = self._dest_fs.find(dest_path, detail=True)
         except RuntimeError:
             dest_files = {}
-
         total_size = 0
-
-        # syncing a folder
         for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
             relpath = _rel_path(abs_path, src_path)
 

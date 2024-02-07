@@ -56,11 +56,13 @@ class SyncCommand:
         """
         sync_stats = SyncStats()
 
+        srcpath_is_dir = _isdir(self._src_fs, self._src_root)
         if not self._dryrun:
             self._dest_fs.start_transaction(self._message)
         with ThreadPoolExecutor() as executor:
             futures = []
-            if self._use_mtime:
+            # if src is a single file, we always use sync_with_info
+            if self._use_mtime or srcpath_is_dir == False:
                 self._sync_with_info(executor, futures, self._src_root, self._dest_root)
             else:
                 self._sync_with_ls(executor, futures, self._src_root, self._dest_root)
@@ -95,38 +97,23 @@ class SyncCommand:
             dest_files = self._dest_fs.find(dest_path, detail=True)
         except RuntimeError:
             dest_files = {}
+
         total_size = 0
 
+        # syncing a folder
+        for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
+            relpath = _rel_path(abs_path, src_path)
 
-        if not _isdir(self._src_fs, src_path):
-            # syncing a single file
-            src_info = self._src_fs.info(src_path)
-            abs_path = src_info['name']
-            # get the last component name. This is the filename
-            fname = _path_split(self._src_fs, abs_path)[-1]
-            # Tack it on to the end of the dest path to make the output name
-            dest_for_this_path = _path_join(self._dest_fs, dest_path, fname)
+            if _is_illegal_subdirectory_file_name(relpath):
+                print(f"{abs_path} is an invalid file (not copied).")
+                continue
+
+            dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
             dest_info = dest_files.get(dest_for_this_path)
 
             partial_func = partial(self._sync_file_task, abs_path, src_info, dest_for_this_path, dest_info)
             futures.append(executor.submit(partial_func))
             total_size += src_info.get('size', 0)
-
-        else:
-            # syncing a folder
-            for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
-                relpath = _rel_path(abs_path, src_path)
-
-                if _is_illegal_subdirectory_file_name(relpath):
-                    print(f"{abs_path} is an invalid file (not copied).")
-                    continue
-
-                dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
-                dest_info = dest_files.get(dest_for_this_path)
-
-                partial_func = partial(self._sync_file_task, abs_path, src_info, dest_for_this_path, dest_info)
-                futures.append(executor.submit(partial_func))
-                total_size += src_info.get('size', 0)
 
         if self._update_size:
             self._update_remote_size(total_size)
@@ -137,18 +124,29 @@ class SyncCommand:
         found in the source. This is much slower than
         """
         total_size = 0
-        for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
-            relpath = _rel_path(abs_path, src_path)
+        if not _isdir(self._src_fs, src_path):
+            src_info = self._src_fs.info(src_path)
+            abs_path = src_info['name']
+            # get the last component name. This is the filename
+            fname = _path_split(self._src_fs, abs_path)[-1]
+            # Tack it on to the end of the dest path to make the output name
+            dest_for_this_path = _path_join(self._dest_fs, dest_path, fname)
+            partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
+            futures.append(executor.submit(partial_func))
+            total_size += src_info.get('size', 0)
+        else:
+            for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
+                relpath = _rel_path(abs_path, src_path)
 
-            if _is_illegal_subdirectory_file_name(relpath):
-                print(f"{abs_path} is an invalid file (not copied).")
-                continue
+                if _is_illegal_subdirectory_file_name(relpath):
+                    print(f"{abs_path} is an invalid file (not copied).")
+                    continue
 
-            dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
-            if src_info['type'] != 'directory':
-                partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
-                futures.append(executor.submit(partial_func))
-                total_size += src_info.get('size', 0)
+                dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
+                if src_info['type'] != 'directory':
+                    partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
+                    futures.append(executor.submit(partial_func))
+                    total_size += src_info.get('size', 0)
 
         if self._update_size:
             self._update_remote_size(total_size)

@@ -150,6 +150,8 @@ class PyxetCLI:
         print(f"Checking sync")
         cmd.validate()
         print(f"Starting sync")
+        if dryrun:
+            print("This is a dryrun")
         stats = cmd.run()
         if not dryrun:
             print(f"Completed sync. Copied: {stats.copied} files, ignored: {stats.ignored} files")

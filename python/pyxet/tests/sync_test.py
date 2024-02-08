@@ -44,8 +44,6 @@ def test_sync_command_validate_local():
     pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
 
     check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
-    check_sync_validate('/nonexistent', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
-    check_sync_validate('./sync_test.py', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
     check_sync_validate('xet://XetHub/grapp2/main', f'xet://{CONSTANTS.TESTING_SYNCREPO}/sync-branch/sync', False)
     check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/nonexistent-branch', False)
     check_sync_validate('.', './other', False)

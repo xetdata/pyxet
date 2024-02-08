@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 
-from pyxet.util import _get_fs_and_path, _isdir, _rel_path, _path_join, _path_dirname, _is_illegal_subdirectory_file_name
+from pyxet.util import _get_fs_and_path, _isdir, _rel_path, _path_join, _path_split, _path_dirname, _is_illegal_subdirectory_file_name
 from pyxet.file_operations import _single_file_copy_impl, CopyUnit
 
 XET_MTIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
@@ -41,9 +41,6 @@ class SyncCommand:
         # TODO: we may want to be able to sync remote location to a new branch?
         self._dest_fs.branch_info(self._dest_root)
 
-        # source should be a directory
-        if not _isdir(self._src_fs, self._src_root):
-            raise ValueError(f"source: {self._src_root} needs to be a directory")
         # s3 needs a bucket
         if self._src_proto == 's3' and (self._src_root == '/' or self._src_root == ''):
             raise ValueError(f"S3 source needs a specified bucket")
@@ -59,11 +56,13 @@ class SyncCommand:
         """
         sync_stats = SyncStats()
 
+        srcpath_is_dir = _isdir(self._src_fs, self._src_root)
         if not self._dryrun:
             self._dest_fs.start_transaction(self._message)
         with ThreadPoolExecutor() as executor:
             futures = []
-            if self._use_mtime:
+            # if src is a single file, we always use sync_with_info
+            if self._use_mtime or srcpath_is_dir == False:
                 self._sync_with_info(executor, futures, self._src_root, self._dest_root)
             else:
                 self._sync_with_ls(executor, futures, self._src_root, self._dest_root)
@@ -93,6 +92,7 @@ class SyncCommand:
         Note that ls on xet-fs doesn't return an mtime and thus, will not be able to compare
         on that field.
         """
+        # This only syncs folders. single files should always go to sync_with_info
         try:
             dest_files = self._dest_fs.find(dest_path, detail=True)
         except RuntimeError:
@@ -121,18 +121,29 @@ class SyncCommand:
         found in the source. This is much slower than
         """
         total_size = 0
-        for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
-            relpath = _rel_path(abs_path, src_path)
+        if not _isdir(self._src_fs, src_path):
+            src_info = self._src_fs.info(src_path)
+            abs_path = src_info['name']
+            # get the last component name. This is the filename
+            fname = _path_split(self._src_fs, abs_path)[-1]
+            # Tack it on to the end of the dest path to make the output name
+            dest_for_this_path = _path_join(self._dest_fs, dest_path, fname)
+            partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
+            futures.append(executor.submit(partial_func))
+            total_size += src_info.get('size', 0)
+        else:
+            for abs_path, src_info in self._src_fs.find(src_path, detail=True).items():
+                relpath = _rel_path(abs_path, src_path)
 
-            if _is_illegal_subdirectory_file_name(relpath):
-                print(f"{abs_path} is an invalid file (not copied).")
-                continue
+                if _is_illegal_subdirectory_file_name(relpath):
+                    print(f"{abs_path} is an invalid file (not copied).")
+                    continue
 
-            dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
-            if src_info['type'] != 'directory':
-                partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
-                futures.append(executor.submit(partial_func))
-                total_size += src_info.get('size', 0)
+                dest_for_this_path = _path_join(self._dest_fs, dest_path, relpath)
+                if src_info['type'] != 'directory':
+                    partial_func = partial(self._sync_with_mtime_task, abs_path, dest_for_this_path, src_info)
+                    futures.append(executor.submit(partial_func))
+                    total_size += src_info.get('size', 0)
 
         if self._update_size:
             self._update_remote_size(total_size)
@@ -164,6 +175,8 @@ class SyncCommand:
                 dest_dir = _path_dirname(self._dest_fs, dest_path)
                 cp_copy = CopyUnit(src_path=src_path, dest_path=dest_path, dest_dir = dest_dir, size = size)
                 _single_file_copy_impl(cp_copy, self._src_fs, self._dest_fs)
+            else:
+                print(f"Copying {src_path} to {dest_path}")
             return True
         # ignored
         return False

@@ -5,7 +5,7 @@ use gitxetcore::command::*;
 use gitxetcore::config::ConfigGitPathOption;
 use gitxetcore::config::ConfigGitPathOption::NoPath;
 use gitxetcore::config::XetConfig;
-use gitxetcore::log::initialize_tracing_subscriber;
+use gitxetcore::environment::log::initialize_tracing_subscriber;
 use progress_reporting::DataProgressReporter;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
@@ -655,10 +655,10 @@ impl PyWriteTransaction {
     async fn complete_impl(&mut self, commit: bool, cleanup_immediately: bool) -> Result<()> {
         let Some(tr) = self.pwt.take() else {
             // This means either we've called close() on the transaction, then tried to use it;
-            // or all associated write files complete and close before calling close(). 
+            // or all associated write files complete and close before calling close().
             // Either case this should be a NOP.
             info!("Complete called after PyTransaction object committed");
-            return Ok(())
+            return Ok(());
         };
 
         {
@@ -803,9 +803,11 @@ impl PyWriteTransactionAccessToken {
         &'a self,
     ) -> Result<RwLockWriteGuard<'a, WriteTransaction>> {
         let Some(t) = &self.tr else {
-            // This should only happen if it's been closed explicitly, then 
+            // This should only happen if it's been closed explicitly, then
             // access is attempted.
-            return Err(anyhow!("Transaction accessed for write after being closed."));
+            return Err(anyhow!(
+                "Transaction accessed for write after being closed."
+            ));
         };
 
         Ok(t.write().await)
@@ -815,7 +817,7 @@ impl PyWriteTransactionAccessToken {
         &'a self,
     ) -> Result<RwLockReadGuard<'a, WriteTransaction>> {
         let Some(t) = &self.tr else {
-            // This should only happen if it's been closed explicitly, then 
+            // This should only happen if it's been closed explicitly, then
             // access is attempted.
             return Err(anyhow!("Transaction accessed for read after being closed."));
         };

@@ -2906,7 +2906,7 @@ dependencies = [
 
 [[package]]
 name = "pyxet"
-version = "0.1.8-rc1"
+version = "0.1.9-rc1"
 dependencies = [
  "anyhow",
  "cc",
@@ -2914,7 +2914,7 @@ dependencies = [
  "gitxetcore",
  "lazy_static",
  "libc",
- "openssl",
+ "memchr",
  "progress_reporting",
  "pyo3",
  "pyo3-asyncio",

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["maturin>=1.4,<=0.15"]
+requires = ["maturin>=0.14.17,<0.15"]
 build-backend = "maturin"
 
 [project]
 name = "pyxet"
-version = "0.1.8-rc1"
+version = "0.1.9-rc1"
 description = "pyxet is a Python library that provides a lightweight interface for the XetHub platform."
 keywords = [
     "ai",
@@ -16,7 +16,7 @@ keywords = [
     "machine-learning",
     "reproducibility",
 ]
-license = "BSD-3-Clause"
+license = { text = "BSD-3-Clause"}
 maintainers = [{ name = "XetHub", email = "contact@xethub.com" }]
 requires-python = ">=3.7"
 classifiers = [

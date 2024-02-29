@@ -2914,7 +2914,6 @@ dependencies = [
  "gitxetcore",
  "lazy_static",
  "libc",
- "memchr",
  "progress_reporting",
  "pyo3",
  "pyo3-asyncio",

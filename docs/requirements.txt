@@ -1,7 +1,7 @@
 myst-parser
 Sphinx
 sphinx-rtd-theme
-sphinx-book-theme==0.3.3
+sphinx-book-theme
 boto3
 fsspec
 typer

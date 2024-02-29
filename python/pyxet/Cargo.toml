@@ -38,3 +38,9 @@ cc = "1.0"
 
 [features]
 openssl_vendored = ["gitxetcore/openssl_vendored"]
+
+[release]
+opt-level = 3
+debug = true
+lto = true
+

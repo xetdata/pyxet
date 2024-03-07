@@ -18,17 +18,7 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.18.0", features = ["extension-module", "abi3-py37", "generate-import-lib"] }
 xetblob = { git = "https://github.com/xetdata/xet-core" }
-
 progress_reporting = { git = "https://github.com/xetdata/xet-core" }
-
-[target.'cfg(target_os = "windows")'.dependencies.gitxetcore]
-git = "https://github.com/xetdata/xet-core"
-features = []
-
-[target.'cfg(not(target_os = "windows"))'.dependencies.gitxetcore]
-git = "https://github.com/xetdata/xet-core"
-features = ["openssl_vendored"]
-
 tempfile = "3.2.0"
 pyo3-asyncio = { version = "0.18", features = ["attributes", "tokio-runtime"] }
 libc = "0.2"
@@ -38,6 +28,14 @@ tokio = { version = "1", features = ["full"] }
 futures = "0.3.21"
 anyhow = "1"
 lazy_static = "1.4.0"
+
+[target.'cfg(target_os = "windows")'.dependencies.gitxetcore]
+git = "https://github.com/xetdata/xet-core"
+features = []
+
+[target.'cfg(not(target_os = "windows"))'.dependencies.gitxetcore]
+git = "https://github.com/xetdata/xet-core"
+features = ["openssl_vendored"]
 
 [build-dependencies]
 pyo3-build-config = "0.18.0"

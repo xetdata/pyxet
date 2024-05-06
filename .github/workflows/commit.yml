@@ -54,7 +54,7 @@ jobs:
           cd python/pyxet
           pip install -r tests/requirements.txt
           pip install target/wheels/pyxet*.whl
-          pytest tests
+          pytest pyxet/ tests/ # Tests also live in the code itself
       - name: Unit and integration tests (Windows)
         if: runner.os == 'Windows'
         env:
@@ -69,5 +69,5 @@ jobs:
             pip install $_.FullName
           }
           cd ..
-          python -m pytest pyxet/tests
+          python -m pytest pyxet/tests/ pyxet/pyxet/  # Tests also live in the code itself, so run those too
 

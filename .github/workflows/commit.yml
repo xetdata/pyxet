@@ -35,12 +35,14 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install make
-          export PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+          export PATH="$(dirname $(dirname $(which gmake)))/opt/make/libexec/gnubin:$PATH"
+          export MAKE="$(which gmake)"
           export CXXFLAGS="-stdlib=libc++"
           cd python/pyxet
           rustup target add x86_64-apple-darwin
           rustup target add aarch64-apple-darwin
-          maturin build --target universal2-apple-darwin -r 
+
+          maturin build --target universal2-apple-darwin 
       - name: Unit and integration tests (non-Windows)
         if: runner.os != 'Windows'
         env:

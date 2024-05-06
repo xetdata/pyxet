@@ -103,7 +103,6 @@ pub fn configure_login(
             email,
             password: token,
             force: no_auth,
-            s3: false,
             no_overwrite,
         });
         let config = XetConfig::new(None, None, NoPath)

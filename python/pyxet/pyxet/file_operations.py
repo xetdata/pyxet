@@ -214,7 +214,7 @@ def _build_cp_action_list_impl(src_fs, src_path, dest_fs, dest_path, recursive, 
         # Handling directories.  Make sure that the recursive flag is set. 
         if src_is_directory:
             if not recursive:
-                print(f"Directory {src_path} skipped in non-recursive mode.  Pass -r to enable recursive copying of directories.")
+                print(f"Directory {src_path} skipped in non-recursive mode. Pass -r to enable recursive copying of directories.")
                 return
 
 

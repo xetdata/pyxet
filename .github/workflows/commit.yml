@@ -36,6 +36,7 @@ jobs:
         run: |
           brew install make
           export PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+          export MAKE="$(which gmake)"
           export CXXFLAGS="-stdlib=libc++"
           cd python/pyxet
           rustup target add x86_64-apple-darwin
@@ -45,7 +46,7 @@ jobs:
           cargo build --release --target=x86_64-apple-darwin -j 1 -p openssl
           cargo build --release --target=aarch64-apple-darwin -j 1 -p openssl
 
-          maturin build --target universal2-apple-darwin
+          maturin build --target universal2-apple-darwin 
       - name: Unit and integration tests (non-Windows)
         if: runner.os != 'Windows'
         env:

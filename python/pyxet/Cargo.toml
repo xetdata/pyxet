@@ -16,7 +16,11 @@ name = "pyxet"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.18.0", features = ["extension-module", "abi3-py37", "generate-import-lib"] }
+pyo3 = { version = "0.18.0", features = [
+    "extension-module",
+    "abi3-py37",
+    "generate-import-lib",
+] }
 xetblob = { git = "https://github.com/xetdata/xet-core" }
 progress_reporting = { git = "https://github.com/xetdata/xet-core" }
 tempfile = "3.2.0"
@@ -28,6 +32,9 @@ tokio = { version = "1", features = ["full"] }
 futures = "0.3.21"
 anyhow = "1"
 lazy_static = "1.4.0"
+
+# This is needed just to enable us to compile this properly ahead of time.
+openssl = { version = "0.10", features = ["vendored"] }
 
 [target.'cfg(target_os = "windows")'.dependencies.gitxetcore]
 git = "https://github.com/xetdata/xet-core"
@@ -44,4 +51,3 @@ cc = "1.0"
 [release]
 opt-level = 3
 debug = true
-

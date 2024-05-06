@@ -2930,6 +2930,7 @@ dependencies = [
  "gitxetcore",
  "lazy_static",
  "libc",
+ "openssl",
  "progress_reporting",
  "pyo3",
  "pyo3-asyncio",

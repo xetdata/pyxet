@@ -6,7 +6,21 @@ from collections import namedtuple
 from urllib.parse import urlparse
 import sys
 
-XetPathInfo = namedtuple('XetPathInfo', ('remote', 'branch', 'path'))
+class XetPathInfo:
+    __slots__ = ['scheme', 'domain', 'token', 'user', 'repo', 'branch', 'path']
+
+    def url(self):
+        url = f"{self.scheme}://{self.user}@{self.domain}/{self.repo}/"
+        if self.branch:
+            url = f"{url}/{self.branch}"
+        if self.path:
+            url = f"{url}/{self.path}"
+
+        return url
+
+    def remote(self):
+        url = f"{self.scheme}://{self.user}@{self.domain}/{self.repo}"
+
 
 has_warned_user_on_url_format = False
 
@@ -40,6 +54,14 @@ def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_
     if parse.scheme != 'xet':
         raise ValueError('Invalid protocol')
 
+    # Set this as a default below     
+
+    ret = XetPathInfo()
+    # Set what defaults we can
+    ret.domain = default_domain
+    ret.scheme = "xet"
+
+
     # Handle the case where we are xet://user/repo. In which case the domain
     # parsed is not xethub.com and domain="user".
     # we rewrite the parse the handle this case early.
@@ -53,25 +75,26 @@ def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_
                                 f"          Endpoint now defaulting to {default_domain}.\n\n")
                 has_warned_user_on_url_format = True
 
+        if parse.netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the new format.
+            ret.domain = parse.netloc
+            path_to_parse = parse.path
+        else:
+            ret.domain = default_domain
+            path_to_parse = "f{parse.netloc}/{parse.path}"
     else:
+        
         # Hack until we can clean up this parsing logic
         user_at_domain = parse.netloc.split("@")
         if len(user_at_domain) == 2:
-            user, domain = user_at_domain
-            # In this case, swap out the url to the old form and tell it to reparse it.  
-            # This is easier than trying to figure out how to rework the url parsing tool logic
-            new_url = url.replace(parse.netloc, f"{domain}/{user}")
-            return parse_url(new_url, default_domain=domain, partial_remote=partial_remote, recursive_skip_checks=True)
+            ret.user, ret.domain = user_at_domain
+            path_to_parse = f"{ret.user}/{parse.path}"
         else: 
             raise ValueError(f"Cannot parse user and endpoint from {parse.netloc}")
 
-    if not parse.netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the old format.
-        # this is of the for xet://user/repo/...
-        # join user back with path
-        newpath = f"/{parse.netloc}/{parse.path}".replace("//", "/")  
-        # replace the netloc
-        true_netloc = default_domain
-        parse = parse._replace(netloc=true_netloc, path=newpath)
+    
+    ret = XetPathInfo()
+    ret.domain = domain
+    
 
     # Split the known path and try to split out the user/repo/branch/path components
     path = parse.path
@@ -80,15 +103,13 @@ def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_
 
     components = list([t for t in [t.strip() for t in path.split('/')] if t])
 
-    print(f"Components={components}")
-
     # so the minimum for a remote is xethub.com/user/
     if len(components) < 2:
         if partial_remote and len(components) >= 1:
             replacement_parse_path = '/'.join(components)
             parse = parse._replace(path=replacement_parse_path, scheme=scheme)
             return XetPathInfo(parse.geturl(), "", "")
-        raise ValueError(f"Invalid Xet URL format: Expecting xet://user/repo/[branch]/[path], components={components}, path={path}")
+        raise ValueError(f"Invalid Xet URL format: Expecting xet://user@domain/repo/[branch]/[path], got {url}")
 
     branch = ""
     if len(components) >= 3:
@@ -105,8 +126,9 @@ def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_
     replacement_parse_path = '/'.join(components[:2])
     parse = parse._replace(path=replacement_parse_path, scheme=scheme)
 
-    return XetPathInfo(parse.geturl().rstrip("/"), branch, path)
+    ret.domain = domain
 
+    return ret
 
 class ParseUrlTest(unittest.TestCase):
 
@@ -245,6 +267,12 @@ class ParseUrlTest(unittest.TestCase):
         self.assertEqual(parse.remote, "https://xh.com/user/repo")
         self.assertEqual(parse.branch, "")
         self.assertEqual(parse.path, "")
+
+        parse = self.parse_url("xet://XetHub@hub.xetsvc.com/Flickr30k/main", False)
+        self.assertEqual(parse.remote, "https://hub.xetsvc.com/XetHub/Flickr30k")
+        self.assertEqual(parse.branch, "main")
+        self.assertEqual(parse.path, "")
+
 
         parse = self.parse_url("xet://user@xh.com/repo/branch", False, default_domain='xetbeta.com')
         self.assertEqual(parse.remote, "https://xh.com/user/repo")

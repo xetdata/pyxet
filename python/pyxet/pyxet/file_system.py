@@ -142,12 +142,6 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if url_path.branch == '':
             raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
 
-        parse = urlparse(url_path.remote)
-        path = parse.path
-        components = list(filter(None, path.lstrip('/').rstrip('/').split('/')))
-        if len(components) < 2:
-            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
-        prefix = '/'.join(components[:2]) + '/' + url_path.branch
         attr = _manager.stat(url_path.remote, url_path.branch, "")
         if attr is None:
             raise FileNotFoundError(

@@ -138,7 +138,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if isinstance(url, XetPathInfo):
             url_path = url
         else:
-            url_path = parse_url(url, self.domain, require_branch = True)
+            url_path = parse_url(url, self.domain, expect_branch = True)
 
         attr = _manager.stat(url_path.remote(), url_path.branch, "")
 
@@ -223,9 +223,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         origin = parse_url(origin_path, self.domain, expect_branch = False)
         dest = parse_url(dest_path, self.domain, expect_branch = False)
         
-        if not self.is_repo(origin_path):
+        if not self.is_repo(origin.remote()):
             raise ValueError(f"{origin_path} is not a repo")
-        if self.is_repo(dest_path):
+        if self.is_repo(dest.remote()):
             raise ValueError(f"{dest_path} already exists")
 
         if origin.user != dest.user:
@@ -369,7 +369,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                                    "Use `with fs.transaction(repo_and_branch, [commit_message]):` to enable write access.")
 
         if mode.startswith('r'):
-            repo_handle = _manager.get_repo(url_path.remote)
+            repo_handle = _manager.get_repo(url_path.remote())
             branch = url_path.branch
             if "flags" in kwargs:
                 handle = repo_handle.open_for_read_with_flags(branch, url_path.path, kwargs["flags"])
@@ -552,7 +552,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         paths_by_remotes = {}
         for url in url_paths:
-            paths_by_remotes.setdefault(url.remote, []).append(url)
+            paths_by_remotes.setdefault(url.remote(), []).append(url)
 
         for (remote, urls) in paths_by_remotes.items():
             repo_handle = _manager.get_repo(remote)
@@ -584,7 +584,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         Internal method used by CommitTransaction to get
         a transaction handler object from the repository handle
         """
-        repo_handle = _manager.get_repo(repo_info.remote)
+        repo_handle = _manager.get_repo(repo_info.remote())
         return repo_handle.begin_write_transaction(repo_info.branch, commit_message)
 
     def start_transaction(self, commit_message=None):

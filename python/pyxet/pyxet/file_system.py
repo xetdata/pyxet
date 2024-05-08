@@ -281,7 +281,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         })
         _manager.api_query(url_path.remote(branch = True), "remote_size", "post", body)
 
-    def ls(self, path, detail=True, **kwargs):
+    def ls(self, path : str, detail=True, **kwargs):
         """List objects at path.
         This should include subdirectories and files at that location. The
         difference between a file and a directory must be clear when details
@@ -324,15 +324,16 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             return [{'name': n, 'type': 'repo'} for n in names]
         elif url_path.branch == "":
             branches = self.list_branches(url_path.remote())
-            return [{'name': url_path.remote() + '/' + n['name'], 'type': 'branch'} for n in branches]
+            return [{'name':  os.path.join(path, n['name']), 'type': 'branch'} for n in branches]
         else:
-
             files, file_info = _manager.listdir(url_path.remote(),
-                                               url_path.branch,
-                                               url_path.path)
+                                                url_path.branch,
+                                                url_path.path)
 
+        # Note that we cannot actually standardize the paths in the listed files.  
+        # If we do, glob will not work as it calls this and matches names against the query.
         if detail:
-            return [{"name": url_path.name() + '/' + fname,
+            return [{"name": os.path.join(path, fname),
                      "size": finfo.size,
                      "type": finfo.ftype}
                     for fname, finfo in zip(files, file_info)]
@@ -424,7 +425,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             self.list_branches(url_path.remote())
             return True
         except Exception as e:
-            return False
+            raise e
 
     def make_branch(self, repo, src_branch_name, target_branch_name):
         """

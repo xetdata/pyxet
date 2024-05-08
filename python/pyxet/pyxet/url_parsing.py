@@ -15,6 +15,14 @@ class XetPathInfo:
             user = self.user
 
         return f'{user}@{self.domain}'
+    
+    def _domain_sl_user(self):
+        if self.token: 
+            user = f"{self.user}:{self.token}"
+        else:
+            user = self.user
+
+        return f'{self.domain}/{user}'
 
     def _repo_branch_path(self):
         return "/".join(s for s in [self.repo, self.branch, self.path] if s)
@@ -26,12 +34,24 @@ class XetPathInfo:
         """
         Returns the endpoint of this in the qualified user[:token]@domain
         """
+        
         if branch and self.branch:
-            return f"https://{self._user_at_domain()}/{self.repo}/{self.branch}"
+            ret = f"https://{self._domain_sl_user()}/{self.repo}/{self.branch}"
         elif self.repo:
-            return f"https://{self._user_at_domain()}/{self.repo}"
+            ret = f"https://{self._domain_sl_user()}/{self.repo}"
         else:
-            return f"https://{self._user_at_domain()}"
+            ret = f"https://{self._domain_sl_user()}"
+
+        # This should work but has issues in xet-core
+        #if branch and self.branch:
+        #    ret = f"https://{self._user_at_domain()}/{self.repo}/{self.branch}"
+        #elif self.repo:
+        #    ret = f"https://{self._user_at_domain()}/{self.repo}"
+        #else:
+        #    ret = f"https://{self._user_at_domain()}"
+        
+        print(f"remote() = {ret}")
+        return ret
     
     def domain_url(self):
         """

@@ -66,7 +66,7 @@ def _single_file_copy_impl(cp_action, src_fs, dest_fs, progress_reporter = None,
     src_path = _path_normalize(src_fs, cp_action.src_path, strip_trailing_slash=True, keep_relative=False)
     dest_path = _path_normalize(dest_fs, cp_action.dest_path, strip_trailing_slash=True, keep_relative=False) 
 
-    if progress_reporter is None:
+    if True or progress_reporter is None:
         print(f"Copying {src_path} to {dest_path}")
 
     if src_fs.protocol == 'xet' and dest_fs.protocol == 'xet':

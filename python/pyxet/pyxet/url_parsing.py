@@ -30,14 +30,18 @@ class XetPathInfo:
     def url(self):
         return f"{self.scheme}://{self._user_at_domain()}/{self._repo_branch_path()}"
 
-    def remote(self, branch = False):
+    def base_path(self): 
+        """
+        Returns the base user/repo/branch  
+        """ 
+        return f"{self.user}/{self.repo}/{self.branch}"
+
+    def remote(self):
         """
         Returns the endpoint of this in the qualified user[:token]@domain
         """
-        
-        if branch and self.branch:
-            ret = f"https://{self._domain_sl_user()}/{self.repo}/{self.branch}"
-        elif self.repo:
+
+        if self.repo:
             ret = f"https://{self._domain_sl_user()}/{self.repo}"
         else:
             ret = f"https://{self._domain_sl_user()}"
@@ -50,7 +54,6 @@ class XetPathInfo:
         #else:
         #    ret = f"https://{self._user_at_domain()}"
         
-        print(f"remote() = {ret}")
         return ret
     
     def domain_url(self):

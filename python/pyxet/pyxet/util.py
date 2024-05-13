@@ -31,8 +31,12 @@ def _should_load_aws_credentials():
         return False
     return True
 
-
 def _get_fs_and_path(uri, strip_trailing_slash = True):
+    ret = __get_fs_and_path(uri, strip_trailing_slash)
+    print(f"_get_fs_and_path: uri = {uri}, strip_trailin_slash={strip_trailing_slash}, ret = {ret}")
+    return ret
+
+def __get_fs_and_path(uri, strip_trailing_slash = True):
     if uri.find('://') == -1:
         fs = fsspec.filesystem("file")
         return fs, _path_normalize(fs, uri, strip_trailing_slash=strip_trailing_slash)
@@ -40,7 +44,11 @@ def _get_fs_and_path(uri, strip_trailing_slash = True):
     if len(split) != 2:
         print(f"Invalid URL: {uri}", file=sys.stderr)
     if split[0] == 'xet':
-        fs = XetFS()
+        url_info = parse_url(uri)
+        fs = XetFS(domain = url_info.domain)
+        fs, _path_normalize(fs, url_info.name(), strip_trailing_slash = strip_trailing_slash)
+        # 
+
     elif split[0] == 's3':
         load_aws_creds = _should_load_aws_credentials()
         fs = fsspec.filesystem('s3', anon=not load_aws_creds)

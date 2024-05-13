@@ -4,6 +4,42 @@ Provides URL parsing for Xet Repos
 import unittest
 from urllib.parse import urlparse
 import sys
+import os
+
+has_warned_user_on_url_format = False
+
+__default_domain = None
+
+def set_default_domain(domain): 
+    global __default_domain
+    if __default_domain is None:
+        __default_domain = normalize_domain(domain) 
+
+def normalize_domain(domain = None):
+    global __default_domain
+    if domain is None: 
+        if __default_domain is not None:
+            domain = __default_domain
+        elif "XET_ENDPOINT" in os.environ:
+            env_domain = os.environ["XET_ENDPOINT"]
+            domain = __default_domain = env_domain
+        else:
+            sys.stderr.write("\nWarning:  Endpoint defaulting to xethub.com; use URLs of the form \n"
+                             "          xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n")
+            domain = __default_domain = "xethub.com"
+
+    # support default_domain with a scheme (http/https)
+    if domain is not None:
+        domain_split = domain.split('://')
+        if len(domain_split) == 1:
+            domain = domain_split[0]
+        elif len(domain_split) == 2:
+            domain = domain_split[1]
+        else:
+            raise ValueError(f"Domain {domain} not valid url.")
+
+    return domain
+
 
 class XetPathInfo:
     __slots__ = ['scheme', 'domain', 'user', 'repo', 'branch', 'path']
@@ -64,9 +100,7 @@ class XetPathInfo:
         return self.url()
 
 
-has_warned_user_on_url_format = False
-
-def parse_url(url, default_domain='xethub.com', expect_branch = None, expect_repo = True):
+def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True):
     """
     Parses a Xet URL of the form 
      - xet://user/repo/branch/[path]
@@ -90,20 +124,11 @@ def parse_url(url, default_domain='xethub.com', expect_branch = None, expect_rep
     else:
         raise ValueError(f"URL {url} not of the form xet://endpoint:user/repo/...")
 
-    # support default_domain with a scheme (http/https)
-    domain_split = default_domain.split('://')
-    if len(domain_split) == 1:
-        default_domain = domain_split[0]
-    elif len(domain_split) == 2:
-        default_domain = domain_split[1]
-    else:
-        raise ValueError(f"default_domain {default_domain} not valid url.")
 
     # Set this as a default below     
 
     ret = XetPathInfo()
     # Set what defaults we can
-    ret.domain = default_domain
     ret.scheme = "xet"
 
     netloc_info = url_path.split("/", 1)
@@ -118,20 +143,24 @@ def parse_url(url, default_domain='xethub.com', expect_branch = None, expect_rep
     # parsed is not xethub.com and domain="user".
     # we rewrite the parse the handle this case early.
     if ":" not in netloc:
-        global has_warned_user_on_url_format
         
-        if not has_warned_user_on_url_format:
+        global has_warned_user_on_url_format
+
+        if default_domain is None and not has_warned_user_on_url_format:
             sys.stderr.write("Warning:  The use of the xet:// prefix without an endpoint is deprecated and will be disabled in the future.\n"
-                            f"          Please switch URLs to use the format xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n"
-                            f"          Endpoint now defaulting to {default_domain}.\n\n")
+                             "          Please switch URLs to use the format xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n"
+                             "          Endpoint now defaulting to xethub.com.\n\n")
             has_warned_user_on_url_format = True
+        
+        default_domain = normalize_domain(default_domain) 
 
         if netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the new format.
             ret.domain = netloc
             path_to_parse = path
         else:
-            ret.domain = default_domain
+            ret.domain = "xethub.com" 
             path_to_parse = f"{netloc}/{path}"
+
     else:
         domain_user = netloc.split(":")
         if len(domain_user) == 2:

@@ -377,12 +377,12 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         # Note that we cannot actually standardize the paths in the listed files.  
         # If we do, glob will not work as it calls this and matches names against the query.
         if detail:
-            ret = [{"name": os.path.join(url_path.base_path(), fname), 
+            ret = [{"name": url_path.base_path() + "/" + fname, 
                      "size": finfo.size,
                      "type": finfo.ftype}
                     for fname, finfo in zip(files, file_info)]
         else:
-            ret = [os.path.join(url_path.base_path,  fname) for fname in files]
+            ret = [url_path.base_path() + "/" + fname for fname in files]
 
         return ret
 

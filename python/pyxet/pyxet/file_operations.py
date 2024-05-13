@@ -357,8 +357,6 @@ def perform_copy(source_list, destination, message = None, recursive=False):
     Performs a copy operation. 
     """
 
-    print(f"Perform_copy: source_list = {source_list}, destination = {destination}")
-
     if not isinstance(source_list, list):
         source_list = [source_list]
 

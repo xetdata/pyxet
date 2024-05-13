@@ -19,7 +19,7 @@ def _should_load_aws_credentials():
     """
     try:
         import boto3
-        import botocoren
+        import botocore
     except:
         print("boto3 and botocore required for AWS S3 support")
         print("Please install them with 'pip install boto3 botocore'")

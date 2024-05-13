@@ -19,7 +19,7 @@ def _should_load_aws_credentials():
     """
     try:
         import boto3
-        import botocore
+        import botocoren
     except:
         print("boto3 and botocore required for AWS S3 support")
         print("Please install them with 'pip install boto3 botocore'")
@@ -33,7 +33,7 @@ def _should_load_aws_credentials():
 
 def _get_fs_and_path(uri, strip_trailing_slash = True):
     ret = __get_fs_and_path(uri, strip_trailing_slash)
-    print(f"_get_fs_and_path: uri = {uri}, strip_trailin_slash={strip_trailing_slash}, ret = {ret}")
+    # print(f"_get_fs_and_path: uri = {uri}, strip_trailin_slash={strip_trailing_slash}, ret = {ret}")
     return ret
 
 def __get_fs_and_path(uri, strip_trailing_slash = True):

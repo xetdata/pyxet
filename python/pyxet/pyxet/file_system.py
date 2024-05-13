@@ -384,8 +384,6 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         else:
             ret = [os.path.join(url_path.base_path,  fname) for fname in files]
 
-        print(f"ls: path = {path}, ret = {ret}")
-
         return ret
 
     def _open(

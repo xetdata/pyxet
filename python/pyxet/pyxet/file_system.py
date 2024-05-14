@@ -238,6 +238,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if origin.domain != dest.domain:
             raise ValueError("Cannot fork repos between domains.")
 
+        auth_user = self.get_username()
+        if dest.user != auth_user: 
+            raise ValueError(f"Can only fork a repo into your account ({dest.user} != {auth_user})")
+
         query = json.dumps({'name': dest.repo})
         ret = json.loads(bytes(self._manager.api_query(origin.remote(), "forks", "post", query)))
         return ret
@@ -252,6 +256,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise ValueError(f"{dest_path} already exists")
         if origin.domain != dest.domain:
             raise ValueError("Cannot fork repos between different domains.")
+        
+        auth_user = self.get_username()
+        if dest.user != auth_user: 
+            raise ValueError(f"Can only duplicate a repo into your account ({dest.user} != {auth_user})")
 
         ret = json.loads(bytes(self._manager.api_query(origin.remote(), "duplicate", "post", "")))
 

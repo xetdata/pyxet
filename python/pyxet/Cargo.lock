@@ -29,6 +29,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
+dependencies = [
+ "cfg-if 1.0.0",
+ "getrandom",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -353,7 +366,7 @@ dependencies = [
 [[package]]
 name = "cache"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -378,7 +391,7 @@ dependencies = [
 [[package]]
 name = "cas_client"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -470,7 +483,7 @@ dependencies = [
 [[package]]
 name = "chunkpipe"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 
 [[package]]
 name = "clap"
@@ -549,7 +562,7 @@ dependencies = [
 [[package]]
 name = "common_constants"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 
 [[package]]
 name = "compare"
@@ -806,7 +819,7 @@ dependencies = [
 [[package]]
 name = "data_analysis"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "approx",
  "cxx",
@@ -970,7 +983,7 @@ dependencies = [
 [[package]]
 name = "error_printer"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "tracing",
 ]
@@ -1218,7 +1231,7 @@ dependencies = [
 [[package]]
 name = "gitxetcore"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1258,6 +1271,7 @@ dependencies = [
  "libc",
  "libmagic",
  "lru",
+ "lz4",
  "mdb_shard",
  "merkledb",
  "merklehash",
@@ -1367,7 +1381,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash",
+ "ahash 0.7.8",
 ]
 
 [[package]]
@@ -1688,6 +1702,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "imara-diff"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e98c1d0ad70fc91b8b9654b1f33db55e59579d3b3de2bffdced0fdb810570cb8"
+dependencies = [
+ "ahash 0.8.11",
+ "hashbrown 0.12.3",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1814,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "lazy"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "lazy_static",
  "tokio",
@@ -1858,7 +1882,7 @@ dependencies = [
 [[package]]
 name = "libmagic"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "phf",
@@ -1877,6 +1901,14 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags 2.5.0",
  "libc",
+]
+
+[[package]]
+name = "libxet"
+version = "0.13.4"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
+dependencies = [
+ "gitxetcore",
 ]
 
 [[package]]
@@ -1986,7 +2018,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "mdb_shard"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -2026,7 +2058,7 @@ dependencies = [
 [[package]]
 name = "merkledb"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "async-trait",
  "bincode",
@@ -2057,7 +2089,7 @@ dependencies = [
 [[package]]
 name = "merklehash"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "blake3",
  "generic-array",
@@ -2517,7 +2549,7 @@ dependencies = [
 [[package]]
 name = "parutils"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -2776,7 +2808,7 @@ dependencies = [
 [[package]]
 name = "progress_reporting"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "atty",
  "crossterm",
@@ -2804,7 +2836,7 @@ dependencies = [
 [[package]]
 name = "prometheus_dict_encoder"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "memchr",
  "prometheus",
@@ -2972,10 +3004,9 @@ dependencies = [
  "anyhow",
  "cc",
  "futures",
- "gitxetcore",
  "lazy_static",
  "libc",
- "progress_reporting",
+ "libxet",
  "pyo3",
  "pyo3-asyncio",
  "pyo3-build-config",
@@ -2983,7 +3014,6 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "xetblob",
 ]
 
 [[package]]
@@ -3223,7 +3253,7 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 [[package]]
 name = "retry_strategy"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "tokio-retry",
 ]
@@ -3590,7 +3620,7 @@ dependencies = [
 [[package]]
 name = "shard_client"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3880,10 +3910,11 @@ dependencies = [
 [[package]]
 name = "tableau_summary"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "error_printer",
+ "imara-diff",
  "itertools 0.12.1",
  "once_cell",
  "regex",
@@ -4508,7 +4539,7 @@ dependencies = [
 [[package]]
 name = "utils"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4898,7 +4929,7 @@ dependencies = [
 [[package]]
 name = "xet-error-impl"
 version = "1.0.50"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4908,7 +4939,7 @@ dependencies = [
 [[package]]
 name = "xet_config"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "config",
  "dirs 4.0.0",
@@ -4921,23 +4952,10 @@ dependencies = [
 [[package]]
 name = "xet_error"
 version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
+source = "git+https://github.com/xetdata/xet-core#8fd4d0f6ea069d9b5686e192bbeef7b0852e4a0b"
 dependencies = [
  "lazy_static",
  "xet-error-impl",
-]
-
-[[package]]
-name = "xetblob"
-version = "0.13.4"
-source = "git+https://github.com/xetdata/xet-core#1d9e46e7ef4a422943dfd3a6149e9e6fb94c3fea"
-dependencies = [
- "anyhow",
- "clap 3.2.25",
- "gitxetcore",
- "tabled",
- "tokio",
- "url",
 ]
 
 [[package]]
@@ -4947,6 +4965,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.7.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae87e3fcd617500e5d106f0380cf7b77f3c6092aae37191433159dda23cfb087"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
 ]
 
 [[package]]

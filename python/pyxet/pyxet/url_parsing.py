@@ -78,7 +78,7 @@ class XetPathInfo:
     
     def domain_url(self):
         """
-        https://user@domain/
+        https://domain:user/
         """
         return f"https://{self.domain}/{self.user}" 
 
@@ -121,12 +121,15 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         url_path = url_info[0]
     elif len(url_info) == 2:
         scheme, url_path = url_info
-    else:
+    else: 
+        scheme = None  # Raise the ValueError. 
+
+    if scheme not in ["xet", "http", "https"]: 
+        # The other 
         raise ValueError(f"URL {url} not of the form xet://endpoint:user/repo/...")
 
 
     # Set this as a default below     
-
     ret = XetPathInfo()
     # Set what defaults we can
     ret.scheme = "xet"
@@ -174,19 +177,19 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
     components = list([t for t in [t.strip() for t in path_to_parse.split('/')] if t])
 
     if len(components) == 0:
-        raise ValueError(f"Invalid Xet URL format; user must be specified. Expecting xet://user@domain/[repo/[branch[/path]]], got {url}")
+        raise ValueError(f"Invalid Xet URL format; user must be specified. Expecting xet://domain:user/[repo/[branch[/path]]], got {url}")
     
     if len(components) == 1 and expect_repo is True:
-        raise ValueError(f"Invalid Xet URL format; user and repo must be specified. Expecting xet://user@domain/repo/[branch[/path]], got {url}")
+        raise ValueError(f"Invalid Xet URL format; user and repo must be specified. Expecting xet://domain:user/repo/[branch[/path]], got {url}")
     
     if len(components) > 1 and expect_repo is False:
-        raise ValueError(f"Invalid Xet URL format for user; repo given.  Expecting xet://user@domain/, got {url}")
+        raise ValueError(f"Invalid Xet URL format for user; repo given.  Expecting xet://domain:user/, got {url}")
        
     if len(components) == 2 and expect_branch is True:
-        raise ValueError(f"Invalid Xet URL format; user, repo, and branch must be specified for this operation. Expecting xet://user@domain/repo/branch[/path], got {url}")
+        raise ValueError(f"Invalid Xet URL format; user, repo, and branch must be specified for this operation. Expecting xet://domain:user/repo/branch[/path], got {url}")
 
     if len(components) > 2 and expect_branch is False:
-        raise ValueError(f"Invalid Xet URL format for repo; branch given.  Expecting xet://user@domain/repo, got {url}")
+        raise ValueError(f"Invalid Xet URL format for repo; branch given.  Expecting xet://domain:user/repo, got {url}")
 
     
     ret.user = components[0]

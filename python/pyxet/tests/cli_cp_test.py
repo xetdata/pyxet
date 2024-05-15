@@ -17,7 +17,7 @@ def delete_branch(repo, branch, *args):
 
 
 def test_single_file_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
     
@@ -58,7 +58,7 @@ def test_single_file_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_multiple_files_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
 
@@ -99,7 +99,7 @@ def test_multiple_files_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_glob_nonrecursive_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
 
@@ -145,7 +145,7 @@ def test_glob_nonrecursive_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_glob_recursive_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
 
@@ -192,7 +192,7 @@ def test_glob_recursive_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
     
 def test_directory_nonrecursive_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
 
@@ -242,7 +242,7 @@ def test_directory_nonrecursive_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_directory_recursive_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
     try:
@@ -295,7 +295,7 @@ def test_directory_recursive_upload():
 #
 # NOTE: only use this behavior for the fsspec copy method in python, not the xet cp command line.
 def _test_directory_recursive_noslash_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
     try:
@@ -345,7 +345,7 @@ def _test_directory_recursive_noslash_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_large_batch_upload():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
     b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
 
@@ -367,7 +367,7 @@ def test_large_batch_upload():
         delete_branch(f"xet://{user}/{repo}", b1, True)
 
 def test_size_hint():
-    user = utils.test_account_login()
+    user, _ = utils.test_account_login()
     repo = utils.test_repo()
 
     try:

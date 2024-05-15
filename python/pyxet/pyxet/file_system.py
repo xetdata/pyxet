@@ -479,7 +479,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             self.list_branches(url_path.remote())
             return True
         except Exception as e:
-            raise e
+            return False
 
     def make_branch(self, repo, src_branch_name, target_branch_name):
         """

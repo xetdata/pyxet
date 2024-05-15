@@ -46,13 +46,13 @@ def login(user, token, email=None, host=None):
     if host is not None:
         host = normalize_domain(host)
         set_default_domain(host)
-    __login_credentials[host] = (user, token, email)
+    __login_credentials[host] = (user, token, email, host)
     if host is None:
         for repo in __repo_managers.values():
             repo.override_login_config(user, token, email)
     else:
         if host in __repo_managers:
-            __repo_managers[host].override_login_config(user, token, email)
+            __repo_managers[host].override_login_config(user, token, email, host)
 
 
 def open(file_url, mode="rb", **kwargs):

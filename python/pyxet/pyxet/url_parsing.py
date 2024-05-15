@@ -42,7 +42,7 @@ def normalize_domain(domain = None):
 
 
 class XetPathInfo:
-    __slots__ = ['scheme', 'domain', 'user', 'repo', 'branch', 'path']
+    __slots__ = ['scheme', 'domain', 'user', 'repo', 'branch', 'path', 'domain_explicit']
 
     def _repo_branch_path(self):
         return "/".join(s for s in [self.repo, self.branch, self.path] if s)
@@ -54,7 +54,11 @@ class XetPathInfo:
         """
         Returns the base user/repo/branch  
         """ 
-        return f"{self.user}/{self.repo}/{self.branch}"
+        if self.domain_explicit:
+            return f"{self.domain}:{self.user}/{self.repo}/{self.branch}"
+        else:
+            return f"{self.user}/{self.repo}/{self.branch}"
+
 
     def remote(self):
         """
@@ -116,6 +120,8 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
     """
     url_info = url.split("://")
 
+    # assert default_domain is not None
+
     if len(url_info) == 1: 
         scheme = "xet"
         url_path = url_info[0]
@@ -163,7 +169,7 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         else:
             ret.domain = "xethub.com" 
             path_to_parse = f"{netloc}/{path}"
-
+        ret.domain_explicit = False
     else:
         domain_user = netloc.split(":")
         if len(domain_user) == 2:
@@ -171,6 +177,8 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
             path_to_parse = f"{user}/{path}"
         else: 
             raise ValueError(f"Cannot parse user and endpoint from {netloc}")
+        
+        ret.domain_explicit = True
 
     path_endswith_slash = path_to_parse.endswith("/")
 

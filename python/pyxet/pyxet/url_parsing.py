@@ -164,11 +164,12 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         
         default_domain = normalize_domain(default_domain) 
 
+        # Test explicitly for the case where this is just xet://
         if netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the new format.
             ret.domain = netloc
             path_to_parse = path
         else:
-            ret.domain = "xethub.com" 
+            ret.domain = default_domain 
             path_to_parse = f"{netloc}/{path}"
         ret.domain_explicit = False
         explicit_user = None
@@ -177,6 +178,8 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         if len(domain_user) == 2:
             ret.domain, explicit_user  = domain_user
             path_to_parse = f"{path}"
+            if not ret.domain:
+                ret.domain = default_domain
         else: 
             raise ValueError(f"Cannot parse user and endpoint from {netloc}")
         

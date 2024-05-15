@@ -44,7 +44,7 @@ def __get_fs_and_path(uri, strip_trailing_slash = True):
     if len(split) != 2:
         print(f"Invalid URL: {uri}", file=sys.stderr)
     if split[0] == 'xet':
-        url_info = parse_url(uri)
+        url_info = parse_url(uri, expect_branch=None, expect_repo=None)
         fs = XetFS(domain = url_info.domain)
         fs, _path_normalize(fs, url_info.name(), strip_trailing_slash = strip_trailing_slash)
         # 

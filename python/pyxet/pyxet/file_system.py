@@ -302,7 +302,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         remote = parse_url(url, self.domain, expect_branch=False, expect_repo=False)
 
-        res = json.loads(bytes(self._manager.api_query(remote.remote(), "", "get", "")))
+        res = json.loads(bytes(self._manager.api_query(remote.remote(domain_only=True), "", "get", "")))
         if raw:
             return res
         else:
@@ -372,15 +372,22 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         url_path = parse_url(path, self.domain, expect_branch=None, expect_repo=None)
 
         if url_path.repo == "":
-            names = [f['name'] for f in self.list_repos(url_path.remote())]
-            return [{'name': n, 'type': 'repo'} for n in names]
+            names = [f['name'] for f in self.list_repos(path)]
+
+            # To list all repos accessible by the current authenticated user, use 
+            # xet://domain:/
+            if url_path.user == "":
+                return [{'name': url_path.domain + ":" + n, 'type': 'repo'} for n in names]
+            else:
+                return [{'name': url_path.domain + ":" + n, 'type': 'repo'} for n in names if n.startswith(url_path.user)]
+
         elif url_path.branch == "":
             branches = self.list_branches(url_path.remote())
-            return [{'name':  os.path.join(path, n['name']), 'type': 'branch'} for n in branches]
+            return [{'name':  url_path.base_path() + "/" + n['name'], 'type': 'branch'} for n in branches]
         else:
             files, file_info = self._manager.listdir(url_path.remote(),
-                                                url_path.branch,
-                                                url_path.path)
+                                                     url_path.branch,
+                                                     url_path.path)
 
         # Note that we cannot actually standardize the paths in the listed files.  
         # If we do, glob will not work as it calls this and matches names against the query.

@@ -60,12 +60,13 @@ class XetPathInfo:
             return f"{self.user}/{self.repo}/{self.branch}"
 
 
-    def remote(self):
+    def remote(self, domain_only = False):
         """
         Returns the endpoint of this in the qualified user[:token]@domain
         """
-
-        if self.repo:
+        if domain_only:
+            ret = f"https://{self.domain}/"
+        elif self.repo:
             ret = f"https://{self.domain}/{self.user}/{self.repo}"
         else:
             ret = f"https://{self.domain}/{self.user}"
@@ -170,11 +171,12 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
             ret.domain = "xethub.com" 
             path_to_parse = f"{netloc}/{path}"
         ret.domain_explicit = False
+        explicit_user = None
     else:
         domain_user = netloc.split(":")
         if len(domain_user) == 2:
-            ret.domain, user  = domain_user
-            path_to_parse = f"{user}/{path}"
+            ret.domain, explicit_user  = domain_user
+            path_to_parse = f"{path}"
         else: 
             raise ValueError(f"Cannot parse user and endpoint from {netloc}")
         
@@ -182,7 +184,8 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
 
     path_endswith_slash = path_to_parse.endswith("/")
 
-    components = list([t for t in [t.strip() for t in path_to_parse.split('/')] if t])
+    components = [] if explicit_user is None else [explicit_user]
+    components += list([t for t in [t.strip() for t in path_to_parse.split('/')] if t])
 
     if len(components) == 0:
         raise ValueError(f"Invalid Xet URL format; user must be specified. Expecting xet://domain:user/[repo/[branch[/path]]], got {url}")

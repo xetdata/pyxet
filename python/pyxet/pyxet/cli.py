@@ -165,13 +165,14 @@ class PyxetCLI:
         original_path = path
         fs, path = _get_fs_and_path(path)
         try:
-            listing = fs.ls(path, detail=True)
+            listing = fs.ls(original_path, detail=True)
             if raw:
                 print(listing)
             else:
                 if fs.protocol == 'xet':
                     for entry in listing:
-                        entry['name'] = 'xet://' + entry['name']
+                        if not entry['name'].startswith("xet://"):
+                            entry['name'] = f"xet://{entry['name']}"
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:

@@ -8,7 +8,7 @@ import os
 
 from .commit_transaction import MultiCommitTransaction
 from .file_interface import XetFile
-from .url_parsing import parse_url, XetPathInfo, normalize_domain, set_default_domain
+from .url_parsing import parse_url, XetPathInfo, normalize_domain, set_default_domain, get_default_domain
 
 if 'SPHINX_BUILD' not in os.environ:
     from .rpyxet import rpyxet
@@ -97,7 +97,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         Examples::
         
             import pyxet
-            fs = pyxet.XetFS()
+            fs = pyxet.XetFS('xethub.com')
 
             # List files.
             fs.ls('XetHub/Flickr30k/main')
@@ -112,7 +112,11 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         
         # If the domain is None, then it goes to the default xethub.com with a warning
         # later on.
-        self.domain = domain
+        if domain is None:
+            self.domain = get_default_domain()
+        else:
+            self.domain = domain
+
         self.intrans = False
         self._transaction = None
 

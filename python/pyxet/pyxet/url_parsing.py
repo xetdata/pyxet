@@ -85,7 +85,7 @@ class XetPathInfo:
         """
         https://domain:user/
         """
-        return f"https://{self.domain}/{self.user}" 
+        return f"https://{self.domain}" 
 
     def name(self):
         """

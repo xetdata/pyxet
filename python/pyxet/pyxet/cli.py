@@ -99,11 +99,13 @@ class PyxetCLI:
         if res.returncode != 0:
             print("git-xet not found. Please install git-xet from https://xethub.com/explore/install")
             return
-        source = parse_url(source)
-        commands = ["git-xet", "clone"] + [source.remote] + args
+        source = parse_url(source, expect_branch=False, expect_repo=True)
+        if args is None:
+            args = []
+        commands = ["git-xet", "clone"] + [source.remote()] + args 
         strcommand = ' '.join(commands)
         print(f"Running '{strcommand}'")
-        subprocess.run(["git-xet", "clone"] + [source.remote] + args)
+        subprocess.run(["git-xet", "clone"] + [source.remote()] + args)
 
     @staticmethod
     @cli.command()

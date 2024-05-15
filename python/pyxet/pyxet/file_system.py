@@ -220,7 +220,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                 "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
 
     def make_repo(self, dest_path, private=False, **kwargs):
-        dest = parse_url(dest_path, self.domain, expect_branch = False)
+        dest = parse_url(dest_path, self.domain, expect_branch = False, expect_repo=True)
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
 

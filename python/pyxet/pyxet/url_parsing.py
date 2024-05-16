@@ -17,21 +17,23 @@ def set_default_domain(domain):
 
 def get_default_domain():
     global __default_domain
-    return __default_domain
+    if __default_domain is not None:
+        domain = __default_domain
+    elif "XET_ENDPOINT" in os.environ:
+        env_domain = os.environ["XET_ENDPOINT"]
+        domain = __default_domain = env_domain
+    else:
+        sys.stderr.write("\nWarning:  Endpoint defaulting to xethub.com; use URLs of the form \n"
+                            "          xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n")
+        domain = __default_domain = "xethub.com"
+
+    return domain 
 
 
 def normalize_domain(domain = None):
     global __default_domain
-    if domain is None: 
-        if __default_domain is not None:
-            domain = __default_domain
-        elif "XET_ENDPOINT" in os.environ:
-            env_domain = os.environ["XET_ENDPOINT"]
-            domain = __default_domain = env_domain
-        else:
-            sys.stderr.write("\nWarning:  Endpoint defaulting to xethub.com; use URLs of the form \n"
-                             "          xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n")
-            domain = __default_domain = "xethub.com"
+    if domain is None:
+        return get_default_domain()
 
     # support default_domain with a scheme (http/https)
     if domain is not None:

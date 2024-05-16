@@ -352,7 +352,7 @@ def build_cp_action_list(source, destination, recursive=False):
         src_fs, src_path, dest_fs, dest_path, recursive, progress_reporter=None))
     
 
-def perform_copy(source_list, destination, message = None, recursive=False):
+def perform_copy(source_list, destination, message = None, recursive=False, ):
     """
     Performs a copy operation. 
     """

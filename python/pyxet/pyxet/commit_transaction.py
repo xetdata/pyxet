@@ -9,13 +9,13 @@ TRANSACTION_FILE_LIMIT = 512
 
 
 def _validate_repo_info_for_transaction(repo_info):
-    if repo_info.remote == '':
+    if repo_info.remote() == '':
         raise ValueError("No repository specified")
     if repo_info.branch == '':
         raise ValueError("No branch specified")
 
 def repo_info_key(repo_info):
-    return f"{repo_info.remote}/{repo_info.branch}"
+    return f"{repo_info.remote()}/{repo_info.branch}"
 
 
 class MultiCommitTransaction(fsspec.transaction.Transaction):

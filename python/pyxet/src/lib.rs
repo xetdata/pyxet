@@ -1,19 +1,19 @@
 use anyhow::{anyhow, Result};
-use gitxetcore::command::login::*;
-use gitxetcore::command::mount::*;
-use gitxetcore::command::*;
-use gitxetcore::config::ConfigGitPathOption;
-use gitxetcore::config::ConfigGitPathOption::NoPath;
-use gitxetcore::config::XetConfig;
-use gitxetcore::environment::log::initialize_tracing_subscriber;
-use progress_reporting::DataProgressReporter;
+use libxet::command::login::*;
+use libxet::command::mount::*;
+use libxet::command::*;
+use libxet::config::ConfigGitPathOption;
+use libxet::config::ConfigGitPathOption::NoPath;
+use libxet::config::XetConfig;
+use libxet::environment::log::initialize_tracing_subscriber;
+use libxet::progress_reporting::DataProgressReporter;
 use pyo3::exceptions::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyList};
 use std::sync::Arc;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tracing::{error, info};
-use xetblob::*;
+use libxet::xetblob::*;
 
 mod transactions;
 use transactions::*;
@@ -194,7 +194,11 @@ pub fn perform_mount_curdir(
 #[pymethods]
 impl PyRepoManager {
     #[new]
-    pub fn new() -> PyResult<Self> {
+    pub fn new(domain : &str) -> PyResult<Self> {
+    
+        // A bit of a hack here to make sure the domain gets passed in correctly, 
+        // but hopefully this should be
+        std::env::set_var("XET_ENDPOINT", domain); 
         let manager = XetRepoManager::new(None, None).map_err(anyhow_to_runtime_error)?;
         Ok(PyRepoManager {
             manager: RwLock::new(manager),

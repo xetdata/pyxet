@@ -44,6 +44,6 @@ libxet = { git = "https://github.com/xetdata/xet-core", features = [] }
 pyo3-build-config = "0.18.0"
 cc = "1.0"
 
-[release]
-opt-level = 3
-debug = true
+[profile.release]
+opt-level = "s"
+debug = "line-tables-only"

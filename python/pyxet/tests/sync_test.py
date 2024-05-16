@@ -32,8 +32,8 @@ def test_get_normalized_fs_protocol_and_path(monkeypatch):
 
 
 def check_sync_validate(src, dst, is_valid):
-    cmd = SyncCommand(src, dst, False, '', False, False)
     try:
+        cmd = SyncCommand(src, dst, False, '', False, False)
         cmd.validate()
         assert is_valid
     except (ValueError, FileNotFoundError):

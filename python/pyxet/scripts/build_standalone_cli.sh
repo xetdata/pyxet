@@ -33,9 +33,9 @@ pip install maturin fsspec pyinstaller pytest cloudpickle s3fs tabulate typer
 mv target/wheels/ target/old_wheels/ || echo ""
 
 if [[ "$OS" == "Darwin" ]]; then
-    maturin build --release --target=universal2-apple-darwin --features=openssl_vendored
+    maturin build --release --target=universal2-apple-darwin 
 else 
-    maturin build --release --features=openssl_vendored
+    maturin build --release 
 fi
 
 pip install target/wheels/pyxet-*.whl

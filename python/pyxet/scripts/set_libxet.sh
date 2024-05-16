@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Sets the current Cargo.toml to point to either the upstream libxet dependency, or a local path.
+
 # Usage: ./set_libxet.sh [commit COMMIT | path PATH | restore | --help]
 
 # Ensure Cargo.toml exists in the current directory
@@ -14,7 +16,7 @@ show_help() {
     echo
     echo "Options:"
     echo "  commit COMMIT     Pin libxet to depend on remote commit COMMIT."
-    echo "  path PATH         Pin libxet to depend on local path PATH."
+    echo "  path PATH         Pin libxet to depend on repository in path PATH."
     echo "  restore           Restore to default version depending on remote repo main."
     echo "  --help            Show this help message"
     exit 1
@@ -52,6 +54,15 @@ elif [[ "$OPTION" == "path" ]]; then
         show_help
     fi
     ABS_PATH=$(realpath "$VALUE")
+    if [[ -e "$ABS_PATH/libxet/Cargo.toml" ]] ; then 
+        ABS_PATH="$ABS_PATH/libxet"
+    fi
+
+    if [[ ! -e "$ABS_PATH/Cargo.toml" ]] ; then 
+        echo "libxet package not found at $(realpath "$VALUE")"
+        exit 1
+    fi
+
     perl -0777 -i'' -pe 's|libxet = \{[^}]*features\s*=\s*\[([^\]]*)\][^}]*\}|libxet = { path = "'$ABS_PATH'", features = [$1] }|gs' $CARGO_FILE
     echo "$CARGO_FILE set up to depend on libxet at local path $ABS_PATH" 
     echo "Be sure to run ./scripts/$0 restore before committing changes."

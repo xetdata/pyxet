@@ -11,3 +11,4 @@ ipython
 s3fs 
 tabulate 
 typer
+pyinstaller

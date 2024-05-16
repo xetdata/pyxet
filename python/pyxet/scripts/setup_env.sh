@@ -10,10 +10,14 @@ if [[ -z "$VIRTUAL_ENV" ]] ; then
     if [[ ! -e venv/ ]] ; then 
         echo "Setting up virtual environment."
         python3 -m venv venv
+    
+        source ./venv/bin/activate || ls ./venv/bin/
 
         pip install --upgrade pip
         pip install -r scripts/dev_requirements.txt
+    elif
+        source ./venv/bin/activate
     fi
 
-    source venv/bin/activate
+
 fi 

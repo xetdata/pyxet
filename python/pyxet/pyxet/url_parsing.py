@@ -15,7 +15,7 @@ def set_default_domain(domain):
     if __default_domain is None:
         __default_domain = normalize_domain(domain) 
 
-def get_default_domain(domain):
+def get_default_domain():
     global __default_domain
     return __default_domain
 

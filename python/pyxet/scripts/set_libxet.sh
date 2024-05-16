@@ -39,30 +39,24 @@ if [[ -z "$OPTION" ]]; then
     show_help
 fi
 
-# Create a backup of the original Cargo.toml
-cp $CARGO_FILE "${CARGO_FILE}.bak"
-
 # Determine the replacement pattern based on the option
 if [[ "$OPTION" == "commit" ]]; then
     if [[ -z "$VALUE" ]] ; then 
         show_help
     fi
-    perl -0777 -i'' -pe '
-    s|libxet = \{[^}]*features\s*=\s*\[([^\]]+)\][^}]*\}|
-    libxet = { git = "https://github.com/xetdata/xet-core", features = [$1], rev = "'$VALUE'" }|gs' $CARGO_FILE
+    perl -0777 -i'' -pe 's|libxet = \{[^}]*features\s*=\s*\[([^\]]*)\][^}]*\}|libxet = { git = "https://github.com/xetdata/xet-core", features = [$1], rev = "'$VALUE'" }|gs' $CARGO_FILE
     echo "$CARGO_FILE set up to depend on libxet remote commit $VALUE"
+    echo "Be sure to run ./scripts/$0 restore before committing changes."
 elif [[ "$OPTION" == "path" ]]; then
     if [[ -z "$VALUE" ]] ; then 
         show_help
     fi
     ABS_PATH=$(realpath "$VALUE")
-    perl -0777 -i'' -pe '
-    s|libxet = \{[^}]*features\s*=\s*\[([^\]]+)\][^}]*\}|
-    libxet = { path = "'$ABS_PATH'", features = [$1] }|gs' $CARGO_FILE
+    perl -0777 -i'' -pe 's|libxet = \{[^}]*features\s*=\s*\[([^\]]*)\][^}]*\}|libxet = { path = "'$ABS_PATH'", features = [$1] }|gs' $CARGO_FILE
     echo "$CARGO_FILE set up to depend on libxet at local path $ABS_PATH" 
+    echo "Be sure to run ./scripts/$0 restore before committing changes."
 elif [[ "$OPTION" == "restore" ]]; then
     perl -0777 -i.bak -pe '
-    s|libxet = \{[^}]*features\s*=\s*\[([^\]]+)\][^}]*\}|
-    libxet = { git = "https://github.com/xetdata/xet-core", features = [$1] }|gs' $CARGO_FILE
+    s|libxet = \{[^}]*features\s*=\s*\[([^\]]*)\][^}]*\}|libxet = { git = "https://github.com/xetdata/xet-core", features = [$1] }|gs' $CARGO_FILE
     echo "$CARGO_FILE set up to depend on main on remote git repository."
 fi

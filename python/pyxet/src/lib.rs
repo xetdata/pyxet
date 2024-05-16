@@ -194,7 +194,11 @@ pub fn perform_mount_curdir(
 #[pymethods]
 impl PyRepoManager {
     #[new]
-    pub fn new() -> PyResult<Self> {
+    pub fn new(domain : &str) -> PyResult<Self> {
+    
+        // A bit of a hack here to make sure the domain gets passed in correctly, 
+        // but hopefully this should be
+        std::env::set_var("XET_ENDPOINT", domain); 
         let manager = XetRepoManager::new(None, None).map_err(anyhow_to_runtime_error)?;
         Ok(PyRepoManager {
             manager: RwLock::new(manager),

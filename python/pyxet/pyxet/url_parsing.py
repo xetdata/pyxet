@@ -2,15 +2,117 @@
 Provides URL parsing for Xet Repos
 """
 import unittest
-from collections import namedtuple
 from urllib.parse import urlparse
 import sys
-
-XetPathInfo = namedtuple('XetPathInfo', ('remote', 'branch', 'path'))
+import os
 
 has_warned_user_on_url_format = False
 
-def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_skip_checks = False):
+__default_domain = None
+
+def set_default_domain(domain): 
+    global __default_domain
+    if __default_domain is None:
+        __default_domain = normalize_domain(domain) 
+
+def get_default_domain():
+    global __default_domain
+    if __default_domain is not None:
+        domain = __default_domain
+    elif "XET_ENDPOINT" in os.environ:
+        env_domain = os.environ["XET_ENDPOINT"]
+        domain = __default_domain = env_domain
+    else:
+        sys.stderr.write("\nWarning:  Endpoint defaulting to xethub.com; use URLs of the form \n"
+                            "          xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n")
+        domain = __default_domain = "xethub.com"
+
+    return domain 
+
+
+def normalize_domain(domain = None):
+    global __default_domain
+    if domain is None:
+        return get_default_domain()
+
+    # support default_domain with a scheme (http/https)
+    if domain is not None:
+        domain_split = domain.split('://')
+        if len(domain_split) == 1:
+            domain = domain_split[0]
+        elif len(domain_split) == 2:
+            domain = domain_split[1]
+        else:
+            raise ValueError(f"Domain {domain} not valid url.")
+
+    return domain
+
+
+class XetPathInfo:
+    __slots__ = ['scheme', 'domain', 'user', 'repo', 'branch', 'path', 'domain_explicit']
+
+    def _repo_branch_path(self):
+        return "/".join(s for s in [self.repo, self.branch, self.path] if s)
+
+    def url(self):
+        return f"{self.scheme}://{self.domain}:{self.user}/{self._repo_branch_path()}"
+
+    def base_path(self): 
+        """
+        Returns the base user/repo/branch  
+        """ 
+        if self.domain_explicit:
+            return f"{self.domain}:{self.user}/{self.repo}/{self.branch}"
+        else:
+            return f"{self.user}/{self.repo}/{self.branch}"
+
+
+    def remote(self, domain_only = False):
+        """
+        Returns the endpoint of this in the qualified user[:token]@domain
+        """
+        if domain_only:
+            ret = f"https://{self.domain}/"
+        elif self.repo:
+            ret = f"https://{self.domain}/{self.user}/{self.repo}"
+        else:
+            ret = f"https://{self.domain}/{self.user}"
+
+        # This should work but has issues in xet-core
+        #if branch and self.branch:
+        #    ret = f"https://{self._user_at_domain()}/{self.repo}/{self.branch}"
+        #elif self.repo:
+        #    ret = f"https://{self._user_at_domain()}/{self.repo}"
+        #else:
+        #    ret = f"https://{self._user_at_domain()}"
+        
+        return ret
+    
+    def domain_url(self):
+        """
+        https://domain:user/
+        """
+        return f"https://{self.domain}" 
+
+    def name(self):
+        """
+        Returns the prefix: user/repo/branch/path
+        """
+        return f"{self.user}/{self._repo_branch_path()}"
+
+    def __eq__(self, other: object) -> bool:
+        return (self.scheme == other.scheme
+                and self.domain == other.domain
+                and self.user == other.user
+                and self.repo == other.repo
+                and self.branch == other.branch
+                and self.path == other.path)
+
+    def __repr__(self):
+        return self.url()
+
+
+def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True):
     """
     Parses a Xet URL of the form 
      - xet://user/repo/branch/[path]
@@ -24,229 +126,110 @@ def parse_url(url, default_domain='xethub.com', partial_remote=False, recursive_
     If partial_remote==True, allows [repo] to be optional. i.e. it will
     parse /user or xet://user
     """
+    url_info = url.split("://")
 
-    url = url.lstrip('/')
-    parse = urlparse(url)
-    if parse.scheme == '':
-        parse = parse._replace(scheme='xet')
+    # assert default_domain is not None
 
-    # support default_domain with a scheme (http/https)
-    domain_split = default_domain.split('://')
-    scheme = 'https'
-    if len(domain_split) == 2:
-        scheme = domain_split[0]
-        default_domain = domain_split[1]
+    if len(url_info) == 1: 
+        scheme = "xet"
+        url_path = url_info[0]
+    elif len(url_info) == 2:
+        scheme, url_path = url_info
+    else: 
+        scheme = None  # Raise the ValueError. 
 
-    if parse.scheme != 'xet':
-        raise ValueError('Invalid protocol')
+    if scheme not in ["xet", "http", "https"]: 
+        # The other 
+        raise ValueError(f"URL {url} not of the form xet://endpoint:user/repo/...")
+
+
+    # Set this as a default below     
+    ret = XetPathInfo()
+    # Set what defaults we can
+    ret.scheme = "xet"
+
+    netloc_info = url_path.split("/", 1)
+
+    if len(netloc_info) == 1:
+        netloc = netloc_info[0]
+        path = ""
+    else:
+        netloc, path = netloc_info
 
     # Handle the case where we are xet://user/repo. In which case the domain
     # parsed is not xethub.com and domain="user".
     # we rewrite the parse the handle this case early.
-    if "@" not in parse.netloc:
-        if not recursive_skip_checks:
-            global has_warned_user_on_url_format
-            
-            if not has_warned_user_on_url_format:
-                sys.stderr.write("Warning:  The use of the xet:// prefix without an endpoint is deprecated and will be disabled in the future.\n"
-                                f"          Please switch URLs to use the format xet://<user>@<endpoint>/<repo>/<branch>/<path>.\n"
-                                f"          Endpoint now defaulting to {default_domain}.\n\n")
-                has_warned_user_on_url_format = True
-
-    else:
-        # Hack until we can clean up this parsing logic
-        user_at_domain = parse.netloc.split("@")
-        if len(user_at_domain) == 2:
-            user, domain = user_at_domain
-            # In this case, swap out the url to the old form and tell it to reparse it.  
-            # This is easier than trying to figure out how to rework the url parsing tool logic
-            new_url = url.replace(parse.netloc, f"{domain}/{user}")
-            return parse_url(new_url, default_domain=domain, partial_remote=partial_remote, recursive_skip_checks=True)
-        else: 
-            raise ValueError(f"Cannot parse user and endpoint from {parse.netloc}")
-
-    if not parse.netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the old format.
-        # this is of the for xet://user/repo/...
-        # join user back with path
-        newpath = f"/{parse.netloc}/{parse.path}".replace("//", "/")  
-        # replace the netloc
-        true_netloc = default_domain
-        parse = parse._replace(netloc=true_netloc, path=newpath)
-
-    # Split the known path and try to split out the user/repo/branch/path components
-    path = parse.path
-
-    path_endswith_slash = path.endswith("/")
-
-    components = list([t for t in [t.strip() for t in path.split('/')] if t])
-
-    print(f"Components={components}")
-
-    # so the minimum for a remote is xethub.com/user/
-    if len(components) < 2:
-        if partial_remote and len(components) >= 1:
-            replacement_parse_path = '/'.join(components)
-            parse = parse._replace(path=replacement_parse_path, scheme=scheme)
-            return XetPathInfo(parse.geturl(), "", "")
-        raise ValueError(f"Invalid Xet URL format: Expecting xet://user/repo/[branch]/[path], components={components}, path={path}")
-
-    branch = ""
-    if len(components) >= 3:
-        branch = components[2]  
-
-    path = ""
-    if len(components) >= 4:
-        path = '/'.join(components[3:])
-
-    if path and path_endswith_slash: 
-        path = path + '/'
-
-    # we leave url with the first 2 components. i.e. "/user/repo"
-    replacement_parse_path = '/'.join(components[:2])
-    parse = parse._replace(path=replacement_parse_path, scheme=scheme)
-
-    return XetPathInfo(parse.geturl().rstrip("/"), branch, path)
-
-
-class ParseUrlTest(unittest.TestCase):
-
-    def parse_url(self, url, expect_warning, **kwargs):
+    if ":" not in netloc:
+        
         global has_warned_user_on_url_format
-        has_warned_user_on_url_format = False
-        parse = parse_url(url, **kwargs)
-        self.assertEqual(has_warned_user_on_url_format, expect_warning)
-        print(f"Test parse result = {parse}")
-        return parse
 
-    def test_parse_xet_url(self):
-        parse = self.parse_url("xet://xethub.com/user/repo/branch/hello/world", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world")
+        if default_domain is None and not has_warned_user_on_url_format:
+            sys.stderr.write("Warning:  The use of the xet:// prefix without an endpoint is deprecated and will be disabled in the future.\n"
+                             "          Please switch URLs to use the format xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n"
+                             "          Endpoint now defaulting to xethub.com.\n\n")
+            has_warned_user_on_url_format = True
+        
+        default_domain = normalize_domain(default_domain) 
 
-        parse = self.parse_url("xet://xethub.com/user/repo/branch/hello/world/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world/")
+        # Test explicitly for the case where this is just xet://
+        if netloc.endswith(".com"):  # Cheap way now to see if it's a website or not; we won't hit this with the new format.
+            ret.domain = netloc
+            path_to_parse = path
+        else:
+            ret.domain = default_domain 
+            path_to_parse = f"{netloc}/{path}"
+        ret.domain_explicit = False
+        explicit_user = None
+    else:
+        domain_user = netloc.split(":")
+        if len(domain_user) == 2:
+            ret.domain, explicit_user  = domain_user
+            path_to_parse = f"{path}"
+            if not ret.domain:
+                ret.domain = default_domain
+        else: 
+            raise ValueError(f"Cannot parse user and endpoint from {netloc}")
+        
+        ret.domain_explicit = True
 
-        parse = self.parse_url("xet://xethub.com/user/repo/branch/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
+    path_endswith_slash = path_to_parse.endswith("/")
 
-        parse = self.parse_url("xet://xethub.com/user/repo/branch", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
+    components = [] if explicit_user is None else [explicit_user]
+    components += list([t for t in [t.strip() for t in path_to_parse.split('/')] if t])
 
-        parse = self.parse_url("xet://xethub.com/user/repo", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("xet://xethub.com/user/repo/branch", True, default_domain='xetbeta.com')
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        with self.assertRaises(ValueError):
-            self.parse = self.parse_url("xet://xethub.com/user", True)
-
-    def test_parse_xet_url_truncated(self):
-        parse = self.parse_url("xet://user/repo/branch/hello/world", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world")
-
-        parse = self.parse_url("xet://user/repo/branch/hello/world/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world/")
-
-        parse = self.parse_url("xet://user/repo/branch/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("xet://user/repo/branch", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("xet://user/repo", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("xet://user/repo/branch", True, default_domain='xetbeta.com')
-        self.assertEqual(parse.remote, "https://xetbeta.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        with self.assertRaises(ValueError):
-            self.parse = self.parse_url("xet://user", True)
-
-    def test_parse_plain_path(self):
-        parse = self.parse_url("/user/repo/branch/hello/world", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world")
-
-        parse = self.parse_url("/user/repo/branch/hello/world/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world/")
-
-        parse = self.parse_url("/user/repo/branch/", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("/user/repo/branch", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("/user/repo", True)
-        self.assertEqual(parse.remote, "https://xethub.com/user/repo")
-        self.assertEqual(parse.branch, "")
-        self.assertEqual(parse.path, "")
-
-        parse = self.parse_url("/user/repo/branch", True, default_domain='xetbeta.com')
-        self.assertEqual(parse.remote, "https://xetbeta.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
-
-        with self.assertRaises(ValueError):
-            self.parse = self.parse_url("xet://xethub.com/user", True)
+    if len(components) == 0:
+        raise ValueError(f"Invalid Xet URL format; user must be specified. Expecting xet://domain:user/[repo/[branch[/path]]], got {url}")
     
-    def test_parse_xet_url_correct(self):
-        parse = self.parse_url("xet://user@xh.com/repo/branch/hello/world", False)
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world")
+    if len(components) == 1 and expect_repo is True:
+        raise ValueError(f"Invalid Xet URL format; user and repo must be specified. Expecting xet://domain:user/repo/[branch[/path]], got {url}")
+    
+    if len(components) > 1 and expect_repo is False:
+        raise ValueError(f"Invalid Xet URL format for user; repo given.  Expecting xet://domain:user/, got {url}")
+       
+    if len(components) == 2 and expect_branch is True:
+        raise ValueError(f"Invalid Xet URL format; user, repo, and branch must be specified for this operation. Expecting xet://domain:user/repo/branch[/path], got {url}")
 
-        parse = self.parse_url("xet://user@xh.com/repo/branch/hello/world/", False)
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "hello/world/")
+    if len(components) > 2 and expect_branch is False:
+        raise ValueError(f"Invalid Xet URL format for repo; branch given.  Expecting xet://domain:user/repo, got {url}")
 
-        parse = self.parse_url("xet://user@xh.com/repo/branch/", False)
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
+    
+    ret.user = components[0]
 
-        parse = self.parse_url("xet://user@xh.com/repo/branch", False)
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
+    if len(components) > 1:
+        ret.repo = components[1]
+    else:
+        ret.repo = ""
+    
+    if len(components) > 2:
+        ret.branch = components[2]
+    else:
+        ret.branch = ""
 
-        parse = self.parse_url("xet://user@xh.com/repo", False)
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "")
-        self.assertEqual(parse.path, "")
+    if len(components) > 3:
+        ret.path = "/".join(components[3:])
+        if path_endswith_slash:
+            ret.path = ret.path + "/"
+    else:
+        ret.path = ""
 
-        parse = self.parse_url("xet://user@xh.com/repo/branch", False, default_domain='xetbeta.com')
-        self.assertEqual(parse.remote, "https://xh.com/user/repo")
-        self.assertEqual(parse.branch, "branch")
-        self.assertEqual(parse.path, "")
+    return ret

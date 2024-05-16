@@ -69,7 +69,10 @@ def test_user_info():
     assert email is not None
     token = os.getenv('XET_TEST_TOKEN')
     assert token is not None
-    host = os.getenv('XET_ENDPOINT')
+    host = os.getenv('XET_TEST_ENDPOINT')
+
+    if host is None: 
+        host = "xethub.com"
 
     return {
         "user": user,
@@ -87,7 +90,7 @@ def test_repo():
 def test_account_login():
     user_info = test_user_info()
     pyxet.login(user_info['user'], user_info['token'], user_info['email'], user_info['host'])
-    return user_info['user']
+    return (user_info['user'], user_info['host'])
 
 def random_string(N):
     return ''.join(secrets.choice(string.ascii_letters + string.digits)

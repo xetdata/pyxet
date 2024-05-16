@@ -17,9 +17,9 @@ def delete_branch(repo, branch, *args):
 
 
 def test_single_file_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
     
     try:
         # generate a random file in a temp dir
@@ -34,9 +34,9 @@ def test_single_file_upload():
 
         dest_list = [
             # (dest in cp command, expected path of remote file)
-            (f"xet://{user}/{repo}/{b1}", [f"xet://{user}/{repo}/{b1}/data"]),
-            (f"xet://{user}/{repo}/{b1}/",[f"xet://{user}/{repo}/{b1}/data"]),
-            (f"xet://{user}/{repo}/{b1}/zz", [f"xet://{user}/{repo}/{b1}/zz"]),
+            (f"xet://{host}:{user}/{repo}/{b1}", [f"xet://{host}:{user}/{repo}/{b1}/data"]),
+            (f"xet://{host}:{user}/{repo}/{b1}/",[f"xet://{host}:{user}/{repo}/{b1}/data"]),
+            (f"xet://{host}:{user}/{repo}/{b1}/zz", [f"xet://{host}:{user}/{repo}/{b1}/zz"]),
         ]
 
         recursive_list = [
@@ -50,17 +50,17 @@ def test_single_file_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest[0]} {r}")
                         perform_copy(src, dest[0], "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", dest[1])
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", dest[1])
                         pyxet.PyxetCLI.rm(dest[1])
         finally:
             shutil.rmtree(dir)
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_multiple_files_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
 
     try:
         # generate random files in a temp dir
@@ -74,8 +74,8 @@ def test_multiple_files_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
@@ -83,7 +83,7 @@ def test_multiple_files_upload():
             True,
         ]
 
-        expected_files = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1"]
+        expected_files = [f"xet://{host}:{user}/{repo}/{b1}/data0", f"xet://{host}:{user}/{repo}/{b1}/data1"]
 
         try:
             for src in source_list:
@@ -91,17 +91,17 @@ def test_multiple_files_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         perform_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", expected_files)
                         pyxet.PyxetCLI.rm(expected_files)
         finally:
             shutil.rmtree(dir)
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_glob_nonrecursive_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
 
     try:
         # generate a mix of random files and directories in a temp dir
@@ -120,15 +120,15 @@ def test_glob_nonrecursive_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
             False,
         ]
 
-        expected_files = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1"]
+        expected_files = [f"xet://{host}:{user}/{repo}/{b1}/data0", f"xet://{host}:{user}/{repo}/{b1}/data1"]
 
         try:
             for src in source_list:
@@ -136,18 +136,18 @@ def test_glob_nonrecursive_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         perform_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files)
-                        utils.assert_remote_files_not_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/{sub_dir}"])
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", expected_files)
+                        utils.assert_remote_files_not_exist(f"xet://{host}:{user}/{repo}/{b1}/*", [f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}"])
                         pyxet.PyxetCLI.rm(expected_files)
         finally:
             shutil.rmtree(dir)
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_glob_recursive_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
 
     try:
         # generate a mix of random files and directories in a temp dir
@@ -166,16 +166,16 @@ def test_glob_recursive_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
             True,
         ]
 
-        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1", f"xet://{user}/{repo}/{b1}/{sub_dir}"]
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
+        expected_files_level1 = [f"xet://{host}:{user}/{repo}/{b1}/data0", f"xet://{host}:{user}/{repo}/{b1}/data1", f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}"]
+        expected_files_level2 = [f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}/data"]
 
         try:
             for src in source_list:
@@ -183,18 +183,18 @@ def test_glob_recursive_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         perform_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", expected_files_level1)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
         finally:
             shutil.rmtree(dir)
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
     
 def test_directory_nonrecursive_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
 
     try:
         # generate a random file in a temp dir
@@ -212,8 +212,8 @@ def test_directory_nonrecursive_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
@@ -229,7 +229,7 @@ def test_directory_nonrecursive_upload():
                         if should_succeed:
                             perform_copy(src, dest, "add data", r)
                                 
-                            utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", [f"xet://{user}/{repo}/{b1}/data"])
+                            utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", [f"xet://{host}:{user}/{repo}/{b1}/data"])
 
                         else:
 
@@ -239,12 +239,12 @@ def test_directory_nonrecursive_upload():
         finally:
             shutil.rmtree(dir)
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_directory_recursive_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
     try:
         # generate a mix of random files and directories in a temp dir
         dir = tempfile.mkdtemp()
@@ -262,16 +262,16 @@ def test_directory_recursive_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
             True,
         ]
 
-        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/data0", f"xet://{user}/{repo}/{b1}/data1", f"xet://{user}/{repo}/{b1}/{sub_dir}"]
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{sub_dir}/data"]
+        expected_files_level1 = [f"xet://{host}:{user}/{repo}/{b1}/data0", f"xet://{host}:{user}/{repo}/{b1}/data1", f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}"]
+        expected_files_level2 = [f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}/data"]
 
         try:
             for src in source_list:
@@ -279,15 +279,15 @@ def test_directory_recursive_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         perform_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", expected_files_level1)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/{sub_dir}/*", expected_files_level2)
                         pyxet.PyxetCLI.rm(expected_files_level1)
                         pyxet.PyxetCLI.rm(expected_files_level2)
         finally:
             shutil.rmtree(dir)
         
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 # According to https://filesystem-spec.readthedocs.io/en/latest/copying.html#single-source-to-single-target
 # section 1e, if the trailing slash is omitted from "source/subdir" then the subdir is also copied, 
@@ -295,9 +295,9 @@ def test_directory_recursive_upload():
 #
 # NOTE: only use this behavior for the fsspec copy method in python, not the xet cp command line.
 def _test_directory_recursive_noslash_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
     try:
         # generate a mix of random files and directories in a temp dir
         dir = tempfile.mkdtemp()
@@ -316,17 +316,17 @@ def _test_directory_recursive_noslash_upload():
         ]
 
         dest_list = [
-            f"xet://{user}/{repo}/{b1}",
-            f"xet://{user}/{repo}/{b1}/",
+            f"xet://{host}:{user}/{repo}/{b1}",
+            f"xet://{host}:{user}/{repo}/{b1}/",
         ]
 
         recursive_list = [
             True,
         ]
 
-        expected_files_level1 = [f"xet://{user}/{repo}/{b1}/{dir_name}"]
-        expected_files_level2 = [f"xet://{user}/{repo}/{b1}/{dir_name}/data0", f"xet://{user}/{repo}/{b1}/{dir_name}/data1", f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}"]
-        expected_files_level3 = [f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/data"]
+        expected_files_level1 = [f"xet://{host}:{user}/{repo}/{b1}/{dir_name}"]
+        expected_files_level2 = [f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/data0", f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/data1", f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/{sub_dir}"]
+        expected_files_level3 = [f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/{sub_dir}/data"]
 
         try:
             for src in source_list:
@@ -334,20 +334,20 @@ def _test_directory_recursive_noslash_upload():
                     for r in recursive_list:
                         print(f"xet cp {src} {dest} {r}")
                         perform_copy(src, dest, "add data", r)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/*", expected_files_level1)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
-                        utils.assert_remote_files_exist(f"xet://{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/*", expected_files_level1)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/*", expected_files_level2)
+                        utils.assert_remote_files_exist(f"xet://{host}:{user}/{repo}/{b1}/{dir_name}/{sub_dir}/*", expected_files_level3)
                         pyxet.PyxetCLI.rm(expected_files_level1)
         finally:
             shutil.rmtree(dir)
         
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_large_batch_upload():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
-    b1 = utils.new_random_branch_from(f"xet://{user}/{repo}", "main")
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
 
     try:
         # generate a large batch of random files in a temp dir
@@ -359,15 +359,15 @@ def test_large_batch_upload():
 
         try:
             pyxet.commit_transaction.TRANSACTION_FILE_LIMIT = 100
-            perform_copy(f"{dir}/", f"xet://{user}/{repo}/{b1}", "add data", True)
+            perform_copy(f"{dir}/", f"xet://{host}:{user}/{repo}/{b1}", "add data", True)
         finally:
             shutil.rmtree(dir)
 
     finally:
-        delete_branch(f"xet://{user}/{repo}", b1, True)
+        delete_branch(f"xet://{host}:{user}/{repo}", b1, True)
 
 def test_size_hint():
-    user, _ = utils.test_account_login()
+    user, host = utils.test_account_login()
     repo = utils.test_repo()
 
     try:
@@ -376,7 +376,7 @@ def test_size_hint():
         local_files = [f"{dir}/data0", f"{dir}/data1"]
         utils.random_binary_files(local_files, [262, 471])
 
-        cplist = build_cp_action_list(f"{dir}/*", f"xet://{user}/{repo}/main")
+        cplist = build_cp_action_list(f"{dir}/*", f"xet://{host}:{user}/{repo}/main")
         assert len(cplist) == 2
         assert cplist[0].size == 262
         assert cplist[1].size == 471

@@ -8,17 +8,51 @@ import os
 
 from .commit_transaction import MultiCommitTransaction
 from .file_interface import XetFile
-from .url_parsing import parse_url, XetPathInfo
+from .url_parsing import parse_url, XetPathInfo, normalize_domain, set_default_domain, get_default_domain
 
 if 'SPHINX_BUILD' not in os.environ:
     from .rpyxet import rpyxet
-    _manager = rpyxet.PyRepoManager()
+
+__repo_managers = {}
+__login_credentials = {}
+
+def _repo_manager(domain):
+    global __repo_managers
+    global __login_credentials
+
+    domain = normalize_domain(domain)
+
+    try:
+        return __repo_managers[domain]
+    except KeyError:
+        pass
+
+    repo = rpyxet.PyRepoManager(domain)
+    __login_credentials
+    if domain in __login_credentials:
+        repo.override_login_config(*__login_credentials[domain])
+    elif None in __login_credentials:
+        repo.override_login_config(*__login_credentials[None])
+
+    __repo_managers[domain] = repo
+    return repo
+
 
 def login(user, token, email=None, host=None):
     """
     Sets the active login credentials used to authenticate against Xethub.
     """
-    _manager.override_login_config(user, token, email, host)
+    global __login_credentials
+    if host is not None:
+        host = normalize_domain(host)
+        set_default_domain(host)
+    __login_credentials[host] = (user, token, email, host)
+    if host is None:
+        for repo in __repo_managers.values():
+            repo.override_login_config(user, token, email)
+    else:
+        if host in __repo_managers:
+            __repo_managers[host].override_login_config(user, token, email, host)
 
 
 def open(file_url, mode="rb", **kwargs):
@@ -29,8 +63,9 @@ def open(file_url, mode="rb", **kwargs):
         f = pyxet.open('xet://XetHub/Flickr30k/main/results.csv')
     """
 
-    fs = XetFS()
-    return fs._open(file_url, mode=mode, **kwargs)
+    url_info = parse_url(file_url, expect_branch=True)
+    fs = XetFS(domain = url_info.domain)
+    return fs._open(url_info.name(), mode=mode, **kwargs)
 
 class XetFSOpenFlags(IntEnum):
     FILE_FLAG_NO_BUFFERING = 0x20000000
@@ -43,6 +78,14 @@ class XetFS(fsspec.spec.AbstractFileSystem):
     async_impl = False
     root_marker = "/"
 
+    def from_url(url): 
+        """
+        Initializes the proper information from a URL.
+        """
+
+        url_info = parse_url(url, expect_repo=None)
+        return XetFS(domain = url_info.domain)
+
     def __init__(self, domain=None, **storage_options):
         """
         Opens the repository at `repo_url` as an fsspec file system handle,
@@ -54,7 +97,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         Examples::
         
             import pyxet
-            fs = pyxet.XetFS()
+            fs = pyxet.XetFS('xethub.com')
 
             # List files.
             fs.ls('XetHub/Flickr30k/main')
@@ -66,13 +109,14 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         or the XET_ENDPOINT environment variable. The default domain is
         xethub.com if unspecified
         """
-        import os
-        if 'XET_ENDPOINT' in os.environ:
-            domain = os.environ['XET_ENDPOINT']
+        
+        # If the domain is None, then it goes to the default xethub.com with a warning
+        # later on.
         if domain is None:
-            # Read it from the config
-            domain = 'xethub.com'
-        self.domain = domain
+            self.domain = get_default_domain()
+        else:
+            self.domain = domain
+
         self.intrans = False
         self._transaction = None
 
@@ -100,11 +144,14 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         Returns the inferred username for the domain
         """
-        return _manager.get_inferred_username(self.domain)
+        return _repo_manager(self.domain).get_inferred_username(self.domain)
 
     def unstrip_protocol(self, name):
         """Format FS-specific path to generic, including protocol"""
         return 'xet://' + name.lstrip('/')
+
+    def __repr__(self):
+        return f"XetFS(domain = {self.domain})"
 
     @staticmethod
     def _get_kwargs_from_urls(path):
@@ -114,7 +161,8 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         Examples may look like an sftp path "sftp://user@host:/my/path", where
         the user and host should become kwargs and later get stripped.
         """
-        return {}
+        url_path = parse_url(path)
+        return {"domain" : url_path.domain}
 
     def isdir(self, path):
         """Is this entry directory-like?"""
@@ -138,23 +186,18 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if isinstance(url, XetPathInfo):
             url_path = url
         else:
-            url_path = parse_url(url, self.domain)
-        if url_path.branch == '':
-            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
+            url_path = parse_url(url, self.domain, expect_branch = True)
 
-        parse = urlparse(url_path.remote)
-        path = parse.path
-        components = list(filter(None, path.lstrip('/').rstrip('/').split('/')))
-        if len(components) < 2:
-            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
-        prefix = '/'.join(components[:2]) + '/' + url_path.branch
-        attr = _manager.stat(url_path.remote, url_path.branch, "")
+        attr = self._manager.stat(url_path.remote(), url_path.branch, "")
+
         if attr is None:
             raise FileNotFoundError(
-                f"Branch or repo not found {url}, remote = {url_path.remote}, branch = {url_path.branch}")
-        return {"name": prefix + '/' + url_path.path,
+                f"Branch or repo not found, remote = {url_path.remote()}, branch = {url_path.branch}")
+
+        return {"name": url_path.name(),
                 "size": attr.size,
                 "type": attr.ftype}
+
 
     def branch_exists(self, url):
         try:
@@ -163,156 +206,107 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         except Exception as e:
             return False
 
+
     def info(self, url):
         """
         Returns information about a path `user/repo/branch/[path]` 
         or `xet://user/repo/branch/[path]`
         """
-        url_path = parse_url(url, self.domain)
-        if url_path.branch == '':
-            raise ValueError("Incomplete path: Expecting xet://user/repo/branch/[path]")
+        url_path = parse_url(url, self.domain, expect_branch = True)
+        attr = self._manager.stat(url_path.remote(), url_path.branch, url_path.path)
 
-        parse = urlparse(url_path.remote)
-        path = parse.path
-        components = path.lstrip('/').rstrip('/').split('/')
-        if len(components) < 2:
-            raise ValueError("URL not in recognized format.")
-        prefix = '/'.join(components[:2]) + '/' + url_path.branch
-        attr = _manager.stat(url_path.remote, url_path.branch, url_path.path)
         if attr is None:
             raise FileNotFoundError(f"File not found {url}")
-        return {"name": prefix + '/' + url_path.path,
+
+        return {"name": url_path.name(),
                 "size": attr.size,
                 "type": attr.ftype,
                 "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
 
     def make_repo(self, dest_path, private=False, **kwargs):
-        dest = parse_url(dest_path, self.domain)
-        if dest.path != '':
-            raise ValueError("Expecting xet://user/repo for destination")
+        dest = parse_url(dest_path, self.domain, expect_branch = False, expect_repo=True)
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
 
-        domain = self.domain
-        domain_split = domain.split('://')
-        scheme = 'https'
-        if len(domain_split) == 2:
-            scheme = domain_split[0]
-            domain = domain_split[1]
-
-        # dest_path is of the form xet://user/repo
-        split = dest_path.split('://')[-1].split('/')
-        assert (len(split) == 2)
-        owner, repo = split[0], split[1]
-
-        query = json.dumps({'name': repo, 'owner': owner, 'private': private})
-        ret = json.loads(bytes(_manager.api_query(f"{scheme}://{domain}", "", "post", query)))
+        query = json.dumps({'name': dest.repo, 'owner': dest.user, 'private': private})
+        ret = json.loads(bytes(self._manager.api_query(dest.domain_url(), "", "post", query)))
         return ret
 
     def fork_repo(self, origin_path, dest_path, **kwargs):
-        origin = parse_url(origin_path, self.domain)
-        dest = parse_url(dest_path, self.domain)
-        if origin.path != '':
-            raise ValueError("Expecting xet://user/repo for fork origin")
-        if dest.path != '':
-            raise ValueError("Expecting xet://user/repo for destination")
+        origin = parse_url(origin_path, self.domain, expect_branch = False)
+        dest = parse_url(dest_path, self.domain, expect_branch = False)
         if not self.is_repo(origin_path):
             raise ValueError(f"{origin_path} is not a repo")
         if self.is_repo(dest_path):
             raise ValueError(f"{dest_path} already exists")
-        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
-        if len(user_and_repo) != 2:
-            raise ValueError("Expecting xet://user/repo for destination")
-        # validate username
-        user, new_repo = user_and_repo[0], user_and_repo[1]
-        real_username = self.get_username()
-        if user != real_username:
-            raise ValueError(f"Cannot only create repository at xet://{real_username} and not xet://{user}")
+        if origin.domain != dest.domain:
+            raise ValueError("Cannot fork repos between domains.")
 
-        query = json.dumps({'name': new_repo})
-        ret = json.loads(bytes(_manager.api_query(origin.remote, "forks", "post", query)))
+        auth_user = self.get_username()
+        if dest.user != auth_user: 
+            raise ValueError(f"Can only fork a repo into your account ({dest.user} != {auth_user})")
+
+        query = json.dumps({'name': dest.repo})
+        ret = json.loads(bytes(self._manager.api_query(origin.remote(), "forks", "post", query)))
         return ret
 
     def duplicate_repo(self, origin_path, dest_path, **kwargs):
-        origin = parse_url(origin_path, self.domain)
-        dest = parse_url(dest_path, self.domain)
-        if origin.path != '':
-            raise ValueError("Expecting xet://user/repo for fork origin")
-        if dest.path != '':
-            raise ValueError("Expecting xet://user/repo for destination")
-        if not self.is_repo(origin_path):
+        origin = parse_url(origin_path, self.domain, expect_branch = False)
+        dest = parse_url(dest_path, self.domain, expect_branch = False)
+        
+        if not self.is_repo(origin.remote()):
             raise ValueError(f"{origin_path} is not a repo")
-        if self.is_repo(dest_path):
+        if self.is_repo(dest.remote()):
             raise ValueError(f"{dest_path} already exists")
-        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
-        if len(user_and_repo) != 2:
-            raise ValueError("Expecting xet://user/repo for destination")
-        # validate username
-        user, new_repo = user_and_repo[0], user_and_repo[1]
-        real_username = self.get_username()
-        if user != real_username:
-            raise ValueError(f"Cannot only create repository at xet://{real_username} and not xet://{user}")
+        if origin.domain != dest.domain:
+            raise ValueError("Cannot fork repos between different domains.")
+        
+        auth_user = self.get_username()
+        if dest.user != auth_user: 
+            raise ValueError(f"Can only duplicate a repo into your account ({dest.user} != {auth_user})")
 
-        ret = json.loads(bytes(_manager.api_query(origin.remote, "duplicate", "post", "")))
+        ret = json.loads(bytes(self._manager.api_query(origin.remote(), "duplicate", "post", "")))
+
         if 'full_name' not in ret:
             raise RuntimeError("Duplication failed")
         src_name = 'xet://' + ret['full_name']
         if src_name == dest_path:
             return ret
+
         return self.rename_repo(src_name, dest_path)
 
     def rename_repo(self, origin_path, dest_path, **kwargs):
-        origin = parse_url(origin_path, self.domain)
-        dest = parse_url(dest_path, self.domain)
-        if origin.path != '':
-            raise ValueError("Expecting xet://user/repo for fork origin")
-        if dest.path != '':
-            raise ValueError("Expecting xet://user/repo for destination")
-        if not self.is_repo(origin_path):
+        origin = parse_url(origin_path, self.domain, expect_branch = False)
+        dest = parse_url(dest_path, self.domain, expect_branch = False)
+        
+        if not self.is_repo(origin.remote()):
             raise ValueError(f"{origin_path} is not a repo")
-        if self.is_repo(dest_path):
+        if self.is_repo(dest.remote()):
             raise ValueError(f"{dest_path} already exists")
 
-        user_and_repo = list(filter(None, origin_path.split('://')[-1].split('/')))
-        if len(user_and_repo) != 2:
-            raise ValueError("Expecting xet://user/repo for destination")
-        old_user = user_and_repo[0]
-
-        user_and_repo = list(filter(None, dest_path.split('://')[-1].split('/')))
-        if len(user_and_repo) != 2:
-            raise ValueError("Expecting xet://user/repo for destination")
-        new_user, new_repo = user_and_repo[0], user_and_repo[1]
-
-        if old_user != new_user:
+        if origin.user != dest.user:
             raise ValueError("Username must be the same between source and destination")
 
-        query = json.dumps({'name': new_repo})
-        ret = json.loads(bytes(_manager.api_query(origin.remote, "", "patch", query)))
+        query = json.dumps({'name': dest.repo})
+        ret = json.loads(bytes(self._manager.api_query(origin.remote(), "", "patch", query)))
         return ret
 
     def set_repo_attr(self, origin_path, attrkey, attrvalue, **kwargs):
-        origin = parse_url(origin_path, self.domain)
-        if origin.path != '':
-            raise ValueError("Expecting xet://user/repo for fork origin")
+        origin = parse_url(origin_path, self.domain, expect_branch=False)
         if not self.is_repo(origin_path):
             raise ValueError(f"{origin_path} is not a repo")
 
         query = json.dumps({attrkey: attrvalue})
-        ret = json.loads(bytes(_manager.api_query(origin.remote, "", "patch", query)))
+        ret = json.loads(bytes(self._manager.api_query(origin.remote(), "", "patch", query)))
         return ret
 
-    def list_repos(self, raw=False, **kwargs):
+    def list_repos(self, url, raw=False, **kwargs):
         """
         Lists the repos available for a path of the form `user` or `xet://user`
         """
-        domain = self.domain
-        domain_split = domain.split('://')
-        scheme = 'https'
-        if len(domain_split) == 2:
-            scheme = domain_split[0]
-            domain = domain_split[1]
+        remote = parse_url(url, self.domain, expect_branch=False, expect_repo=False)
 
-        res = json.loads(bytes(_manager.api_query(f"{scheme}://{domain}", "", "get", "")))
+        res = json.loads(bytes(self._manager.api_query(remote.remote(domain_only=True), "", "get", "")))
         if raw:
             return res
         else:
@@ -323,13 +317,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         Lists the branches for a path of the form `user/repo` or `xet://user/repo`
         """
-        url_path = parse_url(path, self.domain)
-        if url_path.remote == '':
-            raise ValueError("Incomplete path: Expecting xet://user/repo")
-        if url_path.branch != '':
-            raise ValueError('Too many path components for a repo')
+        url_path = parse_url(path, self.domain, expect_branch=False)
+        res = json.loads(bytes(self._manager.api_query(url_path.remote(), "branches", "get", "")))
 
-        res = json.loads(bytes(_manager.api_query(url_path.remote, "branches", "get", "")))
         if raw:
             return res
         else:
@@ -339,18 +329,15 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         Calls Xetea to update the size of a synchronized S3 bucket for the repo.
         """
-        url_path = parse_url(path, self.domain)
-        if url_path.remote == '':
-            raise ValueError("Incomplete path: Expecting xet://user/repo/branch")
-        if url_path.branch == '':
-            raise ValueError("No branch in path")
+        url_path = parse_url(path, self.domain, expect_branch=True)
+        
         body = json.dumps({
             'size': bucket_size,
             'branch': url_path.branch
         })
-        _manager.api_query(url_path.remote, "remote_size", "post", body)
+        self._manager.api_query(url_path.remote(), "remote_size", "post", body)
 
-    def ls(self, path, detail=True, **kwargs):
+    def ls(self, path : str, detail=True, **kwargs):
         """List objects at path.
         This should include subdirectories and files at that location. The
         difference between a file and a directory must be clear when details
@@ -385,45 +372,38 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             dicts if detail is True.  These dicts would have: name (full path in the FS), 
             size (in bytes), type (file, directory, or something else) and other FS-specific keys.
         """
-        # list user names
-        if path == '':
-            # if there are no paths. We list all the unique users
-            # list_repos return username/repo so we split the name and 
-            # unique the 1st component
-            names = set([f['name'].split('/')[0] for f in self.list_repos()])
-            return [{'name': n, 'type': 'user'} for n in names]
-        path = path.rstrip('/')
-        if len(path.split('/')) == 1:
-            # if there exactly 1 component in the path it has to be [username]
-            # list_repos return username/repo so we split the name and
-            # and match every repo which username == path
-            names = [f['name'] for f in self.list_repos() if f['name'].split('/')[0] == path]
-            return [{'name': n, 'type': 'repo'} for n in names]
 
-        url_path = parse_url(path, self.domain)
+        url_path = parse_url(path, self.domain, expect_branch=None, expect_repo=None)
 
-        if url_path.branch == '':
-            branches = self.list_branches(path)
-            return [{'name': path + '/' + n['name'], 'type': 'branch'} for n in branches]
+        if url_path.repo == "":
+            names = [f['name'] for f in self.list_repos(path)]
 
-        parse = urlparse(url_path.remote)
-        path = parse.path
-        components = path.lstrip('/').rstrip('/').split('/')
-        if len(components) < 2:
-            raise ValueError('Incomplete path. must be of the form user/repo/[branch]/[path]')
-        prefix = '/'.join(components[:2]) + '/' + url_path.branch
+            # To list all repos accessible by the current authenticated user, use 
+            # xet://domain:/
+            if url_path.user == "":
+                return [{'name': url_path.domain + ":" + n, 'type': 'repo'} for n in names]
+            else:
+                return [{'name': url_path.domain + ":" + n, 'type': 'repo'} for n in names if n.startswith(url_path.user)]
 
-        files, file_info = _manager.listdir(url_path.remote,
-                                            url_path.branch,
-                                            url_path.path)
+        elif url_path.branch == "":
+            branches = self.list_branches(url_path.remote())
+            return [{'name':  url_path.base_path() + "/" + n['name'], 'type': 'branch'} for n in branches]
+        else:
+            files, file_info = self._manager.listdir(url_path.remote(),
+                                                     url_path.branch,
+                                                     url_path.path)
 
+        # Note that we cannot actually standardize the paths in the listed files.  
+        # If we do, glob will not work as it calls this and matches names against the query.
         if detail:
-            return [{"name": prefix + '/' + fname,
+            ret = [{"name": url_path.base_path() + "/" + fname, 
                      "size": finfo.size,
                      "type": finfo.ftype}
                     for fname, finfo in zip(files, file_info)]
         else:
-            return files
+            ret = [url_path.base_path() + "/" + fname for fname in files]
+
+        return ret
 
     def _open(
             self,
@@ -455,7 +435,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                                    "Use `with fs.transaction(repo_and_branch, [commit_message]):` to enable write access.")
 
         if mode.startswith('r'):
-            repo_handle = _manager.get_repo(url_path.remote)
+            repo_handle = self._manager.get_repo(url_path.remote())
             branch = url_path.branch
             if "flags" in kwargs:
                 handle = repo_handle.open_for_read_with_flags(branch, url_path.path, kwargs["flags"])
@@ -493,7 +473,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if len(kwargs) > 0:
             print(f"rm arguments {kwargs} ignored", file=sys.stderr)
 
-        path = parse_url(path, self.domain)
+        path = parse_url(path, self.domain, expect_repo = None)
         if len(path.path) == 0 and len(path.branch) > 0:
             raise ValueError("Cannot delete branches with 'rm'")
         if len(path.path) == 0 and len(path.branch) == 0:
@@ -505,11 +485,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         Returns true if the path is a repo
         """
-        url_path = parse_url(path, self.domain)
-        if len(url_path.branch) != 0:
-            raise ValueError("Too many path components to be a repo")
+        url_path = parse_url(path, self.domain, expect_branch=False)
         try:
-            self.list_branches(path)
+            self.list_branches(url_path.remote())
             return True
         except Exception as e:
             return False
@@ -532,13 +510,13 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                  "old_branch_name": src_branch_name}
         query = json.dumps(query)
         url_path = parse_url(repo, self.domain)
-        _manager.api_query(url_path.remote, "branches", "post", query)
+        self._manager.api_query(url_path.remote(), "branches", "post", query)
 
     def find_ref(self, repo, ref_name):
         if not self.is_repo(repo):
             raise ValueError(f"{repo} is not a repository")
         url_path = parse_url(repo, self.domain)
-        res = _manager.api_query(url_path.remote, f"git/refs/{ref_name}", "get", "")
+        res = self._manager.api_query(url_path.remote(), f"git/refs/{ref_name}", "get", "")
         return json.loads(bytes(res))
 
     def delete_branch(self, repo, branch_name):
@@ -556,7 +534,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             raise ValueError("Cannot delete main branch")
 
         url_path = parse_url(repo, self.domain)
-        _manager.api_query(url_path.remote, f"branches/{branch_name}", "delete", "")
+        self._manager.api_query(url_path.remote(), f"branches/{branch_name}", "delete", "")
 
     def cp_file(self, path1, path2, *args, **kwargs):
         """
@@ -576,7 +554,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                 "Write access to files is only allowed within a commit transaction.")
         parsed_path1 = parse_url(path1, self.domain)
         parsed_path2 = parse_url(path2, self.domain)
-        if parsed_path1.remote != parsed_path2.remote:
+        if parsed_path1.remote() != parsed_path2.remote():
             raise ValueError("Can only copy between paths in the same repository")
         if len(parsed_path1.branch) == 0:
             raise ValueError(f"Branch not specified in copy source {path1}")
@@ -587,7 +565,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             query = {"new_branch_name": parsed_path2.branch,
                      "old_branch_name": parsed_path1.branch}
             query = json.dumps(query)
-            _manager.api_query(parsed_path1.remote, "branches", "post", query)
+            self._manager.api_query(parsed_path1.remote(), "branches", "post", query)
             return
 
         transaction.copy(parsed_path1, parsed_path2)
@@ -608,8 +586,10 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         if transaction is None:
             raise RuntimeError(
                 "Write access to files is only allowed within a commit transaction.")
-        parsed_path1 = parse_url(path1, self.domain)
-        parsed_path2 = parse_url(path2, self.domain)
+        parsed_path1 = parse_url(path1, self.domain, expect_branch=True)
+        parsed_path2 = parse_url(path2, self.domain, expect_branch=True)
+        if parsed_path1.remote() != parsed_path2.remote():
+            raise ValueError("Can only copy between paths in the same repository")
         if parsed_path1.branch != parsed_path2.branch:
             raise ValueError("Moves can only happen within a branch")
 
@@ -626,7 +606,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         """
         if isinstance(path_urls, str):
             path_urls = [path_urls]
-        url_paths = [parse_url(url, self.domain, partial_remote=True) for url in path_urls]
+        url_paths = [parse_url(url, self.domain) for url in path_urls]
 
         self._add_deduplication_hints_by_url(url_paths)
 
@@ -638,13 +618,21 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         paths_by_remotes = {}
         for url in url_paths:
-            paths_by_remotes.setdefault(url.remote, []).append(url)
+            paths_by_remotes.setdefault(url.remote(), []).append(url)
 
         for (remote, urls) in paths_by_remotes.items():
-            repo_handle = _manager.get_repo(remote)
+            repo_handle = self._manager.get_repo(remote)
 
             repo_handle.fetch_hinted_shards_for_dedup([(url.branch, url.path) for url in urls],
                                                       min_dedup_byte_threshhold)
+
+    @property
+    def _manager(self):
+        """
+        The repo manager associated with this repo.
+        """
+        return _repo_manager(self.domain)
+
 
     @property
     def transaction(self):
@@ -670,7 +658,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         Internal method used by CommitTransaction to get
         a transaction handler object from the repository handle
         """
-        repo_handle = _manager.get_repo(repo_info.remote)
+        repo_handle = self._manager.get_repo(repo_info.remote())
         return repo_handle.begin_write_transaction(repo_info.branch, commit_message)
 
     def start_transaction(self, commit_message=None):

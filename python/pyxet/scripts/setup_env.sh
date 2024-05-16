@@ -15,7 +15,7 @@ if [[ -z "$VIRTUAL_ENV" ]] ; then
 
         pip install --upgrade pip
         pip install -r scripts/dev_requirements.txt
-    elif
+    else
         source ./venv/bin/activate
     fi
 

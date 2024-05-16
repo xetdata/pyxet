@@ -2,7 +2,7 @@
 
 if [[ -z "$VIRTUAL_ENV" ]] ; then 
 
-    source ./scripts/set_python_executable.sh
+    python_executable=$(./scripts/find_python.sh)
 
     if [[ ! -e pyproject.toml ]] ; then 
         echo "Run this script in the pyxet directory using ./scripts/$0"
@@ -11,8 +11,8 @@ if [[ -z "$VIRTUAL_ENV" ]] ; then
 
     if [[ ! -e venv/ ]] ; then 
         echo "Setting up virtual environment."
-        echo "Python version = $($PYTHON_EXECUTABLE --version)"
-        $PYTHON_EXECUTABLE -m venv ./venv
+        echo "Python version = $($python_executable--version)"
+        $python_executable -m venv ./venv
 
         source ./venv/bin/activate || ls -R ./ 
 

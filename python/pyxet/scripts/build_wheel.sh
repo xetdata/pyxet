@@ -11,28 +11,19 @@ fi
 export MACOSX_DEPLOYMENT_TARGET=10.9
 unset CONDA_PREFIX
 
-# Clear out the old virtual env.
+python_executable=$(./scripts/find_python.sh release)
+
+# Clear out and rebuild the virtual env 
 rm -rf .venv_build
-
-OS=$(uname -s)
-
-if [[ -z "$PYTHON_EXECUTABLE" ]] ; then 
-    if [[ "$OS" == "Darwin" ]]; then
-        # Use system universal one
-        PYTHON_EXECUTABLE=/usr/bin/python3
-    else 
-        PYTHON_EXECUTABLE=$(which python3)
-    fi
-fi
-
-$PYTHON_EXECUTABLE -m venv .venv_build
+$python_executable -m venv .venv_build
 . .venv_build/bin/activate
 
 pip install --upgrade pip
 pip install -r scripts/dev_requirements.txt
 
 # Clear out any old wheels
-mv target/wheels/ target/old_wheels/ || echo ""
+mkdir -p target/old_wheels/
+mv target/wheels/* target/old_wheels/ || echo ""
 
 if [[ "$OS" == "Darwin" ]]; then
     maturin build --profile=cli-release --target=universal2-apple-darwin 

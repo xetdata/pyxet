@@ -9,7 +9,7 @@ if [[ -z "$VIRTUAL_ENV" ]] ; then
 
     if [[ ! -e venv/ ]] ; then 
         echo "Setting up virtual environment."
-        python -m venv venv
+        python -m venv ./venv
     
         source ./venv/bin/activate || ls -R ./ 
 

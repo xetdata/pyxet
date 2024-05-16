@@ -71,6 +71,9 @@ def test_user_info():
     assert token is not None
     host = os.getenv('XET_ENDPOINT')
 
+    if host is None: 
+        host = "xethub.com"
+
     return {
         "user": user,
         "email": email,

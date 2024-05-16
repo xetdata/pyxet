@@ -16,9 +16,11 @@ name = "pyxet"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.18.0", features = ["extension-module", "abi3-py37", "generate-import-lib"] }
-xetblob = { git = "https://github.com/xetdata/xet-core" }
-progress_reporting = { git = "https://github.com/xetdata/xet-core" }
+pyo3 = { version = "0.18.0", features = [
+    "extension-module",
+    "abi3-py37",
+    "generate-import-lib",
+] }
 tempfile = "3.2.0"
 pyo3-asyncio = { version = "0.18", features = ["attributes", "tokio-runtime"] }
 libc = "0.2"
@@ -29,13 +31,14 @@ futures = "0.3.21"
 anyhow = "1"
 lazy_static = "1.4.0"
 
-[target.'cfg(target_os = "windows")'.dependencies.gitxetcore]
-git = "https://github.com/xetdata/xet-core"
-features = []
 
-[target.'cfg(not(target_os = "windows"))'.dependencies.gitxetcore]
-git = "https://github.com/xetdata/xet-core"
-features = ["openssl_vendored"]
+[target.'cfg(target_os = "windows")'.dependencies]
+libxet = { git = "https://github.com/xetdata/xet-core", features = [
+    "openssl_vendored",
+] }
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+libxet = { git = "https://github.com/xetdata/xet-core", features = [] }
 
 [build-dependencies]
 pyo3-build-config = "0.18.0"
@@ -44,4 +47,3 @@ cc = "1.0"
 [release]
 opt-level = 3
 debug = true
-

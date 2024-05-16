@@ -69,7 +69,7 @@ def test_user_info():
     assert email is not None
     token = os.getenv('XET_TEST_TOKEN')
     assert token is not None
-    host = os.getenv('XET_ENDPOINT')
+    host = os.getenv('XET_TEST_ENDPOINT')
 
     return {
         "user": user,

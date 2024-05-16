@@ -32,12 +32,12 @@ anyhow = "1"
 lazy_static = "1.4.0"
 
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 libxet = { git = "https://github.com/xetdata/xet-core", features = [
     "openssl_vendored",
 ] }
 
-[target.'cfg(not(target_os = "windows"))'.dependencies]
+[target.'cfg(target_os = "windows")'.dependencies]
 libxet = { git = "https://github.com/xetdata/xet-core", features = [] }
 
 [build-dependencies]

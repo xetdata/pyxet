@@ -9,9 +9,15 @@ if [[ ! -e pyproject.toml ]] ; then
 fi
 
 source ./scripts/setup_env.sh
+activate_venv venv
 
-# Run the development scripts
-maturin develop
+# Clear out any old wheels
+mkdir -p target/old_wheels/
+mv target/wheels/* target/old_wheels/ || echo ""
+
+# Install 
+maturin build
+pip install target/wheels/pyxet-*.whl
 
 # This runs the tests in parallel using pytest-xdist
 pytest -n 12 --verbose tests/

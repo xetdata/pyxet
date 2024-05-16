@@ -11,15 +11,9 @@ fi
 export MACOSX_DEPLOYMENT_TARGET=10.9
 unset CONDA_PREFIX
 
-python_executable=$(./scripts/find_python.sh release)
-
-# Clear out and rebuild the virtual env 
 rm -rf .venv_build
-$python_executable -m venv .venv_build
-. .venv_build/bin/activate
-
-pip install --upgrade pip
-pip install -r scripts/dev_requirements.txt
+create_venv .venv_build release
+activate_venv .venv_build
 
 # Clear out any old wheels
 mkdir -p target/old_wheels/

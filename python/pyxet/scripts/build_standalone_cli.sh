@@ -12,30 +12,14 @@ source ./scripts/build_wheel.sh
 
 pip install target/wheels/pyxet-*.whl
 
-# Find the binary, which isn't always where you want it to be. 
-xet_path="$(which xet)"
-if [[ -z "${xet_path}" ]] ; then 
-    echo "Error: Xet not found."
-fi
+# Find the cli file, which isn't always where you want it to be. 
+xet_cli_path="./.venv_build/lib/site-packages/pyxet/cli.py"
 
-if [[ ! -e "${xet_path}" ]] ; then 
-    # On windows, which strips the .exe
-    if [[ -e "${xet_path}*.exe" ]] ; then 
-        xet_path="${xet_path}.exe"
-    else
-        xet_path=
-        where_attempt="$(where xet || echo '')"
-        if [[ ! -z "$where_attempt" ]] && [[ -e "$where_attempt" ]] ; then 
-            xet_path="$where_attempt"
-        fi
-    fi
-fi
-
-echo "Path to xet = '${xet_path}'"
+echo "Path to xet = '${xet_cli_path}'"
 
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
-    pyinstaller --onefile "$xet_path" --target-arch universal2
+    pyinstaller --onefile "$xet_cli_path" --target-arch universal2
 else 
-    pyinstaller --onefile "$xet_path" 
+    pyinstaller --onefile "$xet_cli_path" 
 fi

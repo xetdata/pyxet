@@ -320,6 +320,50 @@ class PyxetCLI:
             print(f"  {fs.domain}/{username}/{repo_name}/settings")
 
 
+    @staticmethod
+    @cli.command()
+    def trace(args: Annotated[typing.List[str], typer.Argument(help="Command to run")] = None):
+        """
+        Experimental tracing. `xet trace [arbitrary command]` and
+        traces will go into xtrace.log.
+        Only one program can be traced at any one time.
+        """
+        import os
+        import subprocess
+        try:
+            import mitmproxy
+        except:
+            print("Please `pip install mitmproxy`")
+            os._exit(1)
+            
+        import threading
+        from .mitmhook import proxy_loop
+        from . import xtracelib
+        import sys
+
+        t = threading.Thread(target=proxy_loop)
+        t.start()
+
+
+        if os.path.exists("xtrace.log"):
+            os.remove('xtrace.log')
+
+        xtracelib.set_xlog_point("xtrace.log")
+
+        os.environ["HTTP_PROXY"] = "localhost:8080"
+        os.environ["HTTPS_PROXY"] = "localhost:8080"
+        os.environ["AWS_CA_BUNDLE"] = os.path.expanduser("~/.mitmproxy/mitmproxy-ca-cert.pem")
+        os.environ["DYLD_INSERT_LIBRARIES"] = xtracelib.xlibpath
+        os.environ["LD_PRELOAD"] = xtracelib.xlibpath
+        os.environ["XTRACE_LOG_TARGET"] = xtracelib.get_xlog_point()
+
+        # do any thing else here
+        subprocess.run(args)
+
+        os._exit(0)
+
+
+
 class BranchCLI:
     @staticmethod
     @branch.command()
@@ -510,3 +554,5 @@ class RepoCLI:
 
         """
         raise NotImplementedError("info command is not implemented yet")
+
+

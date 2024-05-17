@@ -12,6 +12,8 @@ source ./scripts/build_wheel.sh
 
 pip install target/wheels/pyxet-*.whl
 
+OS=$(uname -s)
+
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
     xet_cli_path="$(which xet)"

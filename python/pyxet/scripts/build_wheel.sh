@@ -8,6 +8,8 @@ if [[ ! -e pyproject.toml ]] ; then
     exit 1
 fi
 
+OS=$(uname -s)
+
 export MACOSX_DEPLOYMENT_TARGET=10.9
 unset CONDA_PREFIX
 

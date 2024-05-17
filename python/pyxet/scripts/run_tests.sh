@@ -28,5 +28,8 @@ echo "$(which pip)"
 maturin build
 pip install target/wheels/pyxet-*.whl
 
-# This runs the tests in parallel using pytest-xdist
-pytest -n 12 --verbose tests/
+# TODO: This runs the tests in parallel using pytest-xdist
+# Error: tests in cli can't be run simultaneously actually, as there are conflicts.
+#pytest -n 12 --verbose tests/
+pytest --verbose tests/
+

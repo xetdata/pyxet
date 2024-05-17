@@ -13,7 +13,7 @@ if [[ "$1" == "release" ]] ; then
     fi
 fi
 
-if [[ ! -z $PYTHON_EXECUTABLE ]] ; then 
+if [[ ! -z "$PYTHON_EXECUTABLE" ]] ; then 
     echo "$PYTHON_EXECUTABLE"
 elif [[ "$(python --version)" == "Python 3"* ]] ; then
     echo "$(which python)"

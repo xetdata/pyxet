@@ -20,7 +20,7 @@ create_venv() {
 
     venv_name=$1
 
-    python_executable=$(./scripts/find_python.sh $2)
+    python_executable="$(./scripts/find_python.sh $2)"
 
     if [[ ! -e pyproject.toml ]] ; then 
         >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
@@ -29,8 +29,8 @@ create_venv() {
 
     if [[ ! -e ./$venv_name ]] ; then 
         >&2 echo "Setting up virtual environment."
-        >&2 echo "Python version = $($python_executable --version)"
-        >&2 $python_executable -m venv ./$venv_name
+        >&2 echo "Python version = $("$python_executable" --version)"
+        >&2 "$python_executable" -m venv "./$venv_name"
 
         [[ -e "./$venv_name" ]] || exit 1 
 

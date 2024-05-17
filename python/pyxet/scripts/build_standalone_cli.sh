@@ -14,18 +14,19 @@ pip install target/wheels/pyxet-*.whl
 
 # Find the binary, which isn't always where you want it to be. 
 xet_path="$(which xet)"
-if [[ -z "$(xet_path)" ]] ; then 
+if [[ -z "${xet_path}" ]] ; then 
     echo "Error: Xet not found."
 fi
 
-if [[ ! -e "$(xet_path)" ]] ; then 
+if [[ ! -e "${xet_path}" ]] ; then 
     # On windows, which strips the .exe
-    if [[ -e "$(xet_path).exe" ]] ; then 
-        xet_path="$(xet_path).exe"
+    if [[ -e "${xet_path}*.exe" ]] ; then 
+        xet_path="${xet_path}.exe"
     else
+        xet_path=
         where_attempt="$(where xet || echo '')"
         if [[ ! -z "$where_attempt" ]] && [[ -e "$where_attempt" ]] ; then 
-            xet_path="$(where_attempt)"
+            xet_path="$where_attempt"
         fi
     fi
 fi

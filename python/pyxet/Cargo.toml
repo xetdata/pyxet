@@ -44,6 +44,13 @@ libxet = { git = "https://github.com/xetdata/xet-core", features = [] }
 pyo3-build-config = "0.18.0"
 cc = "1.0"
 
-[release]
+[profile.release]
 opt-level = 3
-debug = true
+debug = 1
+lto = "fat"
+
+[profile.cli-release]
+inherits = "release"
+opt-level = "s"
+debug = 0
+

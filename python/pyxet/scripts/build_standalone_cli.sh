@@ -30,4 +30,5 @@ else
     xet_cli_path="./.venv_build/Lib/site-packages/pyxet/cli.py"
     echo "Path to xet = '${xet_cli_path}'"
     pyinstaller --onefile "$xet_cli_path" 
+    mv dist/cli.exe dist/xet.exe
 fi

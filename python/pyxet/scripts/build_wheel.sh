@@ -11,9 +11,12 @@ fi
 export MACOSX_DEPLOYMENT_TARGET=10.9
 unset CONDA_PREFIX
 
+# Use a new build environment that links against the system python on OSX 
+# and always creates a new environment.
 rm -rf .venv_build
+source ./scripts/setup_env.sh
 create_venv .venv_build release
-activate_venv .venv_build
+source $(venv_activate_script .venv_build)
 
 # Clear out any old wheels
 mkdir -p target/old_wheels/

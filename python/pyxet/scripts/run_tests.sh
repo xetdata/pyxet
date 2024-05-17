@@ -1,5 +1,5 @@
 #!/bin/bash -ex
-
+export PS4='Line ${LINENO}: '
 # Usage: in <repo>/python/pyxet/, run ./scripts/run_tests.sh. 
 # Will build in development mode and run tests. 
 
@@ -9,11 +9,20 @@ if [[ ! -e pyproject.toml ]] ; then
 fi
 
 source ./scripts/setup_env.sh
-activate_venv venv
+create_venv venv
+source $(venv_activate_script venv)
+
+if [[ -z "$VIRTUAL_ENV" ]] ; then 
+  echo "Failed to activate virtual env."
+  exit 1
+fi
+
 
 # Clear out any old wheels
 mkdir -p target/old_wheels/
 mv target/wheels/* target/old_wheels/ || echo ""
+
+echo "$(which pip)"
 
 # Install 
 maturin build

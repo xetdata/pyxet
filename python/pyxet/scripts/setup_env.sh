@@ -17,27 +17,26 @@ venv_activate_script() {
 }
 
 create_venv() {
-    if [[ -z "$VIRTUAL_ENV" ]] ; then 
-        venv_name=$1
 
-        python_executable=$(./scripts/find_python.sh $2)
+    venv_name=$1
 
-        if [[ ! -e pyproject.toml ]] ; then 
-            >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
-            exit 1
-        fi
+    python_executable=$(./scripts/find_python.sh $2)
 
-        if [[ ! -e ./$venv_name ]] ; then 
-            >&2 echo "Setting up virtual environment."
-            >&2 echo "Python version = $($python_executable--version)"
-            >&2 $python_executable -m venv ./$venv_name
+    if [[ ! -e pyproject.toml ]] ; then 
+        >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
+        exit 1
+    fi
 
-            [[ -e "./$venv_name" ]] || exit 1 
+    if [[ ! -e ./$venv_name ]] ; then 
+        >&2 echo "Setting up virtual environment."
+        >&2 echo "Python version = $($python_executable --version)"
+        >&2 $python_executable -m venv ./$venv_name
 
-            source $(venv_activate_script $venv_name)
+        [[ -e "./$venv_name" ]] || exit 1 
 
-            >&2 pip install --upgrade pip
-            >&2 pip install -r scripts/dev_requirements.txt
-        fi
-    fi 
+        source $(venv_activate_script $venv_name)
+
+        >&2 pip install --upgrade pip
+        >&2 pip install -r scripts/dev_requirements.txt
+    fi
 }

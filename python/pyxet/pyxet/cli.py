@@ -55,7 +55,7 @@ class PyxetCLI:
         """
         source = parse_url(source)
         if source.path != '':
-            raise ValueError("Cannot have a path when mounting. Expecting xet://[user]/[repo]/[branch]")
+            raise ValueError("Cannot have a path when mounting. Expecting xet://domain:user/repo/branch")
         if source.branch == '':
             raise ValueError("Branch or revision must be specified")
         if os.name == 'nt':

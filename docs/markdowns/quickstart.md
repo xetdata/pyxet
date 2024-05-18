@@ -59,7 +59,7 @@ Python fsspec.
 import pyxet            # make xet:// protocol available
 import pandas as pd     # assumes pip install pandas has been run
 
-df = pd.read_csv('xet://XetHub/titanic/main/titanic.csv')
+df = pd.read_csv('xet://xethub.com:XetHub/titanic/main/titanic.csv')
 df
 ```
 
@@ -90,8 +90,10 @@ leveraging the power of Git branches and versioning.
 
 A XetHub URL for pyxet is in the form:
 ```
-xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
+xet://<endpoint>:<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
+
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
 
 Unlike with traditional blob stores, the ability to call a branch means that you can choose whether to 
 use the most recent version of a file/directory or to reference a particular branch or commit.

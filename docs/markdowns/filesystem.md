@@ -7,8 +7,10 @@ library. Use it to access local files, remote files, and files in XetHub.
 
 Xet URLs are in the form:
 ```sh
-xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
+xet://<endpoint>:<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
+
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
 
 The `<path_to_file>` argument is optional if the URL
 refers to a repository and the `xet://` prefix is optional when using pyxet.XetFS.
@@ -35,10 +37,10 @@ Example usage of `pyxet.XetFS`:
   fs = pyxet.XetFS()
 
   # List files in the repository.
-  files = fs.ls('xet://XetHub/Flickr30k/main')
+  files = fs.ls('xet://xethub.com:XetHub/Flickr30k/main')
 
   # Open a file from the repository.
-  f = fs.open('xet://XetHub/Flickr30k/main/results.csv')
+  f = fs.open('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
 
   # Read the contents of the file.
   contents = f.read()
@@ -95,6 +97,6 @@ xet:// URLs must be used as file paths when interacting with these packages. For
   import pyxet   # make xet protocol available to fsspec
   import pandas as pd
 
-  df = pd.read_csv('xet://XetHub/Flickr30k/main/results.csv')
+  df = pd.read_csv('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
 ```
 

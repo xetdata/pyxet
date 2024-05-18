@@ -97,7 +97,7 @@ Read a CSV file:
     import pyxet            # make xet:// protocol available
     import pandas as pd     # assumes pip install pandas has been run
 
-    df = pd.read_csv('xet://XetHub/titanic/main/titanic.csv')
+    df = pd.read_csv('xet://xethub.com:XetHub/titanic/main/titanic.csv')
 
 Checkout the rest of the documentation for detailed usage examples!
 

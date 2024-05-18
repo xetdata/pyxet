@@ -81,8 +81,8 @@ Optionally, use [Git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submod
 
 
 ```bash
-xet://org/project (branch-prod/dev/ab-test-210322/ab-test-210323)
-├── data/ xet://org/project/data (submodule)
+xet://xethub.com:org/project (branch-prod/dev/ab-test-210322/ab-test-210323)
+├── data/ xet://xethub.com:org/project/data (submodule)
 │   ├── data.csv
 ├── models/
 │   ├── model.pkl

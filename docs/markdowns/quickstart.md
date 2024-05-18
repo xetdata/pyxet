@@ -104,7 +104,7 @@ Here are some simple ways to access information from an existing repository:
 ```python
 import pyxet
 
-fs = pyxet.XetFS()  # fsspec filesystem
+fs = pyxet.XetFS('xethub.com')  # fsspec filesystem with endpoint specified
 
 fs.info("XetHub/titanic/main/titanic.csv")  
 # returns repo level info: {'name': 'XetHub/main/titanic.csv', 'size': 61194, 'type': 'file'}

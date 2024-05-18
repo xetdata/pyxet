@@ -60,10 +60,10 @@ results = pd.DataFrame([{'accuracy': info['accuracy'],
 ### Writing back to XetHub
 
 After training your model, you can persist both the model and metrics back to XetHub.
-Update the `<user_name>` fields below and run:
+Update the `<user_name>` fields below and run the following, which assumes that you're using our public xethub.com endpoint:
 
 ```python
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 with fs.transaction as tr:
     tr.set_commit_message("Write experiment 1 results back to repo")
     fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)

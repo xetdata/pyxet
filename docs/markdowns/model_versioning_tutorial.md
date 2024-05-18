@@ -64,7 +64,7 @@ datasets, XetHub can hold any type of file: A/B test data, databases backup dump
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 
 # a transaction is needed for write
 with fs.transaction as tr:
@@ -130,7 +130,7 @@ To save time, we simply copy it from a ready *app* branch.
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 fs.cp("xdssio/kickstart_ml/app/server", "server")
 ```
 
@@ -200,7 +200,7 @@ To get the full code… we’ll copy it from the existing version:
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 
 fs.cp("xdssio/titanic/experiment1/notebooks/train.ipynb", "notebooks/train.ipynb")
 ```
@@ -284,7 +284,7 @@ We simulate it by just adding data there:
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 with fs.transaction as tr:
     tr.set_commit_message("Adding more data")
     fs.cp("data/titanic.csv", "xet://xethub.com:${XET_USER_NAME}/kickstart_data/main/titanic2.csv")

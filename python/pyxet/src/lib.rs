@@ -194,11 +194,11 @@ pub fn perform_mount_curdir(
 #[pymethods]
 impl PyRepoManager {
     #[new]
-    pub fn new(domain : &str) -> PyResult<Self> {
+    pub fn new(endpoint : &str) -> PyResult<Self> {
     
-        // A bit of a hack here to make sure the domain gets passed in correctly, 
+        // A bit of a hack here to make sure the endpoint gets passed in correctly, 
         // but hopefully this should be
-        std::env::set_var("XET_ENDPOINT", domain); 
+        std::env::set_var("XET_ENDPOINT", endpoint); 
         let manager = XetRepoManager::new(None, None).map_err(anyhow_to_runtime_error)?;
         Ok(PyRepoManager {
             manager: RwLock::new(manager),
@@ -363,7 +363,7 @@ impl PyRepo {
         )
     }
 
-    /// Fetch shards that could be useful for dedup, according to the given domains.
+    /// Fetch shards that could be useful for dedup, according to the given endpoints.
     ///
     /// Endpoints are given as a list of (branch, path) tuples.  Shard hint fetches may be
     /// across branches.

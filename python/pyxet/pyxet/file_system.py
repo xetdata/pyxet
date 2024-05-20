@@ -58,9 +58,11 @@ def login(user, token, email=None, host=None):
 def open(file_url, mode="rb", **kwargs):
     """
     Open the file at the specific Xet file URL
-    of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`::
+    of the form `xet://<domain>:<user>/<repo>/<branch>/<path-to-file>`.  
 
-        f = pyxet.open('xet://XetHub/Flickr30k/main/results.csv')
+    For example::
+
+        f = pyxet.open('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
     """
 
     url_info = parse_url(file_url, expect_branch=True)
@@ -179,7 +181,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
     def branch_info(self, url):
         """
         Returns information about a branch `user/repo/branch` 
-        or `xet://user/repo/branch`
+        or `xet://[domain:]<user>/<repo>/<branch>`
         """
         # try to parse this as a URL
         # and if not try to parse it as a path
@@ -210,7 +212,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
     def info(self, url):
         """
         Returns information about a path `user/repo/branch/[path]` 
-        or `xet://user/repo/branch/[path]`
+        or `xet://[domain:]<user>/<repo>/<branch>/[path]`
         """
         url_path = parse_url(url, self.domain, expect_branch = True)
         attr = self._manager.stat(url_path.remote(), url_path.branch, url_path.path)
@@ -303,7 +305,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
     def list_repos(self, url, raw=False, **kwargs):
         """
-        Lists the repos available for a path of the form `user` or `xet://user`
+        Lists the repos available for a path of the form `user` or `xet://[domain:]<user>`
         """
         remote = parse_url(url, self.domain, expect_branch=False, expect_repo=False)
 
@@ -316,7 +318,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
     def list_branches(self, path, raw=False, **kwargs):
         """
-        Lists the branches for a path of the form `user/repo` or `xet://user/repo`
+        Lists the branches for a path of the form `user/repo` or `xet://[domain:]<user>/<repo>`
         """
         url_path = parse_url(path, self.domain, expect_branch=False)
         res = json.loads(bytes(self._manager.api_query(url_path.remote(), "branches", "get", "")))
@@ -644,7 +646,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
             with fs.transaction as tr:
                 tr.set_commit_message("message")
-                file = fs.open('user/repo/main/hello.txt','w')
+                file = fs.open('<user>/<repo>/main/hello.txt','w')
                 file.write('hello world')
                 file.close()
 
@@ -669,7 +671,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         transaction. All writes must be performed into this branch
 
         repo_and_branch is of the form
-        `user/repo/branch` or `xet://user/repo/branch`::
+        `<user>/<repo>/<branch>` or `xet://[domain:]<user>/<repo>/<branch>`::
 
             fs.start_transaction('my commit message')
             file = fs.open('user/repo/main/hello.txt','w')

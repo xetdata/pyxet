@@ -47,7 +47,7 @@ class PyxetCLI:
     @staticmethod
     @cli.command()
     def mount(
-            source: Annotated[str, typer.Argument(help="Repository and branch in format xet://domain:user/repo/branch")],
+            source: Annotated[str, typer.Argument(help="Repository and branch in format xet://<domain>:<user>/<repo>/<branch>")],
             path: Annotated[str, typer.Argument(help="Path to mount to or a Windows drive letter)")],
             prefetch: Annotated[int, typer.Option(help="Prefetch blocks in multiple of 16MB. Default=32")] = 32):
         """
@@ -55,7 +55,7 @@ class PyxetCLI:
         """
         source = parse_url(source)
         if source.path != '':
-            raise ValueError("Cannot have a path when mounting. Expecting xet://domain:user/repo/branch")
+            raise ValueError("Cannot have a path when mounting. Expecting xet://<domain>:<user>/<repo>/<branch>")
         if source.branch == '':
             raise ValueError("Branch or revision must be specified")
         if os.name == 'nt':
@@ -90,7 +90,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://domain:user/repo")],
+    def clone(source: Annotated[str, typer.Argument(help="Repository in format xet://<domain>:<user>/<repo>")],
               args: Annotated[typing.List[str], typer.Argument(help="Arguments to be passed to git-xet clone")] = None):
         """
         Clones a repository on a local path
@@ -208,7 +208,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder to delete in the form xet://domain:user/repo/branch/path")],
+    def rm(paths: Annotated[typing.List[str], typer.Argument(help="File or folder to delete in the form xet://<domain>:<user>/<repo>/<branch>/<path>")],
            message: Annotated[
                str, typer.Option("--message", "-m", help="A commit message")] = ""):
         """delete files and folders"""
@@ -236,8 +236,8 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def mv(source: Annotated[str, typer.Argument(help="Source file or folder to move of the form xet://domain:user/repo/branch/path")],
-           target: Annotated[str, typer.Argument(help="Target location or name to move to of the form xet://domain:user/repo/branch/path")],
+    def mv(source: Annotated[str, typer.Argument(help="Source file or folder to move of the form xet://<domain>:<user>/<repo>/<branch>/<path>")],
+           target: Annotated[str, typer.Argument(help="Target location or name to move to of the form xet://<domain>:<user>/<repo>/<branch>/<path>")],
            recursive: Annotated[
                bool, typer.Option("--recursive", "-r", help="Recursively copy files and folders ")] = False,
            message: Annotated[
@@ -264,7 +264,7 @@ class PyxetCLI:
 
     @staticmethod
     @cli.command()
-    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://domain:user/repo/branch[/path]")],
+    def info(uri: Annotated[str, typer.Argument(help="A URI in format xet://<domain>:<user>/<repo>/<branch>[/path]")],
              raw: Annotated[bool, typer.Option(help="If True, will print the raw JSON output")] = False):
         """Provide information about any path"""
         fs, path = _get_fs_and_path(uri)
@@ -289,7 +289,7 @@ class PyxetCLI:
                   public: Annotated[bool, typer.Option('--public', help="make repository public")] = False,
                   ):
         """
-        Duplicates (via a detached fork) a copy of a repository from xet://[domain]:[user]/[repo] to your own account.
+        Duplicates (via a detached fork) a copy of a repository from xet://<domain>:<user>/<repo> to your own account.
         Defaults to original repository private/public settings. Use --private or --public to adjust the repository permissions. 
         If dest is not provided, xet://[domain]:[yourusername]/[repo] is used.
         Use `xet fork` if you want a regular fork.
@@ -331,16 +331,16 @@ class PyxetCLI:
 class BranchCLI:
     @staticmethod
     @branch.command()
-    def make(repo: Annotated[str, typer.Argument(help="Repository name in format xet://domain:user/repo")],
+    def make(repo: Annotated[str, typer.Argument(help="Repository name in format xet://<domain>:<user>/<repo>")],
              src_branch: Annotated[str, typer.Argument(help="Source branch to copy")],
              dest_branch: Annotated[str, typer.Argument(help="New branch name")]):
         """
-        make a new branch copying another branch.
+        Make a new branch, using an existing branch as the starting point. 
         Branch names with "/" are not supported.
 
         Example: Create a new branch from the main branch
 
-            xet branch make xet://user/repo main new_branch
+            xet branch make xet://<domain>:<user>/<repo> main new_branch
         """
         fs, remote = _get_fs_and_path(repo)
         assert (fs.protocol == 'xet')
@@ -356,7 +356,7 @@ class BranchCLI:
         """
         fs, path = _get_fs_and_path(repo)
         if fs.protocol != 'xet':
-            print("Please specify a valid repository name in format xet://domain:user/repo")
+            print("Please specify a valid repository name in format xet://<domain>:<user>/<repo>")
             return
         try:
             listing = fs.list_branches(repo, raw)
@@ -454,9 +454,9 @@ class RepoCLI:
 
         fs = XetFS.from_url(source)
         if dest is None:
-            
-            repo_name = source.rstrip('/').split('/')[-1]
-            dest = "xet://" + fs.get_username() + "/" + repo_name
+            source_info = parse_url(source, fs.domain, expect_branch=False, expect_repo=True)
+            repo_name = source_info.repo
+            dest = "xet://" + fs.domain + ":" + fs.get_username() + "/" + repo_name
             print(f"Forking to {dest}")
         fs.fork_repo(source, dest)
 

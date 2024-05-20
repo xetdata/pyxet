@@ -10,7 +10,7 @@ Use the XetHub UI to [create a new repository](https://xethub.com/xet/create). N
 You can then create a branch called experiment-1 with
 
 ```
-xet branch make xet://<username>/titanic main experiment-1
+xet branch make xet://xethub.com:<username>/titanic main experiment-1
 ```
 
 Start a new virtualenv and install some dependencies:
@@ -31,7 +31,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-df = pd.read_csv("xet://XetHub/titanic/main/titanic.csv")  # read data from XetHub
+df = pd.read_csv("xet://xethub.com:XetHub/titanic/main/titanic.csv")  # read data from XetHub
 
 # Standard ML workflow
 target_names, features, target = ['die', 'survive'], ["Pclass", "SibSp", "Parch"], "Survived"
@@ -60,10 +60,10 @@ results = pd.DataFrame([{'accuracy': info['accuracy'],
 ### Writing back to XetHub
 
 After training your model, you can persist both the model and metrics back to XetHub.
-Update the `<user_name>` fields below and run:
+Update the `<user_name>` fields below and run the following, which assumes that you're using our public xethub.com endpoint:
 
 ```python
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 with fs.transaction as tr:
     tr.set_commit_message("Write experiment 1 results back to repo")
     fs.mkdirs("<user_name>/titanic/experiment-1/metrics", exist_ok=True)
@@ -92,7 +92,7 @@ model = pickle.load(fs.open("<user_name>/titanic/experiment-1/models/model.pickl
 Versioned experiments on branches enables easy comparison.
 To try this out, create a new `experiment-2` branch:
 ```sh
-xet branch make xet://<username>/titanic main experiment-2
+xet branch make xet://xethub.com:<username>/titanic main experiment-2
 ```
 
 Run the same code as above, but change the `test_size` and `random_state` values. This time, persist 
@@ -117,7 +117,7 @@ import pandas as pd
 
 dfs = []
 for branch in ['experiment-1', 'experiment-2']:
-    df = pd.read_csv(f"xet://<user_name>/titanic/{branch}/metrics/results.csv")
+    df = pd.read_csv(f"xet://xethub.com:<user_name>/titanic/{branch}/metrics/results.csv")
     df['branch'] = branch
     dfs.append(df)
 pd.concat(dfs)

@@ -103,15 +103,17 @@ Our examples are based on a small Titanic dataset you can see and explore [here]
 
 A XetHub URL for pyxet is in the form:
 ```
-xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
+xet://<endpoint>:<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
+
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
 
 Reading files from pyxet is easy: `pyxet.open` on a Xet path will return a
 python file-like object which you can directly read from.
 
 ```python
 import pyxet            
-print(pyxet.open('xet://XetHub/titanic/main/README.md').readlines())
+print(pyxet.open('xet://xethub.com:XetHub/titanic/main/README.md').readlines())
 ```
 
 
@@ -125,7 +127,7 @@ dataframe:
 import pyxet            # make xet:// protocol available
 import pandas as pd     # assumes pip install pandas has been run
 
-df = pd.read_csv('xet://XetHub/titanic/main/titanic.csv')
+df = pd.read_csv('xet://xethub.com:XetHub/titanic/main/titanic.csv')
 df
 ```
 
@@ -198,11 +200,11 @@ To write files with pyxet, you need to first make a repository you have access t
 An easy thing you can do is to simply fork the titanic repo. You can do so with
 
 ```bash
-xet repo fork xet://XetHub/titanic
+xet repo fork xet://xethub.com:XetHub/titanic
 ```
 (see the Xet CLI documentation below)
 
-This will create a private version of the titanic repository under `xet://<username>/titanic`.
+This will create a private version of the titanic repository under `xet://xethub.com:<username>/titanic`.
 
 Unlike typical blob stores, XetHub writes are *transactional*. This means the
 entire write succeeds, or the entire write fails 
@@ -229,27 +231,27 @@ The Xet Command line is the easiest way to interact with a Xet repository.
 ## Listing and time travel
 You can browse the repository with:
 ```bash
-xet ls xet://<username>/titanic/main
+xet ls xet://xethub.com:<username>/titanic/main
 ```
 
 You can even browse it at any point in history (say 5 minutes ago) with:
 ```bash
-xet ls xet://<username>/titanic/main@{5.minutes.ago}
+xet ls xet://xethub.com:<username>/titanic/main@{5.minutes.ago}
 ```
 
 ## Downloading
 This syntax works everywhere, you can download files with `xet cp`
 ```bash
 # syntax is similar to AWS CLI 
-xet cp xet://<username>/titanic/main/<path> <local_path>
-xet cp xet://<username>/titanic/main@{5.minutes.ago}/<path> <local_path>
+xet cp xet://xethub.com:<username>/titanic/main/<path> <local_path>
+xet cp xet://xethub.com:<username>/titanic/main@{5.minutes.ago}/<path> <local_path>
 ```
 
 And you can also use `xet cp` to upload files:
 
 ## Uploading
 ```bash
-xet cp <file/directory> xet://<username>/titanic/main/<path>
+xet cp <file/directory> xet://xethub.com:<username>/titanic/main/<path>
 ```
 Of course, you cannot rewrite history, so uploading to `main@{5.minutes.ago}`
 is prohibited. 
@@ -257,7 +259,7 @@ is prohibited.
 ## Branches
 You can easily create branches for collaboration:
 ```bash
-xet branch make xet://<username>/titanic main another_branch
+xet branch make xet://xethub.com:<username>/titanic main another_branch
 ```
 This is fast regardless of the size of the repo.
 
@@ -267,9 +269,9 @@ copy of a file which you accidentally overwrote:
 
 ```bash
 # copying across branch
-xet cp xet://<username>/titanic/branch/<file> xet://<username>/titanic/main/<file>
+xet cp xet://xethub.com:<username>/titanic/branch/<file> xet://xethub.com:<username>/titanic/main/<file>
 # copying from history to current
-xet cp xet://<username>/titanic/main@{5.minutes.ago}/<file> xet://<username>/titanic/main/<file>
+xet cp xet://xethub.com:<username>/titanic/main@{5.minutes.ago}/<file> xet://xethub.com:<username>/titanic/main/<file>
 ```
 
 ## S3, GCP, etc

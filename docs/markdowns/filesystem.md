@@ -7,11 +7,13 @@ library. Use it to access local files, remote files, and files in XetHub.
 
 Xet URLs are in the form:
 ```sh
-xet://<repo_owner>/<repo_name>/<branch>/<path_to_file>
+xet://<endpoint>:<repo_owner>/<repo_name>/<branch>/<path_to_file>
 ```
 
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
+
 The `<path_to_file>` argument is optional if the URL
-refers to a repository and the `xet://` prefix is optional when using pyxet.XetFS.
+refers to a repository and the `xet://` prefix is optional when using pyxet.XetFS. If pyxet.FS is initialized with an endpoint, `xet://<endpoint>:` is inferred.
 
 ## Accessing private repositories
 
@@ -32,19 +34,19 @@ Example usage of `pyxet.XetFS`:
   import pyxet
 
   # Create a file system handle for a repository
-  fs = pyxet.XetFS()
+  fs = pyxet.XetFS('xethub.com')
 
   # List files in the repository.
-  files = fs.ls('xet://XetHub/Flickr30k/main')
+  files = fs.ls('XetHub/Flickr30k/main')
 
   # Open a file from the repository.
-  f = fs.open('xet://XetHub/Flickr30k/main/results.csv')
+  f = fs.open('XetHub/Flickr30k/main/results.csv')
 
   # Read the contents of the file.
   contents = f.read()
 
   # Write to a repository with an optional commit message
-with fs.transaction as tr:
+  with fs.transaction as tr:
     tr.set_commit_message("Writing things")
     fs.open("<user_name>/<repo_name>/main/foo", 'w').write("Hello world!")
 ```
@@ -53,10 +55,10 @@ with fs.transaction as tr:
 ```python
   import pyxet
 
-  fs = pyxet.XetFS()  # fsspec filesystem
+  fs = pyxet.XetFS('xethub.com')  # fsspec filesystem
 
   # Read functions
-  fs.info("xethub/titanic/main/titanic.csv")
+  fs.info("XetHub/titanic/main/titanic.csv")
   # returns repo level info: {'name': 'https://xethub.com/XetHub/titanic/titanic.csv', 'size': 61194, 'type': 'file'}
 
   fs.open("XetHub/titanic/main/titanic.csv", 'r').read(20)
@@ -95,6 +97,6 @@ xet:// URLs must be used as file paths when interacting with these packages. For
   import pyxet   # make xet protocol available to fsspec
   import pandas as pd
 
-  df = pd.read_csv('xet://XetHub/Flickr30k/main/results.csv')
+  df = pd.read_csv('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
 ```
 

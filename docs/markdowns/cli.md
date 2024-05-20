@@ -43,23 +43,23 @@ list files and folders
 ```bash
 
 # list files and directories
-$ xet ls xet://user/repo/main/path/to/file/or/dir
+$ xet ls xet://xethub.com:user/repo/main/path/to/file/or/dir
 # list repos
-$ xet ls xet://user/
+$ xet ls xet://xethub.com:user/
 
 # list organisation users
 $ xet ls 
 # list all available repos for current user + organisation
 $ xet repo ls
 # list all available branches for a project
-$ xet branch ls xet://user/repo
+$ xet branch ls xet://xethub.com:user/repo
 
 # examples
-$ xet ls xet://xdssio/gitease/giteas
+$ xet ls xet://xethub.com:xdssio/gitease/gitease
 xdssio/gitease/gitease/__init__.py         2  file
 xdssio/gitease/gitease/cli.py           6146  file
 
-$ xet ls xet://xdssio
+$ xet ls xet://xethub.com:xdssio
 name                          type
 ----------------------------  ------
 xdssio/datasets               repo
@@ -98,10 +98,10 @@ $ xet ls s3://<bucket>
 
 ```bash
 # Copy files or directories
-$ xet cp xet://user/repo/branch/path/to/source xet://user/repo/branch/path/to/target
+$ xet cp xet://xethub.com:user/repo/branch/path/to/source xet://xethub.com:user/repo/branch/path/to/target
 
 # examples
-$ xet cp xet://xdssio/titanic/experiment-1/titanic.csv xet://xdssio/titanic/experiment-2/titanic.csv
+$ xet cp xet://xethub.com:xdssio/titanic/experiment-1/titanic.csv xet://xethub.com:xdssio/titanic/experiment-2/titanic.csv
 Copying xdssio/titanic/experiment-1/titanic.csv to xdssio/titanic/experiment-2/titanic.csv...
 ```
 
@@ -135,10 +135,10 @@ $ xet cp s3://... xet://...
 
 ```bash
 
-$ xet mv xet://user/repo/branch/path/to/source xet://user/repo/branch/path/to/target
+$ xet mv xet://xethub.com:user/repo/branch/path/to/source xet://xethub.com:user/repo/branch/path/to/target
 
 # examples 
-$ xet mv xet://xdssio/titanic/experiment-1/titanic.csv xet://xdssio/titanic/experiment-1/titanic2.csv
+$ xet mv xet://xethub.com:xdssio/titanic/experiment-1/titanic.csv xet://xethub.com:xdssio/titanic/experiment-1/titanic2.csv
 ```
 
 ## rm (delete)
@@ -159,10 +159,10 @@ $ xet mv xet://xdssio/titanic/experiment-1/titanic.csv xet://xdssio/titanic/expe
 ### Usage
 
 ```bash
-xet rm xet://user/repo/branch/path/to/file/or/dir
+xet rm xet://xethub.com:user/repo/branch/path/to/file/or/dir
 
 # examples
-$ xet rm xet://xdssio/titanic/experiment-2/titanic2.csv
+$ xet rm xet://xethub.com:xdssio/titanic/experiment-2/titanic2.csv
 Synchronizing with remote
 ```
 
@@ -185,10 +185,10 @@ Prints a file to stdout
 ### Usage
 
 ```bash
-xet cat xet://user/repo/branch/path/to/file
+xet cat xet://xethub.com:user/repo/branch/path/to/file
 
 # examples
-xet cat xet://xdssio/titanic/main/titanic.csv --limit=200
+xet cat xet://xethub.com:xdssio/titanic/main/titanic.csv --limit=200
 PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
 1,0,3,"Braund, Mr. Owen Harris",male,22,1,0,A/5 21171,7.25,,S
 2,1,1,"Cumings, Mrs. John Bradley (Florence Briggs Thaye%   
@@ -201,10 +201,10 @@ Provide information about a project branch or file.
 ### Usage
 
 ```bash
-$ xet info xet://user/repo/branch/path/to/file
+$ xet info xet://xethub.com:user/repo/branch/path/to/file
 
 # examples
-$ xet info xet://xdssio/titanic/main/titanic.csv
+$ xet info xet://xethub.com:xdssio/titanic/main/titanic.csv
 -------------------------------  -----  ----
 xdssio/titanic/main/titanic.csv  61194  file
 -------------------------------  -----  ----
@@ -220,7 +220,7 @@ This is great for data exploration and analysis.
 
 ```bash 
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    source      TEXT  Repository and branch of the form xet://user/repo/branch [default: None] [required]                    │
+│ *    source      TEXT  Repository and branch of the form xet://xethub.com:user/repo/branch [default: None] [required]         │
 │ *    path        TEXT  Path to mount to. (or a drive letter on windows) [default: None] [required]                            │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -228,7 +228,7 @@ This is great for data exploration and analysis.
 ### Usage
 
 ```bash
-$ xet mount xet://user/repo/branch /path/to/local/dir
+$ xet mount xet://xethub.com:user/repo/branch /path/to/local/dir
 
 ## examples
 $ xet mount XetHub/Laion400M/main laion
@@ -258,13 +258,13 @@ The *branch* sub commands let you manage your project branches.
 # Create a new branch
 $ xet branch make repo source-branch new-branch
 # List branches
-$ xet branch ls xet://user/repo
+$ xet branch ls xet://xethub.com:user/repo
 # Delete a branch
-$ xet branch delete xet://user/repo/new-branch
+$ xet branch delete xet://xethub.com:user/repo/new-branch
 
 # examples
-$ xet branch make xet://xdssio/titanic main experiment-3
-$ xet branch list xet://xdssio/titanic
+$ xet branch make xet://xethub.com:xdssio/titanic main experiment-3
+$ xet branch list xet://xethub.com:xdssio/titanic
 name          type
 ------------  ------
 experiment-2  branch
@@ -272,7 +272,7 @@ experiment-1  branch
 experiment-3  branch
 main          branch
 
-$ xet branch delete xet://xdssio/titanic experiment-3 --yes
+$ xet branch delete xet://xethub.com:xdssio/titanic experiment-3 --yes
 ---------------------------------------------------
                     WARNING
 ---------------------------------------------------
@@ -281,7 +281,7 @@ Any data which only exists on a branch will become irreversibly inaccessible
 
 --yes is set. Issuing deletion
 
-$ xet branch info xet://xdssio/titanic main
+$ xet branch info xet://xethub.com:xdssio/titanic main
 ```
 
 ## repo
@@ -307,14 +307,14 @@ at https://xethub.com/<user>/<repo-name>/settings.
 # Create a new repository
 $ xet repo make repo-name
 # List repositories
-$ xet repo ls xet://user
+$ xet repo ls xet://xethub.com:user
 # fork a repository
-$ xet repo fork xet://user/repo-name xet://user/new-repo-name --private
+$ xet repo fork xet://xethub.com:user/repo-name xet://xethub.com:user/new-repo-name --private
 # Rename a repository
-$ xet repo rename xet://user/repo-name new-repo-name
+$ xet repo rename xet://xethub.com:user/repo-name new-repo-name
 
 examples
-xet repo fork xet://xdssio/titanic xet://xdssio/titanic-fork -p
+xet repo fork xet://xethub.com:xdssio/titanic xet://xethub.com:xdssio/titanic-fork -p
 ```
 
 ## sync
@@ -324,7 +324,7 @@ xet repo fork xet://xdssio/titanic xet://xdssio/titanic-fork -p
   is provided, then a file whose size is the same will be copied if the modification time for the source is 
   *later* than the target. Note that this flag makes the sync significantly slower.
 * Only non-xet sources (e.g. S3 or local filesystem) are allowed.
-* Only XetHub targets are allowed (i.e. `xet://<user>/<repo>/<branch>`).
+* Only XetHub targets are allowed (i.e. `xet://xethub.com:<user>/<repo>/<branch>`).
 * Modifying source files while a sync is happening has undefined behavior for whether those files copy. 
 
 ```bash
@@ -345,10 +345,10 @@ xet repo fork xet://xdssio/titanic xet://xdssio/titanic-fork -p
 
 ```bash
 # Sync remote S3 bucket to repo
-$ xet sync s3://bucket/path/to/source xet://user/repo/branch/path/to/target
+$ xet sync s3://bucket/path/to/source xet://xethub.com:user/repo/branch/path/to/target
 
 # Example sync from S3
-$ xet sync s3://my-files xet://XetHub/import-test/my-files
+$ xet sync s3://my-files xet://xethub.com:XetHub/import-test/my-files
 Checking sync
 Starting sync
 Copying my-files/data.csv to XetHub/import-test/my-files/data.csv...
@@ -357,7 +357,7 @@ Copying my-files/data2.csv to XetHub/import-test/my-files/data2.csv...
 Completed sync. Copied: 20 files, ignored: 277 files
 
 # Example sync from local
-$ xet sync . xet://XetHub/import-test/my-local-files
+$ xet sync . xet://xethub.com:XetHub/import-test/my-local-files
 Checking sync
 Starting sync
 Copying ./dir/data.csv to XetHub/import-test/my-local-files/data.csv...

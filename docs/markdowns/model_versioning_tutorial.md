@@ -64,12 +64,12 @@ datasets, XetHub can hold any type of file: A/B test data, databases backup dump
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 
 # a transaction is needed for write
 with fs.transaction as tr:
     tr.set_commit_message("Adding data")
-    fs.cp("data/titanic.csv", "xet://${XET_USER_NAME}/kickstart_data/main/titanic.csv")
+    fs.cp("data/titanic.csv", "xet://xethub.com:${XET_USER_NAME}/kickstart_data/main/titanic.csv")
 ```
 
 We can delete our local data file: `rm -rf data`.
@@ -94,7 +94,7 @@ Let’s adjust our Jupyter Notebook to load the data from “local” and not sa
 
 ```bash
 ...
-# df = pd.read_csv("xet://xdssio/titanic/main/titanic.csv") <-- delete
+# df = pd.read_csv("xet://xethub.com:xdssio/titanic/main/titanic.csv") <-- delete
 df = pd.read_csv("../data/titanic.csv")
 ...
 # df.to_csv('../data/data.csv', index=False) <-- delete
@@ -130,7 +130,7 @@ To save time, we simply copy it from a ready *app* branch.
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 fs.cp("xdssio/kickstart_ml/app/server", "server")
 ```
 
@@ -200,7 +200,7 @@ To get the full code… we’ll copy it from the existing version:
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 
 fs.cp("xdssio/titanic/experiment1/notebooks/train.ipynb", "notebooks/train.ipynb")
 ```
@@ -254,7 +254,7 @@ import pandas as pd
 username = os.getenv('XET_USER_NAME')
 results = []
 for branch in ["prod", "experiment1"]:
-    results.append(pd.read_csv(pyxet.open(f"xet://{username}/kickstart_ml/{branch}/metrics/results.csv")))
+    results.append(pd.read_csv(pyxet.open(f"xet://xethub.com:{username}/kickstart_ml/{branch}/metrics/results.csv")))
 
 df = pd.concat(results)
 df = df[df['target']=='weighted avg']
@@ -284,10 +284,10 @@ We simulate it by just adding data there:
 ```python
 import pyxet
 
-fs = pyxet.XetFS()
+fs = pyxet.XetFS('xethub.com')
 with fs.transaction as tr:
     tr.set_commit_message("Adding more data")
-    fs.cp("data/titanic.csv", "xet://${XET_USER_NAME}/kickstart_data/main/titanic2.csv")
+    fs.cp("data/titanic.csv", "xet://xethub.com:${XET_USER_NAME}/kickstart_data/main/titanic2.csv")
 ```
 
 We can have any naming convention for our ”training-cycle-jobs” branches.

@@ -20,7 +20,8 @@ Main features:
 
 To open a file from a XetHub repository, you can use the `pyxet.open()` 
 function, which takes a file URL in the format 
-`xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`.  (See below for the URL format).
+`xet://<endpoint>:<repo_user>/<repo_name>/<branch>/<path-to-file>`. 
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
 
 Example usage of `pyxet.open`:
 
@@ -29,7 +30,7 @@ import pyxet
 
 # Open a file from a public repository.
 
-f = pyxet.open('XetHub/Flickr30k/main/results.csv')
+f = pyxet.open('xethub.com:XetHub/Flickr30k/main/results.csv')
 
 # Read the contents of the file.
 contents = f.read()
@@ -49,10 +50,10 @@ import pyxet
 fs = pyxet.XetFS()
 
 # List files in the repository.
-files = fs.ls('XetHub/Flickr30k/main')
+files = fs.ls('xethub.com:XetHub/Flickr30k/main')
 
 # Open a file from the repository.
-f = fs.open('XetHub/Flick30k/main/results.csv')
+f = fs.open('xethub.com:XetHub/Flick30k/main/results.csv')
 
 # Read the contents of the file.
 contents = f.read()
@@ -70,14 +71,14 @@ a XetHub repository.  For example, to read a csv from pandas, use:
 
 ```
 import pyxet
-csv = pd.read_csv('xet://XetHub/Flickr30k/main/results.csv')
+csv = pd.read_csv('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
 ```
 
 URLs:
 -----
 
-Xet URLs should be of the form `xet://<repo_user>/<repo_name>/<branch>/<path-to-file>`,
-with the <path-to-file> being optional when opening a repository.  
+Xet URLs should be of the form `xet://<endpoint>:<repo_user>/<repo_name>/<branch>/<path-to-file>`,
+with the <path-to-file> being optional when opening a repository and `xethub.com` as the public endpoint.  
 The xet:// prefix is inferred as needed or if the url is given as https://.  
 If branch is given as an explicit argument, it may be committed 
 from the url.  

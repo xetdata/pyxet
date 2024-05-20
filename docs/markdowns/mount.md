@@ -10,15 +10,16 @@ SQLite and Parquet databases.
 
 To mount:
 ```bash
-xet mount xet://<username>/<repo>/<branch> <local_path>
+xet mount xet://<endpoint>:<username>/<repo>/<branch> <local_path>
 ```
 
-On windows, the `local_path` must be a drive letter. For instance `X:`
+Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment
+On Windows, the `local_path` must be a drive letter. For instance `X:`
 
 For instance, you can mount the Flickr30k dataset with:
 
 ```bash
-xet mount xet://XetHub/Flickr30k/main Flickr30k
+xet mount xet://xethub.com:XetHub/Flickr30k/main Flickr30k
 ```
 And you will be able to browse to it and explore its contents.
 
@@ -26,7 +27,7 @@ And you will be able to browse to it and explore its contents.
 
 As a slightly larger example, you can mount the Laion400M metadata (54GB) with 
 ```bash
-xet mount --prefetch 0 xet://XetHub/LAION-400M/main LAION400M 
+xet mount --prefetch 0 xet://xethub.com:XetHub/LAION-400M/main LAION400M 
 cd LAION400M
 ```
 which provides a collection of Parquet files which you can query

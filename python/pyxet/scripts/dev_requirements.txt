@@ -1,0 +1,14 @@
+cloudpickle
+fsspec
+maturin
+numpy
+pandas
+pyarrow
+pytest
+pytest-xdist
+urllib3
+ipython 
+s3fs 
+tabulate 
+typer
+pyinstaller

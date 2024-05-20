@@ -1,0 +1,9 @@
+cloudpickle
+fsspec
+maturin
+s3fs 
+urllib3
+tabulate 
+typer
+pyinstaller
+

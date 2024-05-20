@@ -181,7 +181,7 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         ret.domain_explicit = False
         explicit_user = None
     else:
-        domain_user = netloc.rsplit(":", maxsplit = 2)
+        domain_user = netloc.rsplit(":", maxsplit = 1)
         if len(domain_user) == 2:
             ret.domain, explicit_user  = domain_user
             path_to_parse = f"{path}"

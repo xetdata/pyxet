@@ -151,3 +151,18 @@ class TestUrlParsing(unittest.TestCase):
         self.assertEqual(parse.branch, "branch")
         self.assertEqual(parse.path, "")
 
+    def test_ports(self):
+        parse = self.parse_url("xet://localhost:1234:user/repo/branch/hello/world", False)
+        self.assertEqual(parse.remote(), "http://localhost:1234/user/repo")
+        self.assertEqual(parse.branch, "branch")
+        self.assertEqual(parse.path, "hello/world")
+        
+        parse = self.parse_url("xet://127.0.0.1:1234:user/repo/branch/hello/world", False)
+        self.assertEqual(parse.remote(), "http://127.0.0.1:1234/user/repo")
+        self.assertEqual(parse.branch, "branch")
+        self.assertEqual(parse.path, "hello/world")
+
+        parse = self.parse_url("xet://xh.com:1234:user/repo/branch/hello/world/", False)
+        self.assertEqual(parse.remote(), "https://xh.com:1234/user/repo")
+        self.assertEqual(parse.branch, "branch")
+        self.assertEqual(parse.path, "hello/world/")

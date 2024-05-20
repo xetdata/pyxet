@@ -9,7 +9,7 @@ if [[ ! -e pyproject.toml ]] ; then
 fi
 
 source ./scripts/setup_env.sh
-create_venv venv
+create_venv venv dev
 source $(venv_activate_script venv)
 
 if [[ -z "$VIRTUAL_ENV" ]] ; then 

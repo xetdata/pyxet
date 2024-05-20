@@ -19,8 +19,9 @@ venv_activate_script() {
 create_venv() {
 
     venv_name=$1
+    build_mode=$2
 
-    python_executable="$(./scripts/find_python.sh $2)"
+    python_executable="$(./scripts/find_python.sh $build_mode)"
 
     if [[ ! -e pyproject.toml ]] ; then 
         >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
@@ -37,6 +38,12 @@ create_venv() {
         source $(venv_activate_script $venv_name)
 
         >&2 pip install --upgrade pip
-        >&2 pip install -r scripts/dev_requirements.txt
+        if [[ $build_mode == "release" ]] ; then 
+            # For building the wheel / standalone xet, use minimal installation
+            # environment; otherwise may pull in non-universal2 compatible package.
+            >&2 pip install -r scripts/build_requirements.txt
+        else
+            >&2 pip install -r scripts/dev_requirements.txt
+        fi
     fi
 }

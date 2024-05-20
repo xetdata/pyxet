@@ -20,8 +20,8 @@ Main features:
 
 To open a file from a XetHub repository, you can use the `pyxet.open()` 
 function, which takes a file URL in the format 
-`xet://<endpoint>:<repo_user>/<repo_name>/<branch>/<path-to-file>`. 
-Use our public `xethub.com` endpoint unless you're on a custom enterprise deployment.
+`xet://<domain>:<repo_user>/<repo_name>/<branch>/<path-to-file>`. 
+Use our public `xethub.com` domain unless you're on a custom enterprise deployment.
 
 Example usage of `pyxet.open`:
 
@@ -77,8 +77,8 @@ csv = pd.read_csv('xet://xethub.com:XetHub/Flickr30k/main/results.csv')
 URLs:
 -----
 
-Xet URLs should be of the form `xet://<endpoint>:<repo_user>/<repo_name>/<branch>/<path-to-file>`,
-with the <path-to-file> being optional when opening a repository and `xethub.com` as the public endpoint.  
+Xet URLs should be of the form `xet://<domain>:<repo_user>/<repo_name>/<branch>/<path-to-file>`,
+with the <path-to-file> being optional when opening a repository and `xethub.com` as the public domain.  
 The xet:// prefix is inferred as needed or if the url is given as https://.  
 If branch is given as an explicit argument, it may be committed 
 from the url.  

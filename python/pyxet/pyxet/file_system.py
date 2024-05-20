@@ -105,7 +105,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
             # Read the first 5 lines of a file
             b = fs.open('XetHub/Flickr30k/main/results.csv').read()
 
-        the Xet repository endpoint can be set with the 'domain' argument
+        the Xet repository domain can be set with the 'domain' argument
         or the XET_ENDPOINT environment variable. The default domain is
         xethub.com if unspecified
         """
@@ -269,11 +269,12 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         if 'full_name' not in ret:
             raise RuntimeError("Duplication failed")
-        src_name = 'xet://' + ret['full_name']
-        if src_name == dest_path:
+        ret_name = 'xet://' + ret['full_name']
+        ret_info = parse_url(ret_name, self.domain, expect_branch=False)
+        if ret_info == dest:
             return ret
 
-        return self.rename_repo(src_name, dest_path)
+        return self.rename_repo(ret_name, dest_path)
 
     def rename_repo(self, origin_path, dest_path, **kwargs):
         origin = parse_url(origin_path, self.domain, expect_branch = False)

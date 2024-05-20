@@ -363,7 +363,7 @@ impl PyRepo {
         )
     }
 
-    /// Fetch shards that could be useful for dedup, according to the given endpoints.
+    /// Fetch shards that could be useful for dedup, according to the given domains.
     ///
     /// Endpoints are given as a list of (branch, path) tuples.  Shard hint fetches may be
     /// across branches.

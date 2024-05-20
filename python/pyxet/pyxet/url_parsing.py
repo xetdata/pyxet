@@ -24,7 +24,7 @@ def get_default_domain():
         domain = __default_domain = env_domain
     else:
         sys.stderr.write("\nWarning:  Endpoint defaulting to xethub.com; use URLs of the form \n"
-                            "          xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n")
+                            "          xet://<domain>:<user>/<repo>/<branch>/<path>.\n")
         domain = __default_domain = "xethub.com"
 
     return domain 
@@ -69,7 +69,7 @@ class XetPathInfo:
 
     def remote(self, domain_only = False):
         """
-        Returns the endpoint of this in the qualified user[:token]@domain
+        Returns the domain of this in the qualified user[:token]@domain
         """
         if domain_only:
             ret = f"https://{self.domain}/"
@@ -140,7 +140,7 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
 
     if scheme not in ["xet", "http", "https"]: 
         # The other 
-        raise ValueError(f"URL {url} not of the form xet://endpoint:user/repo/...")
+        raise ValueError(f"URL {url} not of the form xet://domain:user/repo/...")
 
 
     # Set this as a default below     
@@ -164,8 +164,8 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
         global has_warned_user_on_url_format
 
         if default_domain is None and not has_warned_user_on_url_format:
-            sys.stderr.write("Warning:  The use of the xet:// prefix without an endpoint is deprecated and will be disabled in the future.\n"
-                             "          Please switch URLs to use the format xet://<endpoint>:<user>/<repo>/<branch>/<path>.\n"
+            sys.stderr.write("Warning:  The use of the xet:// prefix without an domain is deprecated and will be disabled in the future.\n"
+                             "          Please switch URLs to use the format xet://<domain>:<user>/<repo>/<branch>/<path>.\n"
                              "          Endpoint now defaulting to xethub.com.\n\n")
             has_warned_user_on_url_format = True
         
@@ -188,7 +188,7 @@ def parse_url(url, default_domain=None, expect_branch = None, expect_repo = True
             if not ret.domain:
                 ret.domain = default_domain
         else: 
-            raise ValueError(f"Cannot parse user and endpoint from {netloc}")
+            raise ValueError(f"Cannot parse user and domain from {netloc}")
         
         ret.domain_explicit = True
 

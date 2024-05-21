@@ -48,7 +48,7 @@ def normalize_endpoint(endpoint = None):
     return endpoint
 
 
-class XetPathInfo<<<<<< HEAD
+class XetPathInfo:
     __slots__ = ['scheme', 'http_scheme', 'endpoint', 'user', 'repo', 'branch', 'path', 'endpoint_explicit']
 
     def _repo_branch_path(self):

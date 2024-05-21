@@ -38,7 +38,7 @@ class TestUrlParsing(unittest.TestCase):
         self.assertEqual(parse.branch, "")
         self.assertEqual(parse.path, "")
 
-        parse = self.parse_url("xet://xethub.com/user/repo/branch", True, default_domain='xetbeta.com')
+        parse = self.parse_url("xet://xethub.com/user/repo/branch", True, default_endpoint='xetbeta.com')
         self.assertEqual(parse.remote(), "https://xethub.com/user/repo")
         self.assertEqual(parse.branch, "branch")
         self.assertEqual(parse.path, "")
@@ -72,7 +72,7 @@ class TestUrlParsing(unittest.TestCase):
         self.assertEqual(parse.branch, "")
         self.assertEqual(parse.path, "")
 
-        parse = self.parse_url("xet://user/repo/branch", True, default_domain='xetbeta.com')
+        parse = self.parse_url("xet://user/repo/branch", True, default_endpoint='xetbeta.com')
         self.assertEqual(parse.remote(), "https://xetbeta.com/user/repo")
         self.assertEqual(parse.branch, "branch")
         self.assertEqual(parse.path, "")
@@ -106,7 +106,7 @@ class TestUrlParsing(unittest.TestCase):
         self.assertEqual(parse.branch, "")
         self.assertEqual(parse.path, "")
 
-        parse = self.parse_url("/user/repo/branch", True, default_domain='xetbeta.com')
+        parse = self.parse_url("/user/repo/branch", True, default_endpoint='xetbeta.com')
         self.assertEqual(parse.remote(), "https://xetbeta.com/user/repo")
         self.assertEqual(parse.branch, "branch")
         self.assertEqual(parse.path, "")
@@ -146,7 +146,7 @@ class TestUrlParsing(unittest.TestCase):
         self.assertEqual(parse.path, "")
 
 
-        parse = self.parse_url("xet://xh.com:user/repo/branch", False, default_domain='xetbeta.com')
+        parse = self.parse_url("xet://xh.com:user/repo/branch", False, default_endpoint='xetbeta.com')
         self.assertEqual(parse.remote(), "https://xh.com/user/repo")
         self.assertEqual(parse.branch, "branch")
         self.assertEqual(parse.path, "")

@@ -49,7 +49,7 @@ def normalize_endpoint(endpoint = None):
 
 
 class XetPathInfo:
-    __slots__ = ['scheme', 'endpoint', 'user', 'repo', 'branch', 'path', 'endpoint_explicit']
+    __slots__ = ['scheme', 'http_scheme', 'endpoint', 'user', 'repo', 'branch', 'path', 'endpoint_explicit']
 
     def _repo_branch_path(self):
         return "/".join(s for s in [self.repo, self.branch, self.path] if s)
@@ -72,27 +72,27 @@ class XetPathInfo:
         Returns the endpoint of this in the qualified user[:token]@endpoint
         """
         if endpoint_only:
-            ret = f"https://{self.endpoint}/"
+            ret = f"{self.http_scheme}://{self.endpoint}/"
         elif self.repo:
-            ret = f"https://{self.endpoint}/{self.user}/{self.repo}"
+            ret = f"{self.http_scheme}://{self.endpoint}/{self.user}/{self.repo}"
         else:
-            ret = f"https://{self.endpoint}/{self.user}"
+            ret = f"{self.http_scheme}://{self.endpoint}/{self.user}"
 
         # This should work but has issues in xet-core
         #if branch and self.branch:
-        #    ret = f"https://{self._user_at_endpoint()}/{self.repo}/{self.branch}"
+        #    ret = f"{self.http_scheme}://{self._user_at_endpoint()}/{self.repo}/{self.branch}"
         #elif self.repo:
-        #    ret = f"https://{self._user_at_endpoint()}/{self.repo}"
+        #    ret = f"{self.http_scheme}://{self._user_at_endpoint()}/{self.repo}"
         #else:
-        #    ret = f"https://{self._user_at_endpoint()}"
+        #    ret = f"{self.http_scheme}://{self._user_at_endpoint()}"
         
         return ret
     
     def endpoint_url(self):
         """
-        https://endpoint:user/
+        {self.http_scheme}://endpoint:user/
         """
-        return f"https://{self.endpoint}" 
+        return f"{self.http_scheme}://{self.endpoint}" 
 
     def name(self):
         """
@@ -147,6 +147,7 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
     ret = XetPathInfo()
     # Set what defaults we can
     ret.scheme = "xet"
+    ret.http_scheme = "https"
 
     netloc_info = url_path.split("/", 1)
 
@@ -181,7 +182,7 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
         ret.endpoint_explicit = False
         explicit_user = None
     else:
-        endpoint_user = netloc.split(":")
+        endpoint_user = netloc.rsplit(":", maxsplit = 1)
         if len(endpoint_user) == 2:
             ret.endpoint, explicit_user  = endpoint_user
             path_to_parse = f"{path}"
@@ -191,6 +192,10 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
             raise ValueError(f"Cannot parse user and endpoint from {netloc}")
         
         ret.endpoint_explicit = True
+
+    # Now, special case localhost
+    if ret.endpoint.split(":", maxsplit=1)[0] in ["localhost", "127.0.0.1"]:
+        ret.http_scheme = "http" 
 
     path_endswith_slash = path_to_parse.endswith("/")
 

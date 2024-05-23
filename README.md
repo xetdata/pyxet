@@ -10,7 +10,6 @@
 [![License](https://img.shields.io/github/license/xetdata/pyxet?style=flat)](https://github.com/xetdata/pyxet/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/pypi/dm/pyxet?style=flat)](https://pypi.python.org/pypi/pyxet/)
 [![Documentation Status](https://readthedocs.org/projects/pyxet/badge/?version=latest)](https://pyxet.readthedocs.io/en/latest/?badge=latest)
-[![Discord](https://img.shields.io/discord/1100889165777862807)](https://discord.gg/KCzmjDaDdC)
 
 pyxet is a Python library that provides a pythonic interface for
 [XetHub](https://xethub.com/).  Xethub is simple git-based system capable of
@@ -288,7 +287,7 @@ See [here](python/pyxet/README.md)
 
 # Encountering Issues?
 
-Please file a bug [here](https://github.com/xetdata/pyxet/issues/new), or
-report on our [Discord channel](https://discord.gg/KCzmjDaDdC)! 
+Please file bugs [here](https://github.com/xetdata/pyxet/issues/new), or
+report on our [Slack #support channel](https://xetdata.slack.com/join/shared_invite/zt-2doug4qz8-JZviSqPHuLBa~pw3gnk7Iw#/shared-invite/email)! 
 We are constant making improvements, especially with
 usability and performance.

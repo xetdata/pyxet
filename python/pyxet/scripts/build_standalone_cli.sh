@@ -14,21 +14,14 @@ pip install target/wheels/pyxet-*.whl
 
 OS=$(uname -s)
 
+xet_cli_path="./scripts/xet_standalone_entry.py"
+echo "Path to xet entry script = '${xet_cli_path}'"
+
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
-    xet_cli_path="$(which xet)"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" --target-arch universal2
+    pyinstaller --onefile "$xet_cli_path" --name xet --target-arch universal2 
 elif [[ "$OS" == "Linux" ]] ; then
-    xet_cli_path="$(which xet)"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" 
+    pyinstaller --onefile "$xet_cli_path" --name xet
 else
-    # Windows is weird.  Have to go directly to the cli path
-
-    # Find the cli file, which isn't always where you want it to be. 
-    xet_cli_path="./.venv_build/Lib/site-packages/pyxet/cli.py"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" 
-    mv dist/cli.exe dist/xet.exe
+    pyinstaller --onefile "$xet_cli_path" --name xet
 fi

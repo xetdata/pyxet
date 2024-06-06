@@ -4,24 +4,31 @@
 # Will build wheel in release mode, then build standalone executable using the xet packaged with the CLI
 
 if [[ ! -e pyproject.toml ]] ; then 
-    echo "Run this script in the pyxet directory using ./scripts/$0"
+    >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
     exit 1
 fi
 
-source ./scripts/build_wheel.sh
+>&2 wheel_location=$(./scripts/build_wheel.sh)
 
-pip install target/wheels/pyxet-*.whl
+>&2 pip install $wheel_location 
+>&2 pip install -r ./scripts/cli_requirements.sh 
 
 OS=$(uname -s)
 
 xet_cli_path="./scripts/xet_standalone_entry.py"
-echo "Path to xet entry script = '${xet_cli_path}'"
+>&2 echo "Path to xet entry script = '${xet_cli_path}'"
 
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
-    pyinstaller --onefile "$xet_cli_path" --name xet --target-arch universal2 
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet --target-arch universal2 
+    cli_path="$PWD/dist/xet"
 elif [[ "$OS" == "Linux" ]] ; then
-    pyinstaller --onefile "$xet_cli_path" --name xet
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    cli_path="$PWD/dist/xet"
 else
-    pyinstaller --onefile "$xet_cli_path" --name xet
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    cli_path="$PWD/dist/xet.exe"
 fi
+
+>&2 echo "Standalone installer is located at ${cli_path}."
+echo ${cli_path} 

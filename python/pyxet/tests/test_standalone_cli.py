@@ -14,8 +14,6 @@ def delete_branch(repo, branch, *args):
     except Exception as e:
         print(f"WARNING: Exception trying to delete branch {branch} on {repo}: {e}")
         
-
-
 def test_single_file_upload():
     user, host = utils.test_account_login()
     repo = utils.test_repo()

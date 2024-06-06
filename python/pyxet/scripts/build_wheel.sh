@@ -4,7 +4,7 @@
 # Will build wheel in release mode. 
 
 if [[ ! -e pyproject.toml ]] ; then 
-    echo "Run this script in the pyxet directory using ./scripts/$0"
+    >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
     exit 1
 fi
 
@@ -15,20 +15,35 @@ unset CONDA_PREFIX
 
 # Use a new build environment that links against the system python on OSX 
 # and always creates a new environment.
-rm -rf .venv_build
-source ./scripts/setup_env.sh
-create_venv .venv_build release
-source $(venv_activate_script .venv_build)
 
-# Clear out any old wheels
-mkdir -p target/old_wheels/
-mv target/wheels/* target/old_wheels/ || echo ""
-
-if [[ "$OS" == "Darwin" ]]; then
-    maturin build --profile=cli-release --target=universal2-apple-darwin 
+# If we're already in a virtual env, then don't worry about this. 
+if [[ -z $_PYXET_BUILD_VIRTUAL_ENV]] ; then
+    >&2 rm -rf .venv_build
+    >&2 source ./scripts/setup_env.sh
+    >&2 create_venv .venv_build release  
+    >&2 source $(venv_activate_script .venv_build)
 else 
-    maturin build --profile=cli-release
+    >&2 source $(venv_activate_script ${_PYXET_BUILD_VIRTUAL_ENV})
 fi
 
-echo "Wheel is located at target/wheels/pyxet-*.whl"
+# Clear out any old wheels
+>&2 mkdir -p target/old_wheels/
+>&2 mv target/wheels/* target/old_wheels/ || echo ""
+
+# Mode
+if [[ $_PYXET_BUILD_MODE == "debug" ]] ; then 
+    flags="--debug"
+else
+    flags="--profile=cli-release"
+fi
+
+
+if [[ "$OS" == "Darwin" ]]; then
+    >&2 maturin build $flags --target=universal2-apple-darwin 
+else  
+    >&2 maturin build $flags 
+fi
+
+>&2 echo "Wheel is located at target/wheels/pyxet-*.whl"
+echo "${PWD}/target/wheels/pyxet-*.whl"
 

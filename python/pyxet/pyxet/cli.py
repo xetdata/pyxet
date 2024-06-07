@@ -115,6 +115,7 @@ class PyxetCLI:
         """
         print(__version__)
 
+    @staticmethod
     @cli.command()
     def cp(source: Annotated[typing.List[str], typer.Argument(help="Source file or folder to copy")],
            target: Annotated[str, typer.Argument(help="Target location of the file or folder")],

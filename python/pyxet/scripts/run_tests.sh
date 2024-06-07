@@ -39,4 +39,4 @@ work_dir="$(mktemp -d -p "${PWD}/testing_tmp")"
 cp "${cli}" "${work_dir}"
 export XET_STANDALONE_CLI=${work_dir}/$(basename "$cli")
 cd "${work_dir}"
-pytest -n 4 --verbose "$tests_dir"
+pytest --verbose "$tests_dir"

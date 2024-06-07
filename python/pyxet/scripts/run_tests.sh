@@ -29,6 +29,14 @@ if [[ -z "$VIRTUAL_ENV" ]] ; then
   exit 1
 fi
 
-# Set this so we can execute the 
-export XET_STANDALONE_CLI=${cli}
-pytest -n 4 --verbose tests/
+# Set this so we can execute the scripts properly
+tests_dir=${PWD}/tests/
+
+# Make sure windows executable can run anywhere 
+mkdir -p ./testing_tmp/
+work_dir="$(mktemp -d -p "${PWD}/testing_tmp")"
+
+cp "${cli}" "${work_dir}"
+export XET_STANDALONE_CLI=${work_dir}/$(basename "$cli")
+cd "${work_dir}"
+pytest -n 4 --verbose "$tests_dir"

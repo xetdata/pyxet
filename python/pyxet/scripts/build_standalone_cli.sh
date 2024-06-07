@@ -27,13 +27,13 @@ if [[ "$OS" == "Darwin" ]]; then
     fi
 
     >&2 pyinstaller --onefile "$xet_cli_path" --name xet $target_flag
-    cli_path="$PWD/dist/xet"
+    cli_path="dist/xet"
 elif [[ "$OS" == "Linux" ]] ; then
     >&2 pyinstaller --onefile "$xet_cli_path" --name xet
-    cli_path="$PWD/dist/xet"
+    cli_path="dist/xet"
 else
     >&2 pyinstaller --onefile "$xet_cli_path" --name xet
-    cli_path="$PWD/dist/xet.exe"
+    cli_path="dist/xet.exe"
 fi
 
 >&2 echo "Standalone installer is located at ${cli_path}."

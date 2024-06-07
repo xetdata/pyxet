@@ -45,7 +45,7 @@ fi
 
 >&2 maturin build $flags 
 
-wheel=$PWD/$(ls target/wheels/pyxet-*.whl | head -n 1)
+wheel=$(ls ./target/wheels/pyxet-*.whl | head -n 1)
 >&2 echo "Wheel is located at $wheel"
 echo $wheel
 

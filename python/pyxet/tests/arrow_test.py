@@ -37,12 +37,6 @@ def test_pyarrow():
     assert df.shape == (891, 12)
 
 
-# def test_pyarrow_stream_cp():
-    with pytest.raises(NotImplementedError):  # TODO
-        pa_fs.copy_file(CONSTANTS.TITANIC_CSV,
-                        'https://xethub.com/xdssio/titanic.git/main/titanic2.csv')
-
-
 @pytest.mark.skip("Not sure if we need this - TODO")
 def test_pyarrow_fsspec():
     from pyarrow import fs

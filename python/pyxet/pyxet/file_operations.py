@@ -97,7 +97,7 @@ def _single_file_copy_impl(cp_action, src_fs, dest_fs, progress_reporter = None,
             # Fasttrack for downloading a file to local
             if src_fs.protocol == "xet" and dest_fs.protocol == "file":
                 with src_fs.open(src_path, "rb", flags=XetFSOpenFlags.FILE_FLAG_NO_BUFFERING) as source_file:
-                    source_file.get(dest_path)
+                    source_file.read_to_path(dest_path, progress_reporter)
             else:
                 with src_fs.open(src_path, "rb") as source_file:
                     with dest_fs.open(dest_path, "wb", auto_mkdir=True) as dest_file:

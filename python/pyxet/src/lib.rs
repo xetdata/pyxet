@@ -593,9 +593,9 @@ impl PyRFile {
             anyhow::Ok(curoff as u64)
         })
     }
-    pub fn get(&mut self, path: &str, py: Python<'_>) -> PyResult<()> {
+    pub fn read_to_path(&mut self, path: &str, progress_reporting : &Option<PyProgressReporter>, py: Python<'_>) -> PyResult<()> {
         rust_async!(py, {
-            self.reader.get(path).await?;
+            self.reader.read_to_path(path, progress_reporting.map(|pr| pr.inner())).await?;
             anyhow::Ok(())
         })
     }
@@ -1014,6 +1014,10 @@ impl PyProgressReporter {
 
     pub fn finalize(&self) {
         self.dpr.finalize()
+    }
+
+    pub fn inner(&self) -> Arc<DataProgressReporter> {
+        self.dpr.clone()
     }
 }
 

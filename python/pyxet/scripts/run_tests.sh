@@ -31,4 +31,4 @@ fi
 
 # Set this so we can execute the 
 export XET_STANDALONE_CLI=${cli}
-pytest -n 8 --verbose tests/
+pytest -n 4 --verbose tests/

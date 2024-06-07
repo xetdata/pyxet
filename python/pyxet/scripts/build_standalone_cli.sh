@@ -11,7 +11,7 @@ fi
 >&2 wheel_location=$(./scripts/build_wheel.sh)
 
 >&2 pip install $wheel_location 
->&2 pip install -r ./scripts/cli_requirements.sh 
+>&2 pip install -r ./scripts/cli_requirements.txt 
 
 OS=$(uname -s)
 
@@ -20,7 +20,13 @@ xet_cli_path="./scripts/xet_standalone_entry.py"
 
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
-    >&2 pyinstaller --onefile "$xet_cli_path" --name xet --target-arch universal2 
+    if [[ ${_PYXET_BUILD_MODE} == "debug" ]] ; then 
+        target_flag=
+    else
+        target_flag="--target-arch=universal2" 
+    fi
+
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $target_flag
     cli_path="$PWD/dist/xet"
 elif [[ "$OS" == "Linux" ]] ; then
     >&2 pyinstaller --onefile "$xet_cli_path" --name xet

@@ -33,12 +33,12 @@ lazy_static = "1.4.0"
 
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-libxet = { path = "/Users/hoytak/workspace/xet-dev/xet-core-2/libxet", features = [
+libxet = { git = "https://github.com/xetdata/xet-core", features = [
     "openssl_vendored",
 ] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-libxet = { path = "/Users/hoytak/workspace/xet-dev/xet-core-2/libxet", features = [] }
+libxet = { git = "https://github.com/xetdata/xet-core", features = [] }
 
 [build-dependencies]
 pyo3-build-config = "0.18.0"

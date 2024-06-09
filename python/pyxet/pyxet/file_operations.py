@@ -40,8 +40,8 @@ def _validate_xet_copy(src_fs, src_path, dest_fs, dest_path):
         # exists before we try to do any copying
         # An exception is that if this operation would create a branch
         if srcproto == 'xet':
-            src_parse = parse_url(src_path, src_fs.domain)
-            dest_parse = parse_url(dest_path, dest_fs.domain)
+            src_parse = parse_url(src_path, src_fs.endpoint)
+            dest_parse = parse_url(dest_path, dest_fs.endpoint)
             if src_parse.path == '' and dest_parse.path == '':
                 # this is a branch to branch copy
                 return True

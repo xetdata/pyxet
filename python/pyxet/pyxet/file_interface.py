@@ -110,8 +110,8 @@ class XetFile:
             data = data.encode('utf-8')
         self.handle.write(data)
 
-    def get(self, path):
-        self.handle.get(path)
+    def read_to_path(self, path, progress_reporter = None):
+        self.handle.read_to_path(path, progress_reporter)
 
     def __del__(self):
         self.close()

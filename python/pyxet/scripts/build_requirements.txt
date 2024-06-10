@@ -6,4 +6,3 @@ urllib3
 tabulate 
 typer
 pyinstaller
-

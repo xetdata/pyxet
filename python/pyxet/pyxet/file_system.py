@@ -390,7 +390,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         elif url_path.branch == "":
             branches = self.list_branches(url_path.remote())
-            return [{'name':  url_path.base_path() + "/" + n['name'], 'type': 'branch'} for n in branches]
+            return [{'name':  url_path.base_path() + n['name'], 'type': 'branch'} for n in branches]
         else:
             files, file_info = self._manager.listdir(url_path.remote(),
                                                      url_path.branch,

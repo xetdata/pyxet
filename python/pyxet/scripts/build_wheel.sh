@@ -13,20 +13,9 @@ OS=$(uname -s)
 export MACOSX_DEPLOYMENT_TARGET=10.9
 unset CONDA_PREFIX
 
-# Adds in the install instructions.
+# Set up the release environment 
 >&2 source ./scripts/setup_env.sh
-
-# Use a new build environment that links against the system python on OSX 
-# and always creates a new environment.
-
-# If we're already in a virtual env, then don't worry about this. 
-if [[ -z $_PYXET_BUILD_VIRTUAL_ENV ]] ; then
-    >&2 rm -rf .venv_build
-    >&2 create_venv .venv_build release  
-    >&2 source $(venv_activate_script .venv_build)
-else 
-    >&2 source $(venv_activate_script ${_PYXET_BUILD_VIRTUAL_ENV})
-fi
+>&2 create_release_venv
 
 # Clear out any old wheels
 >&2 mkdir -p target/old_wheels/

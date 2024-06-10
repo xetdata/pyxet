@@ -36,6 +36,7 @@ create_venv() {
         [[ -e "./$venv_name" ]] || exit 1 
 
         source $(venv_activate_script $venv_name)
+        export _PYXET_BUILD_VIRTUAL_ENV=$venv_name
     fi
     
     # Make sure it's up to par. 
@@ -48,5 +49,21 @@ create_venv() {
         # Install both.
         >&2 pip install --upgrade -r scripts/build_requirements.txt
         >&2 pip install --upgrade -r scripts/dev_requirements.txt
+    fi
+}
+
+
+create_release_venv() {
+
+    # If we're already in a virtual env, then don't worry about this. 
+    if [[ -z $_PYXET_BUILD_VIRTUAL_ENV ]] ; then
+        
+        # Use a new build environment that links against the system python on OSX 
+        # and always creates a new environment.
+        >&2 rm -rf .venv_build
+        >&2 create_venv .venv_build release  
+        >&2 source $(venv_activate_script .venv_build)
+    else 
+        >&2 source $(venv_activate_script ${_PYXET_BUILD_VIRTUAL_ENV})
     fi
 }

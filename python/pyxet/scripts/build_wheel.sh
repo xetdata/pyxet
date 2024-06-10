@@ -29,6 +29,7 @@ else
 
     if [[ "$OS" == "Darwin" ]]; then
         flags="$flags --target=universal2-apple-darwin"
+        export CXXFLAGS="-stdlib=libc++"
     fi
 fi
 

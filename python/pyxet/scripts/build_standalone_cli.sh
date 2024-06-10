@@ -4,31 +4,37 @@
 # Will build wheel in release mode, then build standalone executable using the xet packaged with the CLI
 
 if [[ ! -e pyproject.toml ]] ; then 
-    echo "Run this script in the pyxet directory using ./scripts/$0"
+    >&2 echo "Run this script in the pyxet directory using ./scripts/$0"
     exit 1
 fi
 
-source ./scripts/build_wheel.sh
+>&2 wheel_location=$(./scripts/build_wheel.sh)
 
-pip install target/wheels/pyxet-*.whl
+>&2 pip install $wheel_location 
+>&2 pip install -r ./scripts/cli_requirements.txt 
 
 OS=$(uname -s)
 
+xet_cli_path="./scripts/xet_standalone_entry.py"
+>&2 echo "Path to xet entry script = '${xet_cli_path}'"
+
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
-    xet_cli_path="$(which xet)"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" --target-arch universal2
-elif [[ "$OS" == "Linux" ]] ; then
-    xet_cli_path="$(which xet)"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" 
-else
-    # Windows is weird.  Have to go directly to the cli path
+    if [[ ${_PYXET_BUILD_MODE} == "debug" ]] ; then 
+        target_flag=
+    else
+        target_flag="--target-arch=universal2" 
+    fi
 
-    # Find the cli file, which isn't always where you want it to be. 
-    xet_cli_path="./.venv_build/Lib/site-packages/pyxet/cli.py"
-    echo "Path to xet = '${xet_cli_path}'"
-    pyinstaller --onefile "$xet_cli_path" 
-    mv dist/cli.exe dist/xet.exe
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $target_flag
+    cli_path="dist/xet"
+elif [[ "$OS" == "Linux" ]] ; then
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    cli_path="dist/xet"
+else
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    cli_path="dist/xet.exe"
 fi
+
+>&2 echo "Standalone installer is located at ${cli_path}."
+echo ${cli_path} 

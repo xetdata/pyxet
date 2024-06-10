@@ -9,27 +9,33 @@ if [[ ! -e pyproject.toml ]] ; then
 fi
 
 source ./scripts/setup_env.sh
-create_venv venv dev
+create_venv venv dev  # The dev part here installs the additional dev requirements
 source $(venv_activate_script venv)
+
+export _PYXET_BUILD_MODE=debug
+export _PYXET_BUILD_VIRTUAL_ENV=venv
+
+# Build the wheel.
+wheel=$(./scripts/build_wheel.sh)
+
+# Build the standalone cli and wheel 
+cli=$(./scripts/build_standalone_cli.sh)
+
+# Install the wheel
+pip install "$wheel"
 
 if [[ -z "$VIRTUAL_ENV" ]] ; then 
   echo "Failed to activate virtual env."
   exit 1
 fi
 
+# Make sure windows executable can run anywhere 
+work_dir=./.testing_tmp
+rm -rf $work_dir || echo ""
+mkdir -p $work_dir
 
-# Clear out any old wheels
-mkdir -p target/old_wheels/
-mv target/wheels/* target/old_wheels/ || echo ""
+cp "$cli" "$work_dir"
+cd "$work_dir"
 
-echo "$(which pip)"
-
-# Install 
-maturin build
-pip install target/wheels/pyxet-*.whl
-
-# TODO: This runs the tests in parallel using pytest-xdist
-# Error: tests in cli can't be run simultaneously actually, as there are conflicts.
-#pytest -n 12 --verbose tests/
-pytest --verbose tests/
-
+export XET_STANDALONE_CLI="./$(basename ${cli})"
+pytest --verbose "../tests/"

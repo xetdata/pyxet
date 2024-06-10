@@ -36,14 +36,17 @@ create_venv() {
         [[ -e "./$venv_name" ]] || exit 1 
 
         source $(venv_activate_script $venv_name)
-
-        >&2 pip install --upgrade pip
-        if [[ $build_mode == "release" ]] ; then 
-            # For building the wheel / standalone xet, use minimal installation
-            # environment; otherwise may pull in non-universal2 compatible package.
-            >&2 pip install -r scripts/build_requirements.txt
-        else
-            >&2 pip install -r scripts/dev_requirements.txt
-        fi
+    fi
+    
+    # Make sure it's up to par. 
+    >&2 pip install --upgrade pip
+    if [[ $build_mode == "release" ]] ; then 
+        # For building the wheel / standalone xet, use minimal installation
+        # environment; otherwise may pull in non-universal2 compatible package.
+        >&2 pip install --upgrade -r scripts/build_requirements.txt
+    else
+        # Install both.
+        >&2 pip install --upgrade -r scripts/build_requirements.txt
+        >&2 pip install --upgrade -r scripts/dev_requirements.txt
     fi
 }

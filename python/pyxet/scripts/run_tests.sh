@@ -8,12 +8,9 @@ if [[ ! -e pyproject.toml ]] ; then
     exit 1
 fi
 
+# Now use the dev environment for this.
 source ./scripts/setup_env.sh
-create_venv venv dev  # The dev part here installs the additional dev requirements
-source $(venv_activate_script venv)
-
-export _PYXET_BUILD_MODE=debug
-export _PYXET_BUILD_VIRTUAL_ENV=venv
+activate_dev_venv
 
 # Build the wheel.
 wheel=$(./scripts/build_wheel.sh)

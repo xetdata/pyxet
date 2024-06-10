@@ -15,7 +15,7 @@ unset CONDA_PREFIX
 
 # Set up the release environment 
 >&2 source ./scripts/setup_env.sh
->&2 create_release_venv
+>&2 activate_release_venv
 
 # Clear out any old wheels
 >&2 mkdir -p target/old_wheels/

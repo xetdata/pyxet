@@ -43,4 +43,46 @@ jobs:
           
           cd python/pyxet
           ./scripts/run_tests.sh
+  test_cli_build:
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_SECRET_KEY }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Set up Rust 
+        uses: dtolnay/rust-toolchain@1.75.0
+      - name: Set up Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          version: "23.1"
+          repo-token: ${{ secrets.DEV_GITHUB_TOKEN }}
+      - name: Build with maturin (macOS)
+        if: runner.os == 'macOS'
+        run: | 
+          brew install make
+          echo "export PATH=\"$(dirname $(dirname $(which gmake)))/opt/make/libexec/gnubin:$PATH\"" >> ./build_env_vars.sh
+          echo "export MAKE=\"$(which gmake)\"" >> ./build_env_vars.sh
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+      - name: Unit and integration tests
+        shell: bash
+        env:
+          XET_TEST_USER: ${{ vars.XET_TEST_USER }}
+          XET_TEST_EMAIL: ${{ vars.XET_TEST_EMAIL }}
+          XET_TEST_TOKEN: ${{ vars.XET_TEST_TOKEN }}
+          XET_TEST_REPO: ${{ vars.XET_TEST_REPO }}
+        run: |
+          source ./build_env_vars.sh || echo ""
+          
+          cd python/pyxet
+          xet_exe=$(./scripts/build_standalone_cli.sh)
+          $xet_exe version
 

@@ -1,3 +1,0 @@
-# All of the requirements for installation that the fsspec implementation 
-# could be interested in. 
-s3fs

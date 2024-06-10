@@ -8,7 +8,11 @@ if [[ ! -e pyproject.toml ]] ; then
     exit 1
 fi
 
->&2 wheel_location=$(./scripts/build_wheel.sh)
+# Set up the environment
+>&2 source ./scripts/setup_env.sh
+>&2 create_release_venv
+
+wheel_location=$(./scripts/build_wheel.sh)
 
 >&2 pip install $wheel_location 
 >&2 pip install -r ./scripts/cli_requirements.txt 

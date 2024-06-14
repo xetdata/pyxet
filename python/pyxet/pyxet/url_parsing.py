@@ -146,7 +146,7 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
     # Set this as a default below     
     ret = XetPathInfo()
     # Set what defaults we can
-    ret.scheme = "xet"
+    ret.scheme = scheme
     ret.http_scheme = "https"
 
     netloc_info = url_path.split("/", 1)
@@ -157,10 +157,13 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
     else:
         netloc, path = netloc_info
 
-    # Handle the case where we are xet://user/repo. In which case the endpoint
-    # parsed is not xethub.com and endpoint="user".
-    # we rewrite the parse the handle this case early.
-    if ":" not in netloc:
+    if scheme in ["http", "https"]:
+        # Here we assume the endpoint is always explicit
+        ret.endpoint = netloc
+        path_to_parse = path  
+        ret.endpoint_explicit = True
+        explicit_user = None
+    elif ":" not in netloc:
         
         global has_warned_user_on_url_format
 
@@ -190,7 +193,7 @@ def parse_url(url, default_endpoint=None, expect_branch = None, expect_repo = Tr
                 ret.endpoint = default_endpoint
         else: 
             raise ValueError(f"Cannot parse user and endpoint from {netloc}")
-        
+
         ret.endpoint_explicit = True
 
     # Now, special case localhost

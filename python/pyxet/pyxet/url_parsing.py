@@ -55,7 +55,11 @@ class XetPathInfo:
         return "/".join(s for s in [self.repo, self.branch, self.path] if s)
 
     def url(self):
-        return f"{self.scheme}://{self.endpoint}:{self.user}/{self._repo_branch_path()}"
+        if self.scheme in ["http", "https"]:
+            return f"{self.scheme}://{self.endpoint}/{self.user}/{self._repo_branch_path()}"
+        else:
+            return f"{self.scheme}://{self.endpoint}:{self.user}/{self._repo_branch_path()}"
+
 
     def base_path(self): 
         """

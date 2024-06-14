@@ -192,15 +192,16 @@ class XetFS(fsspec.spec.AbstractFileSystem):
 
         try:
             attr = self._manager.stat(url_path.remote(), url_path.branch, "")
-            if attr is None:
-                raise FileNotFoundError(
-                    f"Branch or repo not found, remote = {url_path.remote()}, branch = {url_path.branch}")
-            return {"name": url_path.name(),
-                "size": attr.size,
-                "type": attr.ftype}
         except Exception as e:
-                print(f"{e}")
-                sys.exit(1)
+            print(f"{e}")
+            sys.exit(1)
+        if attr is None:
+            raise FileNotFoundError(
+                f"Branch or repo not found, remote = {url_path.remote()}, branch = {url_path.branch}")
+        return {"name": url_path.name(),
+            "size": attr.size,
+            "type": attr.ftype}
+        
 
     def branch_exists(self, url):
         try:
@@ -218,17 +219,18 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         url_path = parse_url(url, self.endpoint, expect_branch = True)
         try:
             attr = self._manager.stat(url_path.remote(), url_path.branch, url_path.path)
-
-            if attr is None:
-                raise FileNotFoundError(f"File not found {url}")
-
-            return {"name": url_path.name(),
-                    "size": attr.size,
-                    "type": attr.ftype,
-                    "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
         except Exception as e:
             print(f"{e}")
             sys.exit(1)
+
+        if attr is None:
+            raise FileNotFoundError(f"File not found {url}")
+
+        return {"name": url_path.name(),
+                "size": attr.size,
+                "type": attr.ftype,
+                "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
+        
 
     def make_repo(self, dest_path, private=False, **kwargs):
         dest = parse_url(dest_path, self.endpoint, expect_branch = False, expect_repo=True)

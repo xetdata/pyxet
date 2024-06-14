@@ -180,7 +180,7 @@ class PyxetCLI:
             return listing
         except Exception as e:
             print(f"{e}")
-            return
+            sys.exit(1)
             # this failed to list. retry as a file
             if fs.protocol == 'xet':
                 return PyxetCLI.info(original_path, raw)

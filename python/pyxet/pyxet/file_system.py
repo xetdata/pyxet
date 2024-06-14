@@ -200,7 +200,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                 "type": attr.ftype}
         except Exception as e:
                 print(f"{e}")
-                exit()
+                sys.exit(1)
 
     def branch_exists(self, url):
         try:
@@ -228,7 +228,7 @@ class XetFS(fsspec.spec.AbstractFileSystem):
                     "last_modified": None if len(attr.last_modified) == 0 else attr.last_modified}
         except Exception as e:
             print(f"{e}")
-            exit()
+            sys.exit(1)
 
     def make_repo(self, dest_path, private=False, **kwargs):
         dest = parse_url(dest_path, self.endpoint, expect_branch = False, expect_repo=True)

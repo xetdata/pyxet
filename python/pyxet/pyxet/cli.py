@@ -179,7 +179,8 @@ class PyxetCLI:
                 print(tabulate(listing, headers="keys"))
             return listing
         except Exception as e:
-            raise
+            print(f"{e}")
+            return
             # this failed to list. retry as a file
             if fs.protocol == 'xet':
                 return PyxetCLI.info(original_path, raw)
@@ -409,7 +410,6 @@ class BranchCLI:
         ret = fs.find_ref(repo, branch)
         print(ret)
         return ret
-
 
 class RepoCLI:
     @staticmethod

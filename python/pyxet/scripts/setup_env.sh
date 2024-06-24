@@ -33,11 +33,11 @@ create_venv() {
         >&2 echo "Python version = $("$python_executable" --version)"
         >&2 "$python_executable" -m venv "./$venv_name"
 
-        [[ -e "./$venv_name" ]] || exit 1 
+        [[ -e "./$venv_name" ]] || exit 1
+    fi 
 
-        source $(venv_activate_script $venv_name)
-        export _PYXET_BUILD_VIRTUAL_ENV=$venv_name
-    fi
+    source $(venv_activate_script $venv_name)
+    export _PYXET_BUILD_VIRTUAL_ENV=$venv_name
     
     # Make sure it's up to par. 
     >&2 pip install --upgrade pip

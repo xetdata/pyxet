@@ -40,7 +40,7 @@ create_venv() {
     export _PYXET_BUILD_VIRTUAL_ENV=$venv_name
     
     # Make sure it's up to par. 
-    >&2 ${python_executable} -m pip install --upgrade pip
+    >&2 python -m pip install --upgrade pip
     if [[ $build_mode == "release" ]] ; then 
         if [[ "$(uname -s)" == "Darwin" ]]; then
             # This is VERY annoying.  If a platform specific wheel is published, then that is sometimes prefered by pip over the universal2 wheel, which causes problems.

@@ -22,6 +22,8 @@ OS=$(uname -s)
 xet_cli_path="./scripts/xet_standalone_entry.py"
 >&2 echo "Path to xet entry script = '${xet_cli_path}'"
 
+additional_imports="--hidden-import=boto3 --hidden-import=botocore"
+
 # Build binary
 if [[ "$OS" == "Darwin" ]]; then
     if [[ ${_PYXET_BUILD_MODE} == "debug" ]] ; then 
@@ -30,13 +32,13 @@ if [[ "$OS" == "Darwin" ]]; then
         target_flag="--target-arch=universal2" 
     fi
 
-    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $target_flag
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $target_flag $additional_imports
     cli_path="dist/xet"
 elif [[ "$OS" == "Linux" ]] ; then
-    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $additional_imports
     cli_path="dist/xet"
 else
-    >&2 pyinstaller --onefile "$xet_cli_path" --name xet
+    >&2 pyinstaller --onefile "$xet_cli_path" --name xet $additional_imports 
     cli_path="dist/xet.exe"
 fi
 

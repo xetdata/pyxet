@@ -2,6 +2,8 @@ cloudpickle
 fsspec
 maturin
 s3fs 
+boto3
+botocore
 urllib3
 tabulate 
 typer

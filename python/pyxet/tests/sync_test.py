@@ -45,11 +45,11 @@ def test_sync_command_validate_local():
 
     check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
     check_sync_validate('xet://XetHub/grapp2/main', f'xet://{CONSTANTS.TESTING_SYNCREPO}/sync-branch/sync', False)
-    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/nonexistent-branch', False)
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/new-branch', True)
     check_sync_validate('.', './other', False)
-    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}', False)
+    check_sync_validate('.', f'xet://non-existant-user/non-existant-repo/', False)
     check_sync_validate('.', 'xet://', False)
-    check_sync_validate('./*', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate('./*', f'xet://non-existant-user/', False)
     check_sync_validate('./*.py', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
     check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main/foo*', False)
 

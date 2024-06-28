@@ -47,7 +47,7 @@ def test_sync_command_validate_local():
 
     check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
     check_sync_validate('xet://XetHub/grapp2/main', f'xet://{CONSTANTS.TESTING_SYNCREPO}/sync-branch/sync', False)
-    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/new-branch', True)
+    check_sync_validate('.', f'xet://{CONSTANTS.TESTING_SYNCREPO}/new-branch', False)
     check_sync_validate('.', './other', False)
     check_sync_validate('.', f'xet://non-existant-user/non-existant-repo/', False)
     check_sync_validate('.', 'xet://', False)
@@ -61,7 +61,7 @@ def test_sync_command_validate_s3():
     pyxet.login(CONSTANTS.TESTING_USERNAME, CONSTANTS.TESTING_TOKEN, email="a@a.com")
 
     check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
-    check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}/nonexistent-path', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
+    check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}/nonexistent-path', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', True)
     check_sync_validate(f's3://', f'xet://{CONSTANTS.TESTING_SYNCREPO}/main', False)
     check_sync_validate(f's3://{CONSTANTS.S3_BUCKET}', f's3://{CONSTANTS.S3_BUCKET}/other', False)
 

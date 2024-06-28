@@ -49,6 +49,9 @@ class SyncCommand:
         if '*' in self._src_root or '*' in self._dest_root:
             raise ValueError(f"Wildcards not supported in paths")
 
+        # Check that the source is valid 
+        self._src_fs.ls(self._src_root)
+
     def run(self):
         """
         Runs this Sync command, returning SyncStats containing the number of files copied

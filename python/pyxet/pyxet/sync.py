@@ -39,7 +39,7 @@ class SyncCommand:
 
         # check that the destination specifies an existing branch
         # TODO: we may want to be able to sync remote location to a new branch?
-        self._dest_fs.is_repo(self._dest_root)
+        self._dest_fs.ls(self._dest_root)
         
         # s3 needs a bucket
         if self._src_proto == 's3' and (self._src_root == '/' or self._src_root == ''):

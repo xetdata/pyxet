@@ -14,6 +14,8 @@ class SyncCommand:
     def __init__(self, source, destination, use_mtime, message, dryrun, update_size):
         self._message = message
         self._dryrun = dryrun
+        self._source = source
+        self._destination = destination
         self._src_fs, self._src_proto, self._src_root = _get_normalized_fs_protocol_and_path(source)
         self._dest_fs, self._dest_proto, self._dest_root = _get_normalized_fs_protocol_and_path(destination)
         self._use_mtime = use_mtime
@@ -39,7 +41,10 @@ class SyncCommand:
 
         # check that the destination specifies an existing branch
         # TODO: we may want to be able to sync remote location to a new branch?
-        self._dest_fs.ls(self._dest_root)
+        try:
+            self._dest_fs.ls(self._dest_root)
+        except Exception as e:
+            raise ValueError(f"Destination {self._destination} does not exist or unable to access ({e}).")
         
         # s3 needs a bucket
         if self._src_proto == 's3' and (self._src_root == '/' or self._src_root == ''):
@@ -50,7 +55,10 @@ class SyncCommand:
             raise ValueError(f"Wildcards not supported in paths")
 
         # Check that the source is valid 
-        self._src_fs.ls(self._src_root)
+        try:
+            self._src_fs.ls(self._src_root)
+        except Exception as e:
+            raise ValueError(f"Source {self._source} does not exist or unable to access ({e}).")
 
     def run(self):
         """

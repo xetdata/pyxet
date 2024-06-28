@@ -37,7 +37,9 @@ def check_sync_validate(src, dst, is_valid):
         cmd.validate()
         assert is_valid
     except (ValueError, FileNotFoundError):
-        assert not is_valid
+        if is_valid:
+            raise
+        
 
 
 def test_sync_command_validate_local():

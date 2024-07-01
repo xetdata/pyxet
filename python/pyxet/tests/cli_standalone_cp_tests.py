@@ -18,6 +18,9 @@ xet_cli_path=os.environ.get("XET_STANDALONE_CLI", None)
 
 if xet_cli_path is None:
     print("Warning: XET_STANDALONE_CLI not set, skipping all tests.")
+    
+    if os.environ.get("XET_FORCE_ALL_TESTS") == "1":
+        raise ValueError("xet_cli_path is not set.")
 
 def xet_url(branch = None, path = None): 
     ret = f"xet://{host}:{user}/{repo}"
@@ -309,4 +312,14 @@ def test_directory_recursive_upload():
         delete_branch(b1) 
 
 
+from utils import CONSTANTS, require_s3_creds
 
+@pytest.mark.skipif(xet_cli_path is None)
+@require_s3_creds()
+def test_s3_sync(): 
+
+    b1 = utils.new_random_branch_from(f"xet://{host}:{user}/{repo}", "main")
+    xet_url = f"xet://{host}:{user}/{repo}/{b1}/"
+    run_xet("sync", f"s3://{CONSTANTS.S3_BUCKET}/sync1", xet_url)
+                        
+    utils.assert_remote_files_exist(f"{xet_url}/*", ["js/main.d8604548.js", "tmp-1"])

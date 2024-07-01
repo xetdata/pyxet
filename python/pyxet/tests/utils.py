@@ -153,7 +153,7 @@ def require_s3_creds():
 
     msg = "AWS credentials not defined"
     if os.environ.get("XET_FORCE_ALL_TESTS") == "1":
-        return pytest.mark.skipif(False)
+        return pytest.mark.skipif(False, reason="") # noop
     
     return pytest.mark.skipif(not try_load_s3(), reason=msg)
 

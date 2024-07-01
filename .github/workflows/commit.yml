@@ -5,6 +5,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.DEV_AWS_ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_AWS_SECRET_KEY }}
+      XET_FORCE_ALL_TESTS: 1
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]

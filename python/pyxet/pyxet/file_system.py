@@ -193,8 +193,9 @@ class XetFS(fsspec.spec.AbstractFileSystem):
         try:
             attr = self._manager.stat(url_path.remote(), url_path.branch, "")
         except Exception as e:
-            print(f"{e}")
-            sys.exit(1)
+            print(f"Error accessing repo {url}: {e}")
+            raise
+        
         if attr is None:
             raise FileNotFoundError(
                 f"Branch or repo not found, remote = {url_path.remote()}, branch = {url_path.branch}")

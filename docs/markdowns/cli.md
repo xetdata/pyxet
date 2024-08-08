@@ -216,7 +216,7 @@ Mount a remote branch to a local directory as read only.
 This is great for data exploration and analysis.
 
 * Mount is lazy and data is not retrieved until it is needed.
-* Mount is read only and changes cannot be done to ny mounted file or directory.
+* Mount is read only and changes cannot be done to any mounted file or directory.
 
 ```bash 
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮

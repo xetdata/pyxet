@@ -10,7 +10,7 @@ Use-cases:
 
 Currently, many organizations manage their experiments by saving snapshots of the data, the logs, the metrics and the
 models. The best performing models are copied to a different location for deployment to dev and production environments, 
-which are ometimes managed by a database, or with docker-image registry. Often, another third-party tool is used to 
+which are sometimes managed by a database, or with docker-image registry. Often, another third-party tool is used to 
 manage experiments, which then needs to be integrated with the rest of the development stack.
 
 *An example:*
@@ -76,7 +76,7 @@ And this doesn't even cover other common use cases like sharing data or models w
 
 ## ML experimentation with pyxet and XetHub
 
-With XetHub, we can use Git to manage every part of your ML experiments by storing models and assest alongside your code.
+With XetHub, we can use Git to manage every part of your ML experiments by storing models and assets alongside your code.
 Optionally, use [Git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to manage only large data on XetHub.
 
 
@@ -115,8 +115,8 @@ We can always reproduce results and compare models by checking out branches and 
 
 Start a new experiment branch from any existing one, pull new data with `git submodule update data` and run the training 
 again. XetHub will overwrite the model, metrics, and checkpoints in the new branch, and if the pull request review is 
-successful, merge the changes back to prod. This ensures that the model in prod is always up-to-date, and that its
-always stored  alongside its metrics, inference code and relevant logs.
+successful, merge the changes back to prod. This ensures that the model in prod is always up-to-date, and that it's
+always stored alongside its metrics, inference code and relevant logs.
 
 Everything **this** model needs is saved in the repo. If changes to the app are needed, they are managed together.
 

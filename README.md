@@ -1,26 +1,16 @@
-<p align="center">
-	<img src="https://github.com/xetdata/pyxet/blob/0c7608c97f6a2a0cb2c83dd38fb717913c4d7522/docs/images/logo.png" alt="logo" width="400" />
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
-</p>
+# [DEPRECATED] pyxet - The SDK for XetHub
 
-# pyxet - The SDK for XetHub
+**_XetHub has joined [Hugging Face 🤗](https://huggingface.co/blog/xethub-joins-hf). Follow our work to improve large scale collaboration on [Hugging Face Hub](https://huggingface.co/xet-team)._**
 
-[![Version](https://img.shields.io/pypi/v/pyxet.svg?style=flat)](https://pypi.python.org/pypi/pyxet/)
-[![Python](https://img.shields.io/pypi/pyversions/pyxet.svg?style=flat)](https://pypi.python.org/pypi/pyxet/)
-[![License](https://img.shields.io/github/license/xetdata/pyxet?style=flat)](https://github.com/xetdata/pyxet/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/pypi/dm/pyxet?style=flat)](https://pypi.python.org/pypi/pyxet/)
-[![Documentation Status](https://readthedocs.org/projects/pyxet/badge/?version=latest)](https://pyxet.readthedocs.io/en/latest/?badge=latest)
+----
 
 pyxet is a Python library that provides a pythonic interface for
 [XetHub](https://xethub.com/).  Xethub is simple git-based system capable of
 storing TBs of ML data and models in a single repository, with block-level 
 data deduplication that enables hundreds of versions of similar data to be
 stored without requiring much storage. 
-
-Join our [Slack](https://communityinviter.com/apps/xetdata/xet) to get involved. 
-To stay informed about updates, star this repo and sign up for 
-[XetHub](https://xethub.com/user/sign_up) to get the newsletter.
-
 
 ## License
 
@@ -281,13 +271,3 @@ directly upload and download data from S3 to XetHub:
 $ xet cp xet://... s3://...
 $ xet cp s3://... xet://...
 ```
-
-# Development
-See [here](python/pyxet/README.md)
-
-# Encountering Issues?
-
-Please file bugs [here](https://github.com/xetdata/pyxet/issues/new), or
-report on our [Slack #support channel](https://xetdata.slack.com/join/shared_invite/zt-2doug4qz8-JZviSqPHuLBa~pw3gnk7Iw#/shared-invite/email)! 
-We are constant making improvements, especially with
-usability and performance.
